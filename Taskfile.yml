@@ -1,0 +1,18 @@
+version: "3"
+
+tasks:
+  fmt:
+    cmds:
+      - gofmt -s -w -l .
+      - goimports -w -local github.com/omegaatt36/bookly $(find . -type f -name '*.go')
+      - gci write -s standard -s default -s "Prefix(github.com/omegaatt36/bookly)" --skip-generated .
+      - go mod tidy
+  lint:
+    cmds:
+      - find . -name "*.json" | xargs -n 1 -t gojq . > /dev/null
+      - go vet -all ./...
+      - misspell -error */**
+      - staticcheck $(go list ./...)
+  test:
+    cmds:
+      - go test -v ./...
