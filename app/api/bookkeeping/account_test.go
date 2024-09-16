@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/omegaatt36/bookly/api/bookkeeping"
+	"github.com/omegaatt36/bookly/app/api/bookkeeping"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/domain/fake"
 )
@@ -18,12 +18,12 @@ type testAccountSuite struct {
 	suite.Suite
 
 	router *http.ServeMux
-	repo   *fake.FakeRepository
+	repo   *fake.Repository
 }
 
 func (s *testAccountSuite) SetupTest() {
 	s.router = http.NewServeMux()
-	s.repo = fake.NewFakeRepository()
+	s.repo = fake.NewRepository()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 	controller.RegisterAccountRouters(s.router)
 }

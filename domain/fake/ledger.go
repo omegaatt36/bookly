@@ -7,7 +7,8 @@ import (
 	"github.com/omegaatt36/bookly/domain"
 )
 
-func (r *FakeRepository) CreateLedger(req domain.CreateLedgerRequest) error {
+// CreateLedger creates a new ledger entry based on the provided request
+func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -32,7 +33,8 @@ func (r *FakeRepository) CreateLedger(req domain.CreateLedgerRequest) error {
 	return nil
 }
 
-func (r *FakeRepository) GetLedgerByID(id string) (*domain.Ledger, error) {
+// GetLedgerByID retrieves a ledger entry by its ID
+func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -44,7 +46,8 @@ func (r *FakeRepository) GetLedgerByID(id string) (*domain.Ledger, error) {
 	return ledger, nil
 }
 
-func (r *FakeRepository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, error) {
+// GetLedgersByAccountID retrieves all ledger entries for a given account ID
+func (r *Repository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -58,7 +61,8 @@ func (r *FakeRepository) GetLedgersByAccountID(accountID string) ([]*domain.Ledg
 	return ledgers, nil
 }
 
-func (r *FakeRepository) UpdateLedger(req domain.UpdateLedgerRequest) error {
+// UpdateLedger updates an existing ledger entry based on the provided request
+func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -85,7 +89,8 @@ func (r *FakeRepository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 	return nil
 }
 
-func (r *FakeRepository) VoidLedger(id string) error {
+// VoidLedger marks a ledger entry as voided
+func (r *Repository) VoidLedger(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -101,7 +106,8 @@ func (r *FakeRepository) VoidLedger(id string) error {
 	return nil
 }
 
-func (r *FakeRepository) AdjustLedger(originalID string, adjustment domain.CreateLedgerRequest) error {
+// AdjustLedger creates a new adjusted ledger entry based on an existing one
+func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLedgerRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

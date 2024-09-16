@@ -3,7 +3,7 @@ version: "3"
 tasks:
   run:
     cmds:
-      - go run cmd/server/main.go
+      - go run cmd/api/main.go
   fmt:
     cmds:
       - gofmt -s -w -l .
@@ -12,6 +12,7 @@ tasks:
       - go mod tidy
   lint:
     cmds:
+      - revive -formatter friendly -config revive.toml  ./...
       - find . -name "*.json" | xargs -n 1 -t gojq . > /dev/null
       - go vet -all ./...
       - misspell -error */**

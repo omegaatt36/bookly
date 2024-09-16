@@ -9,7 +9,8 @@ import (
 	"github.com/omegaatt36/bookly/domain"
 )
 
-func (r *FakeRepository) CreateAccount(req domain.CreateAccountRequest) error {
+// CreateAccount creates a new account with the given request details.
+func (r *Repository) CreateAccount(req domain.CreateAccountRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -29,7 +30,8 @@ func (r *FakeRepository) CreateAccount(req domain.CreateAccountRequest) error {
 	return nil
 }
 
-func (r *FakeRepository) GetAllAccounts() ([]*domain.Account, error) {
+// GetAllAccounts retrieves all accounts from the repository.
+func (r *Repository) GetAllAccounts() ([]*domain.Account, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -41,7 +43,8 @@ func (r *FakeRepository) GetAllAccounts() ([]*domain.Account, error) {
 	return accounts, nil
 }
 
-func (r *FakeRepository) GetAccountByID(id string) (*domain.Account, error) {
+// GetAccountByID retrieves an account by its ID from the repository.
+func (r *Repository) GetAccountByID(id string) (*domain.Account, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -53,7 +56,8 @@ func (r *FakeRepository) GetAccountByID(id string) (*domain.Account, error) {
 	return account, nil
 }
 
-func (r *FakeRepository) UpdateAccount(req domain.UpdateAccountRequest) error {
+// UpdateAccount updates an existing account with the given request details.
+func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -76,7 +80,8 @@ func (r *FakeRepository) UpdateAccount(req domain.UpdateAccountRequest) error {
 	return nil
 }
 
-func (r *FakeRepository) DeactivateAccountByID(id string) error {
+// DeactivateAccountByID deactivates an account by setting its status to closed.
+func (r *Repository) DeactivateAccountByID(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

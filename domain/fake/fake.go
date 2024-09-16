@@ -6,19 +6,19 @@ import (
 	"github.com/omegaatt36/bookly/domain"
 )
 
-var _ domain.AccountRepository = (*FakeRepository)(nil)
-var _ domain.LedgerRepository = (*FakeRepository)(nil)
+var _ domain.AccountRepository = (*Repository)(nil)
+var _ domain.LedgerRepository = (*Repository)(nil)
 
-// FakeRepository represents a fake repository
-type FakeRepository struct {
+// Repository represents a fake repository
+type Repository struct {
 	accounts map[string]*domain.Account
 	ledgers  map[string]*domain.Ledger
 	mu       sync.RWMutex
 }
 
-// NewFakeRepository creates a new fake repository
-func NewFakeRepository() *FakeRepository {
-	return &FakeRepository{
+// NewRepository creates a new fake repository
+func NewRepository() *Repository {
+	return &Repository{
 		accounts: make(map[string]*domain.Account),
 		ledgers:  make(map[string]*domain.Ledger),
 	}
