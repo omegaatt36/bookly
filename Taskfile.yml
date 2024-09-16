@@ -1,6 +1,9 @@
 version: "3"
 
 tasks:
+  run:
+    cmds:
+      - go run cmd/server/main.go
   fmt:
     cmds:
       - gofmt -s -w -l .
