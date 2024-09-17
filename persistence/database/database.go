@@ -10,39 +10,26 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var once sync.Once
-
 // database defines database instance.
 type database struct {
 	Opt ConnectOption
 	db  *gorm.DB
 }
 
+var mutex sync.Mutex
 var db *database
 
 // Initialize inits singleton.
 func Initialize(opt ConnectOption) error {
-	var err error
-	once.Do(func() {
-		db = &database{}
-		db.Opt = opt
-		if err = db.Open(); err != nil {
-			return
-		}
+	mutex.Lock()
+	defer mutex.Unlock()
 
-		sqlDB, err := db.db.DB()
-		if err != nil {
-			return
-		}
+	if db != nil {
+		slog.Warn("database already initialized")
+		return nil
+	}
 
-		if opt.Dialect == "postgres" {
-			sqlDB.SetConnMaxLifetime(10 * time.Minute)
-			sqlDB.SetMaxIdleConns(20)
-			sqlDB.SetMaxOpenConns(20)
-		}
-	})
-
-	if err != nil {
+	if err := initializeDB(opt); err != nil {
 		return fmt.Errorf("database init error: %w", err)
 	}
 
@@ -51,12 +38,26 @@ func Initialize(opt ConnectOption) error {
 
 // Finalize finalizes singleton.
 func Finalize() error {
-	var err error
-	once.Do(func() {
-		if err = db.Close(); err != nil {
-			return
-		}
-	})
+	return db.Close()
+}
+
+func initializeDB(opt ConnectOption) error {
+	db = &database{}
+	db.Opt = opt
+	if err := db.Open(); err != nil {
+		return err
+	}
+
+	sqlDB, err := db.db.DB()
+	if err != nil {
+		return err
+	}
+
+	if opt.Dialect == "postgres" {
+		sqlDB.SetConnMaxLifetime(10 * time.Minute)
+		sqlDB.SetMaxIdleConns(20)
+		sqlDB.SetMaxOpenConns(20)
+	}
 
 	return nil
 }
