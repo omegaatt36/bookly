@@ -1,9 +1,13 @@
 package database
 
 import (
+	"fmt"
 	"log/slog"
+	"sync/atomic"
+	"time"
 
-	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var (
@@ -12,9 +16,9 @@ var (
 		Dialect:  "postgres",
 		Host:     "localhost",
 		DBName:   "postgres",
-		Port:     5433,
-		User:     "tester",
-		Password: "tester",
+		Port:     5432,
+		User:     "postgres",
+		Password: "postgres",
 	}
 
 	// SQLiteOpt is shared in-memory database.
@@ -23,6 +27,12 @@ var (
 		Host:    "file::memory:?cache=shared",
 	}
 )
+
+var cnt atomic.Int32
+
+func randomDBName() string {
+	return fmt.Sprintf("testing_%v_%d", time.Now().UnixNano(), cnt.Add(1))
+}
 
 // TestingInitialize creates new db for testing.
 func TestingInitialize(opt ConnectOption) (funcFinalize func()) {
@@ -40,32 +50,35 @@ func TestingInitialize(opt ConnectOption) (funcFinalize func()) {
 		}
 	}
 
-	pg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
-		Port(uint32(opt.Port)).
-		Username(opt.User).
-		Password(opt.Password).
-		Database(opt.DBName))
-	if err := pg.Start(); err != nil {
-		slog.Error("Failed to start postgres", "error", err)
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=postgres sslmode=disable",
+		opt.Host, opt.Port, opt.User, opt.Password)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		slog.Error("Failed to connect to postgres", "error", err)
 		panic(err)
 	}
 
-	if err := Initialize(opt); err != nil {
-		if err := pg.Stop(); err != nil {
-			slog.Error("Failed to stop postgres", "error", err)
-		}
+	randomDBName := randomDBName()
 
+	if err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", randomDBName)).Error; err != nil {
+		slog.Error("Failed to create test database", "error", err)
+		panic(err)
+	}
+
+	opt.DBName = randomDBName
+	if err := Initialize(opt); err != nil {
 		slog.Error("Failed to initialize database", "error", err)
 		panic(err)
 	}
 
 	funcFinalize = func() {
-		if err := pg.Stop(); err != nil {
-			slog.Error("Failed to stop postgres", "error", err)
-		}
-
 		if err := Finalize(); err != nil {
 			slog.Error("Failed to finalize database", "error", err)
+			panic(err)
+		}
+
+		if err := db.Exec(fmt.Sprintf("DROP DATABASE %s", randomDBName)).Error; err != nil {
+			slog.Error("Failed to drop test database", "error", err)
 			panic(err)
 		}
 	}

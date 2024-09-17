@@ -11,24 +11,31 @@ import (
 
 	"github.com/omegaatt36/bookly/app/api/bookkeeping"
 	"github.com/omegaatt36/bookly/domain"
-	"github.com/omegaatt36/bookly/domain/fake"
+	"github.com/omegaatt36/bookly/persistence/database"
+	"github.com/omegaatt36/bookly/persistence/repository"
 )
 
 type testAccountSuite struct {
 	suite.Suite
 
 	router *http.ServeMux
-	repo   *fake.Repository
+
+	repo     *repository.GORMRepository
+	finalize func()
 }
 
 func (s *testAccountSuite) SetupTest() {
+	s.finalize = database.TestingInitialize(database.PostgresOpt)
+	s.repo = repository.NewGORMRepository(database.GetDB())
 	s.router = http.NewServeMux()
-	s.repo = fake.NewRepository()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 	controller.RegisterAccountRouters(s.router)
+
+	s.NoError(s.repo.AutoMigrate())
 }
 
 func (s *testAccountSuite) TearDownTest() {
+	s.finalize()
 	s.router = nil
 	s.repo = nil
 }

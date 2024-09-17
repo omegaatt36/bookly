@@ -38,7 +38,16 @@ func Initialize(opt ConnectOption) error {
 
 // Finalize finalizes singleton.
 func Finalize() error {
-	return db.Close()
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if err := db.Close(); err != nil {
+		return fmt.Errorf("close database error: %w", err)
+	}
+
+	db = nil
+
+	return nil
 }
 
 func initializeDB(opt ConnectOption) error {
@@ -122,8 +131,6 @@ func (db *database) Close() error {
 	if err := realConn.Close(); err != nil {
 		return fmt.Errorf("close db connection error: %w", err)
 	}
-
-	db.db = nil
 
 	return nil
 }

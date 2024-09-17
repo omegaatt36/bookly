@@ -7,4 +7,5 @@ import (
 // MigrationList is list of migrations.
 var MigrationList = []*gormigrate.Migration{
 	&CreateExtension,
+	&CreateAccountAndLedger,
 }
