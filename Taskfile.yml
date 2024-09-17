@@ -2,6 +2,14 @@ version: "3"
 
 tasks:
   run:
+    env:
+      DB_DIALECT: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: bookly
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SILENCE_LOGGER: true
     cmds:
       - go run cmd/api/main.go
   fmt:
@@ -20,3 +28,11 @@ tasks:
   test:
     cmds:
       - go test -v ./...
+  setup-db:
+    desc: Setup the database
+    cmds:
+      - docker compose -f deploy/dev/docker-compose.yaml up -d
+  remove-db:
+    desc: Remove the database
+    cmds:
+      - docker compose -f deploy/dev/docker-compose.yaml down

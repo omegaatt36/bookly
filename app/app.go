@@ -15,7 +15,9 @@ import (
 // App is cli wrapper that do some common operation and creates signal handler.
 type App struct {
 	Flags  []cli.Flag
-	Action func(ctx context.Context)
+	Before func(*cli.Context) error
+	After  func(*cli.Context) error
+	Action func(context.Context)
 }
 
 func (a *App) action(c *cli.Context) error {
@@ -46,10 +48,11 @@ func (a *App) action(c *cli.Context) error {
 func (a *App) Run() {
 	app := cli.NewApp()
 	app.Flags = a.Flags
+	app.Before = a.Before
+	app.After = a.After
 	app.Action = a.action
 
-	err := app.Run(os.Args)
-	if err != nil {
-		slog.Error("app error", slog.String("error", err.Error()))
+	if err := app.Run(os.Args); err != nil {
+		panic(err)
 	}
 }

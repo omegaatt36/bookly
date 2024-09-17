@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    container_name: bookly-database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bookly
+    volumes:
+      - bookly-database:/var/lib/postgresql/data
+    networks:
+      - internal
+    ports:
+      - 5432:5432
+
+  adminer:
+    image: adminer
+    container_name: bookly-adminer
+    restart: always
+    networks:
+      - internal
+    ports:
+      - 9527:8080
+
+networks:
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.32.0.0/16
+
+volumes:
+  bookly-database:
+    driver: local
