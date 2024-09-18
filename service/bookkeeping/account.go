@@ -26,3 +26,8 @@ func (s *Service) DeactivateAccountByID(id string) error {
 func (s *Service) GetAllAccounts() ([]*domain.Account, error) {
 	return s.accountRepo.GetAllAccounts()
 }
+
+// GetAccountsByUserID retrieves all accounts by userID.
+func (s *Service) GetAccountsByUserID(userID string) ([]*domain.Account, error) {
+	return s.accountRepo.GetAccountsByUserID(userID)
+}

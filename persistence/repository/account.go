@@ -18,6 +18,7 @@ type Account struct {
 	ID        string `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	UserID    string          `gorm:"type:uuid;not null"`
 	Name      string          `gorm:"type:varchar(255);not null"`
 	Status    string          `gorm:"type:varchar(20);not null"`
 	Currency  string          `gorm:"type:varchar(3);not null"`
@@ -32,6 +33,7 @@ func (a *Account) toDomainAccount() *domain.Account {
 		ID:        a.ID,
 		CreatedAt: a.CreatedAt,
 		UpdatedAt: a.UpdatedAt,
+		UserID:    a.UserID,
 		Name:      a.Name,
 		Status:    domain.AccountStatus(a.Status),
 		Currency:  a.Currency,
@@ -42,6 +44,7 @@ func (a *Account) toDomainAccount() *domain.Account {
 // CreateAccount creates a new account
 func (r *GORMRepository) CreateAccount(req domain.CreateAccountRequest) error {
 	account := Account{
+		UserID:   req.UserID,
 		Name:     req.Name,
 		Currency: req.Currency,
 		Status:   domain.AccountStatusActive.String(),
@@ -74,6 +77,9 @@ func (r *GORMRepository) UpdateAccount(req domain.UpdateAccountRequest) error {
 		return fmt.Errorf("failed to find account: %w", err)
 	}
 
+	if req.UserID != nil {
+		account.UserID = *req.UserID
+	}
 	if req.Name != nil {
 		account.Name = *req.Name
 	}
@@ -109,6 +115,21 @@ func (r *GORMRepository) GetAllAccounts() ([]*domain.Account, error) {
 	var accounts []Account
 	if err := r.db.Find(&accounts).Error; err != nil {
 		return nil, fmt.Errorf("failed to get all accounts: %w", err)
+	}
+
+	domainAccounts := make([]*domain.Account, len(accounts))
+	for i, account := range accounts {
+		domainAccounts[i] = account.toDomainAccount()
+	}
+
+	return domainAccounts, nil
+}
+
+// GetAccountsByUserID retrieves all accounts for an user
+func (r *GORMRepository) GetAccountsByUserID(userID string) ([]*domain.Account, error) {
+	var accounts []Account
+	if err := r.db.Where("user_id = ?", userID).Order("created_at").Find(&accounts).Error; err != nil {
+		return nil, fmt.Errorf("failed to get accounts by user: %w", err)
 	}
 
 	domainAccounts := make([]*domain.Account, len(accounts))

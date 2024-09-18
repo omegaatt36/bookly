@@ -3,6 +3,7 @@ package bookkeeping_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +15,15 @@ import (
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/repository"
 )
+
+var seedUser = domain.User{
+	Name: "Tester",
+}
+
+var seedAccount = domain.Account{
+	Name:     "Test Account",
+	Currency: "NTD",
+}
 
 type testAccountSuite struct {
 	suite.Suite
@@ -45,7 +55,10 @@ func TestAccountSuite(t *testing.T) {
 }
 
 func (s *testAccountSuite) TestCreateAccount() {
-	reqBody := []byte(`{"name": "Test Account", "currency": "NTD"}`)
+	userID, err := s.createSeedUser()
+	s.NoError(err)
+
+	reqBody := []byte(fmt.Sprintf(`{"user_id": "%s", "name": "Test Account", "currency": "NTD"}`, userID))
 	req := httptest.NewRequest(http.MethodPost, "/accounts", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
@@ -64,11 +77,8 @@ func (s *testAccountSuite) TestCreateAccount() {
 }
 
 func (s *testAccountSuite) TestGetAllAccounts() {
-	// Create a test account
-	s.repo.CreateAccount(domain.CreateAccountRequest{
-		Name:     "Test Account",
-		Currency: "NTD",
-	})
+	_, err := s.createSeedAccount()
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
 	w := httptest.NewRecorder()
@@ -92,10 +102,8 @@ func (s *testAccountSuite) TestGetAllAccounts() {
 }
 
 func (s *testAccountSuite) TestGetAccountByID() {
-	// Create a test account
-	s.repo.CreateAccount(domain.CreateAccountRequest{Name: "Test Account", Currency: "NTD"})
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/accounts/"+accountID, nil)
 	w := httptest.NewRecorder()
@@ -119,10 +127,8 @@ func (s *testAccountSuite) TestGetAccountByID() {
 }
 
 func (s *testAccountSuite) TestUpdateAccount() {
-	// Create a test account
-	s.repo.CreateAccount(domain.CreateAccountRequest{Name: "Test Account", Currency: "NTD"})
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	reqBody := []byte(`{"name": "Updated Account"}`)
 	req := httptest.NewRequest(http.MethodPatch, "/accounts/"+accountID, bytes.NewBuffer(reqBody))
@@ -138,10 +144,8 @@ func (s *testAccountSuite) TestUpdateAccount() {
 }
 
 func (s *testAccountSuite) TestDeactivateAccountByID() {
-	// Create a test account
-	s.repo.CreateAccount(domain.CreateAccountRequest{Name: "Test Account", Currency: "NTD"})
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/accounts/"+accountID, nil)
 	w := httptest.NewRecorder()
@@ -153,4 +157,64 @@ func (s *testAccountSuite) TestDeactivateAccountByID() {
 	deactivatedAccount, err := s.repo.GetAccountByID(accountID)
 	s.NoError(err)
 	s.Equal(domain.AccountStatusClosed, deactivatedAccount.Status)
+}
+
+func (s *testAccountSuite) TestGetAccountsByUserID() {
+	_, err := s.createSeedAccount()
+	s.NoError(err)
+
+	req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
+	w := httptest.NewRecorder()
+
+	s.router.ServeHTTP(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+
+	var accounts []struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		Currency string `json:"currency"`
+		Status   string `json:"status"`
+	}
+
+	s.NoError(json.Unmarshal(w.Body.Bytes(), &accounts))
+	s.Len(accounts, 1)
+	s.Equal(seedAccount.Name, accounts[0].Name)
+	s.Equal(seedAccount.Currency, accounts[0].Currency)
+	s.Equal(domain.AccountStatusActive.String(), accounts[0].Status)
+}
+
+func (s *testAccountSuite) createSeedUser() (userID string, err error) {
+	s.NoError(s.repo.CreateUser(domain.CreateUserRequest{
+		Name: seedUser.Name,
+	}))
+
+	users, err := s.repo.GetAllUsers()
+	if err != nil {
+		return
+	}
+
+	userID = users[0].ID
+
+	return
+}
+
+func (s *testAccountSuite) createSeedAccount() (accountID string, err error) {
+	userID, err := s.createSeedUser()
+	s.NoError(err)
+
+	s.NoError(s.repo.CreateAccount(domain.CreateAccountRequest{
+		UserID:   userID,
+		Name:     seedAccount.Name,
+		Currency: seedAccount.Currency,
+	}))
+
+	accounts, err := s.repo.GetAllAccounts()
+	if err != nil {
+		return
+	}
+
+	accountID = accounts[0].ID
+
+	return
 }

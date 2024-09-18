@@ -20,6 +20,7 @@ func (r *Repository) CreateAccount(req domain.CreateAccountRequest) error {
 		ID:        id,
 		CreatedAt: now,
 		UpdatedAt: now,
+		UserID:    req.UserID,
 		Name:      req.Name,
 		Status:    domain.AccountStatusActive,
 		Currency:  req.Currency,
@@ -66,6 +67,9 @@ func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 		return fmt.Errorf("account not found: %s", req.ID)
 	}
 
+	if req.UserID != nil {
+		account.UserID = *req.UserID
+	}
 	if req.Name != nil {
 		account.Name = *req.Name
 	}
@@ -94,4 +98,19 @@ func (r *Repository) DeactivateAccountByID(id string) error {
 	account.UpdatedAt = time.Now()
 
 	return nil
+}
+
+// GetAccountsByUserID retrieves all accounts associated with a given user ID.
+func (r *Repository) GetAccountsByUserID(userID string) ([]*domain.Account, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	accounts := make([]*domain.Account, 0, len(r.accounts))
+	for _, account := range r.accounts {
+		if account.UserID == userID {
+			accounts = append(accounts, account)
+		}
+	}
+
+	return accounts, nil
 }

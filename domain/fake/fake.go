@@ -8,12 +8,15 @@ import (
 
 var _ domain.AccountRepository = (*Repository)(nil)
 var _ domain.LedgerRepository = (*Repository)(nil)
+var _ domain.UserRepository = (*Repository)(nil)
 
 // Repository represents a fake repository
 type Repository struct {
+	mu sync.RWMutex
+
+	users    map[string]*domain.User
 	accounts map[string]*domain.Account
 	ledgers  map[string]*domain.Ledger
-	mu       sync.RWMutex
 }
 
 // NewRepository creates a new fake repository

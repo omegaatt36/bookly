@@ -35,12 +35,6 @@ func (s *testLedgerSuite) SetupTest() {
 	controller.RegisterLedgerRouters(s.router)
 
 	s.NoError(s.repo.AutoMigrate())
-
-	// Create a test account
-	s.repo.CreateAccount(domain.CreateAccountRequest{
-		Name:     "Test Account",
-		Currency: "USD",
-	})
 }
 
 func (s *testLedgerSuite) TearDownTest() {
@@ -54,8 +48,8 @@ func TestLedgerSuite(t *testing.T) {
 }
 
 func (s *testLedgerSuite) TestCreateLedger() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	reqBody := []byte(`{
 		"date": "2023-05-01T00:00:00Z",
@@ -90,8 +84,8 @@ func (s *testLedgerSuite) TestCreateLedger() {
 }
 
 func (s *testLedgerSuite) TestGetAllLedgers() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	// Create a test ledger
 	s.repo.CreateLedger(domain.CreateLedgerRequest{
@@ -126,8 +120,8 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 }
 
 func (s *testLedgerSuite) TestGetLedgerByID() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	// Create a test ledger
 	s.repo.CreateLedger(domain.CreateLedgerRequest{
@@ -165,8 +159,8 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 }
 
 func (s *testLedgerSuite) TestUpdateLedger() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	// Create a test ledger
 	s.repo.CreateLedger(domain.CreateLedgerRequest{
@@ -203,8 +197,8 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 }
 
 func (s *testLedgerSuite) TestVoidLedger() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	// Create a test ledger
 	s.repo.CreateLedger(domain.CreateLedgerRequest{
@@ -236,8 +230,8 @@ func (s *testLedgerSuite) TestVoidLedger() {
 }
 
 func (s *testLedgerSuite) TestAdjustLedger() {
-	accounts, _ := s.repo.GetAllAccounts()
-	accountID := accounts[0].ID
+	accountID, err := s.createSeedAccount()
+	s.NoError(err)
 
 	// Create a test ledger
 	s.repo.CreateLedger(domain.CreateLedgerRequest{
@@ -289,4 +283,39 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	account, err := s.repo.GetAccountByID(accountID)
 	s.NoError(err)
 	s.Equal(decimal.NewFromFloat(320.00).String(), account.Balance.String())
+}
+
+func (s *testLedgerSuite) createSeedUser() (userID string, err error) {
+	s.NoError(s.repo.CreateUser(domain.CreateUserRequest{
+		Name: seedUser.Name,
+	}))
+
+	users, err := s.repo.GetAllUsers()
+	if err != nil {
+		return
+	}
+
+	userID = users[0].ID
+
+	return
+}
+
+func (s *testLedgerSuite) createSeedAccount() (accountID string, err error) {
+	userID, err := s.createSeedUser()
+	s.NoError(err)
+
+	s.NoError(s.repo.CreateAccount(domain.CreateAccountRequest{
+		UserID:   userID,
+		Name:     seedAccount.Name,
+		Currency: seedAccount.Currency,
+	}))
+
+	accounts, err := s.repo.GetAllAccounts()
+	if err != nil {
+		return
+	}
+
+	accountID = accounts[0].ID
+
+	return
 }

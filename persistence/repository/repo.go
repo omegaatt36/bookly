@@ -17,5 +17,6 @@ func (r *GORMRepository) AutoMigrate() error {
 	return r.db.AutoMigrate(
 		&Account{},
 		&Ledger{},
+		&User{},
 	)
 }

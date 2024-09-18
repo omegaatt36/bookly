@@ -78,12 +78,12 @@ func main() {
 	cliFlags := make([]cli.Flag, 0)
 	cliFlags = append(cliFlags, config.databaseConnectionOption.CliFlags()...)
 
-	app := app.App{
+	server := &app.App{
 		Action: action,
 		Before: before,
 		After:  after,
 		Flags:  cliFlags,
 	}
 
-	app.Run()
+	server.Run()
 }

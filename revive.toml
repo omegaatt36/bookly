@@ -25,61 +25,51 @@ enableAllRules = true
 
 # Disabled rules
 [rule.package-comments]
-    Disabled = true
-[rule.banned-characters]
-    Disabled = true
+Disabled = true
 [rule.file-header]
-    Disabled = true
+Disabled = true
 [rule.max-public-structs]
-    Disabled = true
+Disabled = true
 [rule.function-length]
-    Disabled = true
+Disabled = true
 [rule.blank-imports]
-    Disabled = true
+Disabled = true
 
 # Temp disabled rules
 [rule.add-constant]
-    Disabled = true
+Disabled = true
 [rule.line-length-limit]
-    Disabled = true
+Disabled = true
 #    Arguments = [80]
 [rule.cognitive-complexity]
-    Disabled = true
-[rule.range-val-address]
-    Disabled = true
+Disabled = true
 #    Arguments = [7]
 [rule.flag-parameter]
-    Disabled = true
-[rule.import-shadowing]
-    Disabled = true
+Disabled = true
 [rule.unused-parameter]
-    Disabled = true
+Disabled = true
 [rule.unused-receiver]
-    Disabled = true
+Disabled = true
 [rule.function-result-limit]
-    Disabled = true
+Disabled = true
 #   Arguments = [4]
 [rule.get-return]
-    Disabled = true
-[rule.deep-exit]
-    Disabled = true
+Disabled = true
 [rule.nested-structs]
-    Disabled = true
+Disabled = true
 [rule.bare-return]
-    Disabled = true
+Disabled = true
 [rule.empty-lines]
-    Disabled = true
+Disabled = true
 [rule.unhandled-error]
-    Disabled = true
-[rule.confusing-naming]
-    Disabled = true
-[rule.early-return]
-    Disabled = true
+Disabled = true
 [rule.comment-spacings]
-    Disabled = true
+Disabled = true
+[rule.redundant-import-alias]
+Disabled = true
 
 # Rule tunning
 [rule.argument-limit]
-    Arguments = [8]
+Arguments = [8]
 [rule.cyclomatic]
-    Arguments = [80]
+Arguments = [80]
