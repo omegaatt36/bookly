@@ -29,6 +29,8 @@ func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) error {
 		VoidedAt:     nil,
 	}
 
+	r.accounts[req.AccountID].Balance = r.accounts[req.AccountID].Balance.Add(req.Amount)
+
 	r.ledgers[id] = ledger
 	return nil
 }
@@ -79,6 +81,7 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 	}
 	if req.Amount != nil {
 		ledger.Amount = *req.Amount
+		r.accounts[ledger.AccountID].Balance = r.accounts[ledger.AccountID].Balance.Sub(ledger.Amount)
 	}
 	if req.Note != nil {
 		ledger.Note = *req.Note
@@ -102,6 +105,8 @@ func (r *Repository) VoidLedger(id string) error {
 	ledger.IsVoided = true
 	ledger.VoidedAt = func(t time.Time) *time.Time { return &t }(time.Now())
 	ledger.UpdatedAt = time.Now()
+
+	r.accounts[ledger.AccountID].Balance = r.accounts[ledger.AccountID].Balance.Sub(ledger.Amount)
 
 	return nil
 }
@@ -134,5 +139,8 @@ func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLed
 	}
 
 	r.ledgers[id] = adjustedLedger
+
+	r.accounts[adjustment.AccountID].Balance = r.accounts[adjustment.AccountID].Balance.Add(adjustment.Amount)
+
 	return nil
 }

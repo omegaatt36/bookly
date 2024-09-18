@@ -83,6 +83,10 @@ func (s *testLedgerSuite) TestCreateLedger() {
 	s.NotNil(ledger.CreatedAt)
 	s.NotNil(ledger.UpdatedAt)
 	s.Equal("2023-05-01T00:00:00Z", ledger.Date.Format(time.RFC3339))
+
+	account, err := s.repo.GetAccountByID(accountID)
+	s.NoError(err)
+	s.Equal(decimal.NewFromFloat(100.00).String(), account.Balance.String())
 }
 
 func (s *testLedgerSuite) TestGetAllLedgers() {
@@ -192,6 +196,10 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 	s.NoError(err)
 	s.Equal(decimal.NewFromFloat(120.00).String(), updatedLedger.Amount.String())
 	s.Equal("Updated Expense", updatedLedger.Note)
+
+	account, err := s.repo.GetAccountByID(accountID)
+	s.NoError(err)
+	s.Equal(decimal.NewFromFloat(120.00).String(), account.Balance.String())
 }
 
 func (s *testLedgerSuite) TestVoidLedger() {
@@ -221,6 +229,10 @@ func (s *testLedgerSuite) TestVoidLedger() {
 	s.NoError(err)
 	s.True(voidedLedger.IsVoided)
 	s.NotNil(voidedLedger.VoidedAt)
+
+	account, err := s.repo.GetAccountByID(accountID)
+	s.NoError(err)
+	s.Equal(decimal.NewFromFloat(0.00).String(), account.Balance.String())
 }
 
 func (s *testLedgerSuite) TestAdjustLedger() {
@@ -273,4 +285,8 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 			s.Equal("Adjusted Expense", ledger.Note)
 		}
 	}
+
+	account, err := s.repo.GetAccountByID(accountID)
+	s.NoError(err)
+	s.Equal(decimal.NewFromFloat(320.00).String(), account.Balance.String())
 }

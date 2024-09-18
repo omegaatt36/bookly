@@ -70,6 +70,11 @@ func (r *GORMRepository) CreateLedger(req domain.CreateLedgerRequest) error {
 			return fmt.Errorf("failed to create ledger: %w", err)
 		}
 
+		account.Balance = account.Balance.Add(req.Amount)
+		if err := tx.Save(&account).Error; err != nil {
+			return fmt.Errorf("failed to update account balance: %w", err)
+		}
+
 		return nil
 	})
 }
@@ -104,45 +109,77 @@ func (r *GORMRepository) GetLedgersByAccountID(accountID string) ([]*domain.Ledg
 
 // UpdateLedger updates an existing ledger entry
 func (r *GORMRepository) UpdateLedger(req domain.UpdateLedgerRequest) error {
-	var ledger Ledger
-	if err := r.db.First(&ledger, "id = ?", req.ID).Error; err != nil {
-		return fmt.Errorf("failed to find ledger: %w", err)
-	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var ledger Ledger
+		if err := tx.First(&ledger, "id = ?", req.ID).Error; err != nil {
+			return fmt.Errorf("failed to find ledger: %w", err)
+		}
 
-	if req.Date != nil {
-		ledger.Date = *req.Date
-	}
-	if req.Type != nil {
-		ledger.Type = string(*req.Type)
-	}
-	if req.Amount != nil {
-		ledger.Amount = *req.Amount
-	}
-	if req.Note != nil {
-		ledger.Note = *req.Note
-	}
-	if err := r.db.Save(&ledger).Error; err != nil {
-		return fmt.Errorf("failed to update ledger: %w", err)
-	}
+		oldAmount := ledger.Amount
 
-	return nil
+		if req.Date != nil {
+			ledger.Date = *req.Date
+		}
+		if req.Type != nil {
+			ledger.Type = string(*req.Type)
+		}
+		if req.Amount != nil {
+			ledger.Amount = *req.Amount
+		}
+		if req.Note != nil {
+			ledger.Note = *req.Note
+		}
+		if err := tx.Save(&ledger).Error; err != nil {
+			return fmt.Errorf("failed to update ledger: %w", err)
+		}
+
+		if req.Amount != nil {
+			var account Account
+			if err := tx.First(&account, "id = ?", ledger.AccountID).Error; err != nil {
+				return fmt.Errorf("failed to find account: %w", err)
+			}
+
+			account.Balance = account.Balance.Sub(oldAmount).Add(ledger.Amount)
+			if err := tx.Save(&account).Error; err != nil {
+				return fmt.Errorf("failed to update account balance: %w", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 // VoidLedger marks a ledger entry as voided
 func (r *GORMRepository) VoidLedger(id string) error {
-	now := time.Now()
-	result := r.db.Model(&Ledger{}).Where("id = ?", id).Updates(map[string]any{
-		"is_voided": true,
-		"voided_at": now,
-	})
-	if result.Error != nil {
-		return fmt.Errorf("failed to void ledger: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("ledger not found: %s", id)
-	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var ledger Ledger
+		if err := tx.First(&ledger, "id = ?", id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("ledger not found: %s", id)
+			}
+			return fmt.Errorf("failed to find ledger: %w", err)
+		}
 
-	return nil
+		now := time.Now()
+		ledger.IsVoided = true
+		ledger.VoidedAt = &now
+
+		if err := tx.Save(&ledger).Error; err != nil {
+			return fmt.Errorf("failed to void ledger: %w", err)
+		}
+
+		var account Account
+		if err := tx.First(&account, "id = ?", ledger.AccountID).Error; err != nil {
+			return fmt.Errorf("failed to find account: %w", err)
+		}
+
+		account.Balance = account.Balance.Sub(ledger.Amount)
+		if err := tx.Save(&account).Error; err != nil {
+			return fmt.Errorf("failed to update account balance: %w", err)
+		}
+
+		return nil
+	})
 }
 
 // AdjustLedger creates a new adjusted ledger entry based on an existing one
@@ -152,6 +189,7 @@ func (r *GORMRepository) AdjustLedger(originalID string, adjustment domain.Creat
 		if err := tx.First(&originalLedger, "id = ?", originalID).Error; err != nil {
 			return fmt.Errorf("failed to find original ledger: %w", err)
 		}
+
 		adjustedLedger := Ledger{
 			AccountID:    adjustment.AccountID,
 			Date:         adjustment.Date,
@@ -163,6 +201,16 @@ func (r *GORMRepository) AdjustLedger(originalID string, adjustment domain.Creat
 		}
 		if err := tx.Create(&adjustedLedger).Error; err != nil {
 			return fmt.Errorf("failed to create adjusted ledger: %w", err)
+		}
+
+		var account Account
+		if err := tx.First(&account, "id = ?", adjustment.AccountID).Error; err != nil {
+			return fmt.Errorf("failed to find account: %w", err)
+		}
+
+		account.Balance = account.Balance.Add(adjustment.Amount)
+		if err := tx.Save(&account).Error; err != nil {
+			return fmt.Errorf("failed to update account balance: %w", err)
 		}
 
 		return nil
