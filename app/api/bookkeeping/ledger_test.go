@@ -32,7 +32,12 @@ func (s *testLedgerSuite) SetupTest() {
 	s.repo = repository.NewGORMRepository(database.GetDB())
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
-	controller.RegisterLedgerRouters(s.router)
+	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger)
+	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgers)
+	s.router.HandleFunc("GET /ledgers/{id}", controller.GetLedgerByID)
+	s.router.HandleFunc("PATCH /ledgers/{id}", controller.UpdateLedger)
+	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger)
+	s.router.HandleFunc("POST /ledgers/{id}/adjust", controller.AdjustLedger)
 
 	s.NoError(s.repo.AutoMigrate())
 }
@@ -285,19 +290,13 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.Equal(decimal.NewFromFloat(320.00).String(), account.Balance.String())
 }
 
-func (s *testLedgerSuite) createSeedUser() (userID string, err error) {
-	s.NoError(s.repo.CreateUser(domain.CreateUserRequest{
+func (s *testLedgerSuite) createSeedUser() (string, error) {
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name: seedUser.Name,
-	}))
+	})
+	s.NoError(err)
 
-	users, err := s.repo.GetAllUsers()
-	if err != nil {
-		return
-	}
-
-	userID = users[0].ID
-
-	return
+	return userID, nil
 }
 
 func (s *testLedgerSuite) createSeedAccount() (accountID string, err error) {

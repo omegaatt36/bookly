@@ -6,20 +6,7 @@ import (
 	"time"
 
 	"github.com/omegaatt36/bookly/domain"
-	"github.com/omegaatt36/bookly/service/bookkeeping"
 )
-
-// RegisterAccountRouters registers account-related routes on the provided router.
-func (x *Controller) RegisterAccountRouters(router *http.ServeMux) {
-	router.HandleFunc("POST /accounts", x.createAccount)
-	router.HandleFunc("GET /accounts", x.getAllAccounts)
-	router.HandleFunc("GET /accounts/{id}", x.getAccountByID)
-	router.HandleFunc("PATCH /accounts/{id}", x.updateAccount)
-	router.HandleFunc("DELETE /accounts/{id}", x.deactivateAccountByID)
-
-	router.HandleFunc("GET /users/{userID}/accounts", x.getUserAccounts)
-	router.HandleFunc("POST /users/{userID}/accounts", x.createUserAccount)
-}
 
 type jsonAccount struct {
 	ID        string `json:"id"`
@@ -42,7 +29,8 @@ func (r *jsonAccount) fromDomain(account *domain.Account) {
 
 }
 
-func (x *Controller) createAccount(w http.ResponseWriter, r *http.Request) {
+// CreateAccount handles the creation of a new account
+func (x *Controller) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID   string `json:"user_id"`
 		Name     string `json:"name"`
@@ -69,7 +57,7 @@ func (x *Controller) createAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).CreateAccount(domain.CreateAccountRequest{
+	if err := x.service.CreateAccount(domain.CreateAccountRequest{
 		UserID:   req.UserID,
 		Name:     req.Name,
 		Currency: req.Currency,
@@ -82,8 +70,9 @@ func (x *Controller) createAccount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (x *Controller) getAllAccounts(w http.ResponseWriter, r *http.Request) {
-	accounts, err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).GetAllAccounts()
+// GetAllAccounts handles the retrieval of all accounts
+func (x *Controller) GetAllAccounts(w http.ResponseWriter, r *http.Request) {
+	accounts, err := x.service.GetAllAccounts()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -106,14 +95,15 @@ func (x *Controller) getAllAccounts(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (x *Controller) getAccountByID(w http.ResponseWriter, r *http.Request) {
+// GetAccountByID handles the retrieval of an account by its ID
+func (x *Controller) GetAccountByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	account, err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).GetAccountByID(id)
+	account, err := x.service.GetAccountByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -133,7 +123,8 @@ func (x *Controller) getAccountByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(bs)
 }
 
-func (x *Controller) updateAccount(w http.ResponseWriter, r *http.Request) {
+// UpdateAccount handles the updating of an account
+func (x *Controller) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
@@ -161,7 +152,7 @@ func (x *Controller) updateAccount(w http.ResponseWriter, r *http.Request) {
 		accountStatus = &status
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).UpdateAccount(domain.UpdateAccountRequest{
+	if err := x.service.UpdateAccount(domain.UpdateAccountRequest{
 		ID:     id,
 		Name:   req.Name,
 		Status: accountStatus,
@@ -173,14 +164,15 @@ func (x *Controller) updateAccount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (x *Controller) deactivateAccountByID(w http.ResponseWriter, r *http.Request) {
+// DeactivateAccountByID handles the deactivation of an account by its ID
+func (x *Controller) DeactivateAccountByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).DeactivateAccountByID(id)
+	err := x.service.DeactivateAccountByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -189,7 +181,8 @@ func (x *Controller) deactivateAccountByID(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
-func (x *Controller) createUserAccount(w http.ResponseWriter, r *http.Request) {
+// CreateUserAccount handles the creation of a new account for a specific user
+func (x *Controller) CreateUserAccount(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userID")
 	if userID == "" {
 		http.Error(w, "userID is required", http.StatusBadRequest)
@@ -216,7 +209,7 @@ func (x *Controller) createUserAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).CreateAccount(domain.CreateAccountRequest{
+	if err := x.service.CreateAccount(domain.CreateAccountRequest{
 		UserID:   userID,
 		Name:     req.Name,
 		Currency: req.Currency,
@@ -229,14 +222,15 @@ func (x *Controller) createUserAccount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (x *Controller) getUserAccounts(w http.ResponseWriter, r *http.Request) {
+// GetUserAccounts handles the retrieval of all accounts for a specific user
+func (x *Controller) GetUserAccounts(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userID")
 	if userID == "" {
 		http.Error(w, "userID is required", http.StatusBadRequest)
 		return
 	}
 
-	accounts, err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).GetAccountsByUserID(userID)
+	accounts, err := x.service.GetAccountsByUserID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

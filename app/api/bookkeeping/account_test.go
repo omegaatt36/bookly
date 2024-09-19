@@ -39,7 +39,14 @@ func (s *testAccountSuite) SetupTest() {
 	s.repo = repository.NewGORMRepository(database.GetDB())
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
-	controller.RegisterAccountRouters(s.router)
+
+	s.router.HandleFunc("POST /accounts", controller.CreateAccount)
+	s.router.HandleFunc("GET /accounts", controller.GetAllAccounts)
+	s.router.HandleFunc("GET /accounts/{id}", controller.GetAccountByID)
+	s.router.HandleFunc("PATCH /accounts/{id}", controller.UpdateAccount)
+	s.router.HandleFunc("DELETE /accounts/{id}", controller.DeactivateAccountByID)
+	s.router.HandleFunc("GET /users/{userID}/accounts", controller.GetUserAccounts)
+	s.router.HandleFunc("POST /users/{userID}/accounts", controller.CreateUserAccount)
 
 	s.NoError(s.repo.AutoMigrate())
 }
@@ -184,19 +191,13 @@ func (s *testAccountSuite) TestGetAccountsByUserID() {
 	s.Equal(domain.AccountStatusActive.String(), accounts[0].Status)
 }
 
-func (s *testAccountSuite) createSeedUser() (userID string, err error) {
-	s.NoError(s.repo.CreateUser(domain.CreateUserRequest{
+func (s *testAccountSuite) createSeedUser() (string, error) {
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name: seedUser.Name,
-	}))
+	})
+	s.NoError(err)
 
-	users, err := s.repo.GetAllUsers()
-	if err != nil {
-		return
-	}
-
-	userID = users[0].ID
-
-	return
+	return userID, nil
 }
 
 func (s *testAccountSuite) createSeedAccount() (accountID string, err error) {

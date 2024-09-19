@@ -8,7 +8,7 @@ import (
 )
 
 // CreateUser creates a new user with the given request data
-func (r *Repository) CreateUser(req domain.CreateUserRequest) error {
+func (r *Repository) CreateUser(req domain.CreateUserRequest) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -24,7 +24,7 @@ func (r *Repository) CreateUser(req domain.CreateUserRequest) error {
 	}
 
 	r.users[id] = user
-	return nil
+	return id, nil
 }
 
 // GetAllUsers retrieves all users from the repository
@@ -91,4 +91,42 @@ func (r *Repository) DeactivateUserByID(id string) error {
 	user.UpdatedAt = time.Now()
 
 	return nil
+}
+
+// AddIdentity adds an identity to a user
+func (r *Repository) AddIdentity(userID string, provider domain.Identity) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	user, exists := r.users[userID]
+	if !exists {
+		return fmt.Errorf("user not found: %s", userID)
+	}
+
+	for _, identity := range user.Identities {
+		if identity.Provider == provider.Provider && identity.Identifier == provider.Identifier {
+			return fmt.Errorf("identity already exists")
+		}
+	}
+
+	user.Identities = append(user.Identities, provider)
+	user.UpdatedAt = time.Now()
+
+	return nil
+}
+
+// GetUserByIdentity retrieves a user by their identity provider and identifier
+func (r *Repository) GetUserByIdentity(provider domain.IdentityProvider, identifier string) (*domain.User, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, user := range r.users {
+		for _, identity := range user.Identities {
+			if identity.Provider == provider && identity.Identifier == identifier {
+				return user, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("user not found with the given identity")
 }

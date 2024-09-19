@@ -8,20 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/omegaatt36/bookly/domain"
-	"github.com/omegaatt36/bookly/service/bookkeeping"
 )
-
-// RegisterLedgerRouters registers ledger-related routes on the provided router.
-func (x *Controller) RegisterLedgerRouters(router *http.ServeMux) {
-	router.HandleFunc("POST /accounts/{account_id}/ledgers", x.createLedger)
-	router.HandleFunc("GET /accounts/{account_id}/ledgers", x.getLedgers)
-
-	router.HandleFunc("GET /ledgers/{id}", x.getLedgerByID)
-	router.HandleFunc("PATCH /ledgers/{id}", x.updateLedger)
-	router.HandleFunc("DELETE /ledgers/{id}", x.voidLedger)
-	router.HandleFunc("POST /ledgers/{id}/adjust", x.adjustLedger)
-
-}
 
 type jsonLedger struct {
 	ID           string          `json:"id"`
@@ -49,7 +36,8 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 	l.VoidedAt = ledger.VoidedAt
 }
 
-func (x *Controller) createLedger(w http.ResponseWriter, r *http.Request) {
+// CreateLedger handles the creation of a new ledger entry
+func (x *Controller) CreateLedger(w http.ResponseWriter, r *http.Request) {
 	accountID := r.PathValue("account_id")
 	if accountID == "" {
 		http.Error(w, "parameter 'account_id' is required", http.StatusBadRequest)
@@ -74,7 +62,7 @@ func (x *Controller) createLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).CreateLedger(domain.CreateLedgerRequest{
+	if err := x.service.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      req.Date,
 		Type:      ledgerType,
@@ -89,14 +77,15 @@ func (x *Controller) createLedger(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 }
 
-func (x *Controller) getLedgers(w http.ResponseWriter, r *http.Request) {
+// GetLedgers retrieves all ledger entries for a given account
+func (x *Controller) GetLedgers(w http.ResponseWriter, r *http.Request) {
 	accountID := r.PathValue("account_id")
 	if accountID == "" {
 		http.Error(w, "parameter 'account_id' is required", http.StatusBadRequest)
 		return
 	}
 
-	ledgers, err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).GetLedgersByAccountID(accountID)
+	ledgers, err := x.service.GetLedgersByAccountID(accountID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -118,14 +107,15 @@ func (x *Controller) getLedgers(w http.ResponseWriter, r *http.Request) {
 	w.Write(bs)
 }
 
-func (x *Controller) getLedgerByID(w http.ResponseWriter, r *http.Request) {
+// GetLedgerByID retrieves a specific ledger entry by its ID
+func (x *Controller) GetLedgerByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	ledger, err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).GetLedgerByID(id)
+	ledger, err := x.service.GetLedgerByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,7 +135,8 @@ func (x *Controller) getLedgerByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(bs)
 }
 
-func (x *Controller) updateLedger(w http.ResponseWriter, r *http.Request) {
+// UpdateLedger handles the update of an existing ledger entry
+func (x *Controller) UpdateLedger(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
@@ -175,7 +166,7 @@ func (x *Controller) updateLedger(w http.ResponseWriter, r *http.Request) {
 		ledgerType = &t
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).UpdateLedger(domain.UpdateLedgerRequest{
+	if err := x.service.UpdateLedger(domain.UpdateLedgerRequest{
 		ID:     id,
 		Date:   req.Date,
 		Type:   ledgerType,
@@ -189,14 +180,15 @@ func (x *Controller) updateLedger(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (x *Controller) voidLedger(w http.ResponseWriter, r *http.Request) {
+// VoidLedger handles the voiding of a ledger entry
+func (x *Controller) VoidLedger(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).VoidLedger(id); err != nil {
+	if err := x.service.VoidLedger(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -204,7 +196,8 @@ func (x *Controller) voidLedger(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (x *Controller) adjustLedger(w http.ResponseWriter, r *http.Request) {
+// AdjustLedger handles the adjustment of an existing ledger entry
+func (x *Controller) AdjustLedger(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
@@ -230,7 +223,7 @@ func (x *Controller) adjustLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bookkeeping.NewService(x.accountRepo, x.ledgerRepo).AdjustLedger(id, domain.CreateLedgerRequest{
+	if err := x.service.AdjustLedger(id, domain.CreateLedgerRequest{
 		AccountID: req.AccountID,
 		Date:      req.Date,
 		Type:      ledgerType,

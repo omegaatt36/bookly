@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
-	"net/http"
 	"os"
 
 	slogzap "github.com/samber/slog-zap/v2"
@@ -20,6 +18,10 @@ import (
 var config struct {
 	databaseConnectionOption database.ConnectOption
 	logLevel                 string
+
+	internalTokenOption api.InternalTokenOption
+	jwtOption           api.JWTOption
+	portOption          api.PortOption
 }
 
 func before(_ *cli.Context) error {
@@ -35,24 +37,13 @@ func after(_ *cli.Context) error {
 }
 
 func action(ctx context.Context) {
-	r := api.NewRouter()
+	server := api.NewServer(
+		&config.jwtOption,
+		&config.internalTokenOption,
+		&config.portOption,
+	)
 
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: r,
-	}
-
-	go func() {
-		<-ctx.Done()
-		if err := srv.Shutdown(ctx); err != nil {
-			slog.Error("server shutdown error", slog.String("error", err.Error()))
-		}
-	}()
-
-	if err := srv.ListenAndServe(); err != nil &&
-		!errors.Is(err, http.ErrServerClosed) {
-		slog.Error("server error", slog.String("error", err.Error()))
-	}
+	server.Run(ctx)
 }
 
 func initSLog(logLevel string) error {
@@ -75,7 +66,34 @@ func initSLog(logLevel string) error {
 }
 
 func main() {
-	cliFlags := make([]cli.Flag, 0)
+	cliFlags := []cli.Flag{
+		&cli.StringFlag{
+			Name:        "jwt-salt",
+			EnvVars:     []string{"JWT_SALT"},
+			Value:       "salt",
+			Required:    true,
+			Destination: &config.jwtOption.JWTSalt,
+		},
+		&cli.StringFlag{
+			Name:        "jwt-secret-key",
+			EnvVars:     []string{"JWT_SECRET_KEY"},
+			Value:       "secret",
+			Required:    true,
+			Destination: &config.jwtOption.JWTSecretKey,
+		}, &cli.StringFlag{
+			Name:        "internal-token",
+			EnvVars:     []string{"INTERNAL_TOKEN"},
+			Value:       "secret",
+			Required:    true,
+			Destination: &config.internalTokenOption.InternalToken,
+		}, &cli.IntFlag{
+			Name:        "port",
+			EnvVars:     []string{"PORT"},
+			Value:       8080,
+			DefaultText: "8080",
+			Destination: &config.portOption.Port,
+		},
+	}
 	cliFlags = append(cliFlags, config.databaseConnectionOption.CliFlags()...)
 
 	server := &app.App{

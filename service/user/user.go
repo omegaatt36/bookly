@@ -1,12 +1,18 @@
 package user
 
 import (
+	"fmt"
+
 	"github.com/omegaatt36/bookly/domain"
 )
 
 // CreateUser creates a new user based on the provided CreateUserRequest.
 func (s *Service) CreateUser(req domain.CreateUserRequest) error {
-	return s.userRepo.CreateUser(req)
+	if _, err := s.userRepo.CreateUser(req); err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return nil
 }
 
 // GetUserByID retrieves a user by its ID.

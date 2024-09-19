@@ -6,17 +6,7 @@ import (
 	"time"
 
 	"github.com/omegaatt36/bookly/domain"
-	"github.com/omegaatt36/bookly/service/user"
 )
-
-// RegisterUserRouters registers user-related routes on the provided router.
-func (x *Controller) RegisterUserRouters(router *http.ServeMux) {
-	router.HandleFunc("POST /users", x.createUserHandler)
-	router.HandleFunc("GET /users", x.getAllUsersHandler)
-	router.HandleFunc("GET /users/{id}", x.getUserByIDHandler)
-	router.HandleFunc("PATCH /users/{id}", x.updateUserHandler)
-	router.HandleFunc("DELETE /users/{id}", x.deactivateUserByIDHandler)
-}
 
 type jsonUser struct {
 	ID        string `json:"id"`
@@ -36,7 +26,8 @@ func (r *jsonUser) fromDomain(u *domain.User) {
 	r.Disabled = u.Disabled
 }
 
-func (x *Controller) createUserHandler(w http.ResponseWriter, r *http.Request) {
+// CreateUser handles the creation of a new user.
+func (x *Controller) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name     string `json:"name"`
 		Nickname string `json:"nickname"`
@@ -47,7 +38,7 @@ func (x *Controller) createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := user.NewService(x.userRepo).CreateUser(domain.CreateUserRequest{
+	if err := x.service.CreateUser(domain.CreateUserRequest{
 		Name:     req.Name,
 		Nickname: req.Nickname,
 	}); err != nil {
@@ -59,8 +50,9 @@ func (x *Controller) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (x *Controller) getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
-	users, err := user.NewService(x.userRepo).GetAllUsers()
+// GetAllUsers retrieves all users from the system.
+func (x *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := x.service.GetAllUsers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -80,17 +72,17 @@ func (x *Controller) getAllUsersHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(bs)
-
 }
 
-func (x *Controller) getUserByIDHandler(w http.ResponseWriter, r *http.Request) {
+// GetUserByID retrieves a user by their ID.
+func (x *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	u, err := user.NewService(x.userRepo).GetUserByID(id)
+	u, err := x.service.GetUserByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -110,7 +102,8 @@ func (x *Controller) getUserByIDHandler(w http.ResponseWriter, r *http.Request) 
 	w.Write(bs)
 }
 
-func (x *Controller) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+// UpdateUser handles updating a user's information.
+func (x *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
@@ -136,7 +129,7 @@ func (x *Controller) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		userNickname = req.Nickname
 	}
 
-	if err := user.NewService(x.userRepo).UpdateUser(domain.UpdateUserRequest{
+	if err := x.service.UpdateUser(domain.UpdateUserRequest{
 		ID:       id,
 		Name:     userName,
 		Nickname: userNickname,
@@ -148,14 +141,15 @@ func (x *Controller) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (x *Controller) deactivateUserByIDHandler(w http.ResponseWriter, r *http.Request) {
+// DeactivateUserByID handles the deactivation of a user by their ID.
+func (x *Controller) DeactivateUserByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
 		return
 	}
 
-	err := user.NewService(x.userRepo).DeactivateUserByID(id)
+	err := x.service.DeactivateUserByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

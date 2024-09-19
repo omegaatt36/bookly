@@ -35,16 +35,27 @@ func (u *User) toDomainUser() *domain.User {
 	}
 }
 
+// Identity represents the database model for an identity
+type Identity struct {
+	ID         int    `gorm:"primary_key"`
+	UserID     string `gorm:"type:uuid;not null;uniqueIndex:idx_user_provider_identifier"`
+	Provider   string `gorm:"type:varchar(20);not null;uniqueIndex:idx_user_provider_identifier;uniqueIndex:idx_provider_identifier"`
+	Identifier string `gorm:"type:varchar(255);not null;uniqueIndex:idx_user_provider_identifier;uniqueIndex:idx_provider_identifier"`
+	Credential string `gorm:"type:varchar(255);not null"`
+	LastUsedAt time.Time
+}
+
 // CreateUser creates a new user
-func (r *GORMRepository) CreateUser(req domain.CreateUserRequest) error {
+func (r *GORMRepository) CreateUser(req domain.CreateUserRequest) (string, error) {
 	user := User{
 		Name:     req.Name,
 		Nickname: req.Nickname,
 	}
 	if err := r.db.Create(&user).Error; err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
+		return "", fmt.Errorf("failed to create user: %w", err)
 	}
-	return nil
+
+	return user.ID, nil
 }
 
 // GetAllUsers retrieves all users from the database
@@ -111,4 +122,36 @@ func (r *GORMRepository) DeactivateUserByID(id string) error {
 		}
 		return nil
 	})
+}
+
+// AddIdentity adds a new identity for a user
+func (r *GORMRepository) AddIdentity(userID string, identiy domain.Identity) error {
+	identity := Identity{
+		UserID:     userID,
+		Provider:   string(identiy.Provider),
+		Identifier: identiy.Identifier,
+		Credential: identiy.Credential,
+	}
+
+	if err := r.db.Create(&identity).Error; err != nil {
+		return fmt.Errorf("failed to add identity: %w", err)
+	}
+
+	return nil
+}
+
+// GetUserByIdentity retrieves a user by their identity provider and identifier
+func (r *GORMRepository) GetUserByIdentity(provider domain.IdentityProvider, identifier string) (*domain.User, error) {
+	var user User
+	if err := r.db.Where("id = (?)", r.db.Model(&Identity{}).
+		Select("user_id").
+		Where("provider = ? AND identifier = ?", provider, identifier)).
+		First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user with identity not found: %s %s", provider, identifier)
+		}
+		return nil, fmt.Errorf("failed to get user by identity: %w", err)
+	}
+
+	return user.toDomainUser(), nil
 }

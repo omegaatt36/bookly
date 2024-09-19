@@ -29,7 +29,11 @@ func (s *testUserSuite) SetupTest() {
 	s.repo = repository.NewGORMRepository(database.GetDB())
 	s.router = http.NewServeMux()
 	controller := user.NewController(s.repo)
-	controller.RegisterUserRouters(s.router)
+	s.router.HandleFunc("POST /users", controller.CreateUser)
+	s.router.HandleFunc("GET /users", controller.GetAllUsers)
+	s.router.HandleFunc("GET /users/{id}", controller.GetUserByID)
+	s.router.HandleFunc("PATCH /users/{id}", controller.UpdateUser)
+	s.router.HandleFunc("DELETE /users/{id}", controller.DeactivateUserByID)
 
 	s.NoError(s.repo.AutoMigrate())
 }
