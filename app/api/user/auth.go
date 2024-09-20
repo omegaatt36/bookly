@@ -1,81 +1,69 @@
 package user
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/omegaatt36/bookly/app"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/service/user"
 )
 
 // RegisterUser registers a new user.
-func (x *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+func (x *Controller) RegisterUser() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			if req.Email == "" {
+				return nil, app.ParamError(fmt.Errorf("email is required"))
+			}
+			if req.Password == "" {
+				return nil, app.ParamError(fmt.Errorf("password is required"))
+			}
 
-	if req.Email == "" {
-		http.Error(w, "email is required", http.StatusBadRequest)
-		return
+			return nil, x.service.Register(user.RegisterRequest{
+				Name:       req.Email,
+				Provider:   domain.IdentityProviderPassword,
+				Identifier: req.Email,
+				Credential: req.Password,
+			})
+		}).BindJSON(&req).Call(req).ResponseCreated()
 	}
-
-	if req.Password == "" {
-		http.Error(w, "password is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := x.service.Register(user.RegisterRequest{
-		Name:       req.Email,
-		Provider:   domain.IdentityProviderPassword,
-		Identifier: req.Email,
-		Credential: req.Password,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
 }
 
 // LoginUser logs in a user.
-func (x *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+func (x *Controller) LoginUser() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+		type response struct {
+			Token string `json:"token"`
+		}
 
-	if req.Email == "" {
-		http.Error(w, "email is required", http.StatusBadRequest)
-		return
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (response, error) {
+			if req.Email == "" {
+				return response{}, app.ParamError(fmt.Errorf("email is required"))
+			}
+			if req.Password == "" {
+				return response{}, app.ParamError(fmt.Errorf("password is required"))
+			}
 
-	if req.Password == "" {
-		http.Error(w, "password is required", http.StatusBadRequest)
-		return
+			token, err := x.service.Login(user.LoginRequest{
+				Provider:   domain.IdentityProviderPassword,
+				Identifier: req.Email,
+				Credential: req.Password,
+			})
+			return response{Token: token}, err
+		}).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	token, err := x.service.Login(user.LoginRequest{
-		Provider:   domain.IdentityProviderPassword,
-		Identifier: req.Email,
-		Credential: req.Password,
-	})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(token))
 }

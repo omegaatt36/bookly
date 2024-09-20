@@ -2,6 +2,7 @@ package user_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,8 +36,8 @@ func (s *testAuthSuite) SetupTest() {
 		user.WithAuthenticator(domain.IdentityProviderPassword, s.authenticator),
 	)
 
-	s.router.HandleFunc("POST /auth/register", controller.RegisterUser)
-	s.router.HandleFunc("POST /auth/login", controller.LoginUser)
+	s.router.HandleFunc("POST /auth/register", controller.RegisterUser())
+	s.router.HandleFunc("POST /auth/login", controller.LoginUser())
 
 	s.NoError(s.repo.AutoMigrate())
 }
@@ -71,19 +72,27 @@ func (s *testAuthSuite) TestRegisterAndLogin() {
 		s.False(user.Disabled)
 	})
 
+	type loginResponse struct {
+		Code int `json:"code"`
+		Data struct {
+			Token string `json:"token"`
+		} `json:"data"`
+	}
+
 	s.T().Run("Login", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(reqBody))
 		w := httptest.NewRecorder()
 
 		s.router.ServeHTTP(w, req)
-
 		s.Equal(http.StatusOK, w.Code)
 
-		token := w.Body.String()
-		s.NotEmpty(token)
+		var resp loginResponse
+		s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+
+		s.NotEmpty(resp.Data.Token)
 
 		valid, err := s.authenticator.ValidateToken(domain.ValidateTokenRequest{
-			Token: token,
+			Token: resp.Data.Token,
 		})
 
 		s.NoError(err)

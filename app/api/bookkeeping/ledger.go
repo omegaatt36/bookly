@@ -1,12 +1,14 @@
 package bookkeeping
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/shopspring/decimal"
 
+	"github.com/omegaatt36/bookly/app"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 )
 
@@ -37,202 +39,153 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 }
 
 // CreateLedger handles the creation of a new ledger entry
-func (x *Controller) CreateLedger(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
-	if accountID == "" {
-		http.Error(w, "parameter 'account_id' is required", http.StatusBadRequest)
-		return
-	}
+func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			accountID string
+			Date      time.Time       `json:"date"`
+			Type      string          `json:"type"`
+			Amount    decimal.Decimal `json:"amount"`
+			Note      string          `json:"note"`
+		}
 
-	var req struct {
-		Date   time.Time       `json:"date"`
-		Type   string          `json:"type"`
-		Amount decimal.Decimal `json:"amount"`
-		Note   string          `json:"note"`
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			ledgerType, err := domain.ParseLedgerType(req.Type)
+			if err != nil {
+				return nil, err
+			}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+			if req.Date.IsZero() {
+				req.Date = time.Now()
+			}
 
-	ledgerType, err := domain.ParseLedgerType(req.Type)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+			if req.Amount.IsZero() {
+				return nil, app.ParamError(fmt.Errorf("amount is required"))
+			}
 
-	if err := x.service.CreateLedger(domain.CreateLedgerRequest{
-		AccountID: accountID,
-		Date:      req.Date,
-		Type:      ledgerType,
-		Amount:    req.Amount,
-		Note:      req.Note,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+			return nil, x.service.CreateLedger(domain.CreateLedgerRequest{
+				AccountID: req.accountID,
+				Date:      req.Date,
+				Type:      ledgerType,
+				Amount:    req.Amount,
+				Note:      req.Note,
+			})
+		}).Param("account_id", &req.accountID).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
 }
 
 // GetLedgers retrieves all ledger entries for a given account
-func (x *Controller) GetLedgers(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
-	if accountID == "" {
-		http.Error(w, "parameter 'account_id' is required", http.StatusBadRequest)
-		return
-	}
+func (x *Controller) GetLedgers() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var accountID string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
+			ledgers, err := x.service.GetLedgersByAccountID(accountID)
+			if err != nil {
+				return nil, err
+			}
 
-	ledgers, err := x.service.GetLedgersByAccountID(accountID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+			jsonLedgers := make([]jsonLedger, len(ledgers))
+			for index, ledger := range ledgers {
+				jsonLedgers[index].fromDomain(ledger)
+			}
 
-	jsonLedgers := make([]jsonLedger, len(ledgers))
-	for index, ledger := range ledgers {
-		jsonLedgers[index].fromDomain(ledger)
+			return jsonLedgers, nil
+		}).Param("account_id", &accountID).Call(&engine.Empty{}).ResponseJSON()
 	}
-
-	bs, err := json.Marshal(jsonLedgers)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs)
 }
 
 // GetLedgerByID retrieves a specific ledger entry by its ID
-func (x *Controller) GetLedgerByID(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
+func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var id string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
+			ledger, err := x.service.GetLedgerByID(id)
+			if err != nil {
+				return nil, err
+			}
+
+			var jsonLedger jsonLedger
+			jsonLedger.fromDomain(ledger)
+
+			return &jsonLedger, nil
+		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
-
-	ledger, err := x.service.GetLedgerByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var jsonLedger jsonLedger
-	jsonLedger.fromDomain(ledger)
-
-	bs, err := json.Marshal(jsonLedger)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs)
 }
 
 // UpdateLedger handles the update of an existing ledger entry
-func (x *Controller) UpdateLedger(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
-	}
-
-	var req struct {
-		Date   *time.Time `json:"date"`
-		Type   *string    `json:"type"`
-		Amount *decimal.Decimal
-		Note   *string `json:"note"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	var ledgerType *domain.LedgerType
-	if req.Type != nil {
-		t, err := domain.ParseLedgerType(*req.Type)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			id     string
+			Date   *time.Time       `json:"date"`
+			Type   *string          `json:"type"`
+			Amount *decimal.Decimal `json:"amount"`
+			Note   *string          `json:"note"`
 		}
 
-		ledgerType = &t
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			var ledgerType *domain.LedgerType
+			if req.Type != nil {
+				t, err := domain.ParseLedgerType(*req.Type)
+				if err != nil {
+					return nil, err
+				}
+				ledgerType = &t
+			}
 
-	if err := x.service.UpdateLedger(domain.UpdateLedgerRequest{
-		ID:     id,
-		Date:   req.Date,
-		Type:   ledgerType,
-		Amount: req.Amount,
-		Note:   req.Note,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+			return nil, x.service.UpdateLedger(domain.UpdateLedgerRequest{
+				ID:     req.id,
+				Date:   req.Date,
+				Type:   ledgerType,
+				Amount: req.Amount,
+				Note:   req.Note,
+			})
+		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // VoidLedger handles the voiding of a ledger entry
-func (x *Controller) VoidLedger(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
+func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var id string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+			return nil, x.service.VoidLedger(id)
+		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
-
-	if err := x.service.VoidLedger(id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // AdjustLedger handles the adjustment of an existing ledger entry
-func (x *Controller) AdjustLedger(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
-	}
+func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			id        string
+			AccountID string          `json:"account_id"`
+			Date      time.Time       `json:"date"`
+			Type      string          `json:"type"`
+			Amount    decimal.Decimal `json:"amount"`
+			Note      string          `json:"note"`
+		}
 
-	var req struct {
-		AccountID string          `json:"account_id"`
-		Date      time.Time       `json:"date"`
-		Type      string          `json:"type"`
-		Amount    decimal.Decimal `json:"amount"`
-		Note      string          `json:"note"`
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			ledgerType, err := domain.ParseLedgerType(req.Type)
+			if err != nil {
+				return nil, err
+			}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+			if req.Amount.IsZero() {
+				return nil, app.ParamError(fmt.Errorf("amount is required"))
+			}
 
-	ledgerType, err := domain.ParseLedgerType(req.Type)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+			return nil, x.service.AdjustLedger(req.id, domain.CreateLedgerRequest{
+				AccountID: req.AccountID,
+				Date:      req.Date,
+				Type:      ledgerType,
+				Amount:    req.Amount,
+				Note:      req.Note,
+			})
+		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	if err := x.service.AdjustLedger(id, domain.CreateLedgerRequest{
-		AccountID: req.AccountID,
-		Date:      req.Date,
-		Type:      ledgerType,
-		Amount:    req.Amount,
-		Note:      req.Note,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }

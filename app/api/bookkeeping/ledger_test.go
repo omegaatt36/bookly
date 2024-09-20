@@ -32,12 +32,12 @@ func (s *testLedgerSuite) SetupTest() {
 	s.repo = repository.NewGORMRepository(database.GetDB())
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
-	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger)
-	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgers)
-	s.router.HandleFunc("GET /ledgers/{id}", controller.GetLedgerByID)
-	s.router.HandleFunc("PATCH /ledgers/{id}", controller.UpdateLedger)
-	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger)
-	s.router.HandleFunc("POST /ledgers/{id}/adjust", controller.AdjustLedger)
+	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger())
+	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgers())
+	s.router.HandleFunc("GET /ledgers/{id}", controller.GetLedgerByID())
+	s.router.HandleFunc("PATCH /ledgers/{id}", controller.UpdateLedger())
+	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger())
+	s.router.HandleFunc("POST /ledgers/{id}/adjust", controller.AdjustLedger())
 
 	s.NoError(s.repo.AutoMigrate())
 }
@@ -57,18 +57,27 @@ func (s *testLedgerSuite) TestCreateLedger() {
 	s.NoError(err)
 
 	reqBody := []byte(`{
-		"date": "2023-05-01T00:00:00Z",
-		"type": "income",
-		"amount": "100.00",
-		"note": "Test Ledger"
-	}`)
+  "date": "2023-05-01T00:00:00Z",
+  "type": "income",
+  "amount": "100.00",
+  "note": "Test Ledger"
+ }`)
 
 	req := httptest.NewRequest(http.MethodPost, "/accounts/"+accountID+"/ledgers", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
 
-	s.Equal(http.StatusCreated, w.Code)
+	s.Equal(http.StatusOK, w.Code)
+
+	type createLedgerResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp createLedgerResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
 
 	ledgers, err := s.repo.GetLedgersByAccountID(accountID)
 	s.NoError(err)
@@ -108,20 +117,26 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 
 	s.Equal(http.StatusOK, w.Code)
 
-	var ledgers []struct {
-		ID        string          `json:"id"`
-		AccountID string          `json:"account_id"`
-		Type      string          `json:"type"`
-		Amount    decimal.Decimal `json:"amount"`
-		Note      string          `json:"note"`
+	type getAllLedgersResponse struct {
+		Code int `json:"code"`
+		Data []struct {
+			ID        string          `json:"id"`
+			AccountID string          `json:"account_id"`
+			Type      string          `json:"type"`
+			Amount    decimal.Decimal `json:"amount"`
+			Note      string          `json:"note"`
+		} `json:"data"`
 	}
 
-	s.NoError(json.Unmarshal(w.Body.Bytes(), &ledgers))
+	var resp getAllLedgersResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+	s.Len(resp.Data, 1)
 
-	s.Equal(accountID, ledgers[0].AccountID)
-	s.Equal(domain.LedgerTypeExpense.String(), ledgers[0].Type)
-	s.Equal(decimal.NewFromFloat(50.00).String(), ledgers[0].Amount.String())
-	s.Equal("Test Expense", ledgers[0].Note)
+	s.Equal(accountID, resp.Data[0].AccountID)
+	s.Equal(domain.LedgerTypeExpense.String(), resp.Data[0].Type)
+	s.Equal(decimal.NewFromFloat(50.00).String(), resp.Data[0].Amount.String())
+	s.Equal("Test Expense", resp.Data[0].Note)
 }
 
 func (s *testLedgerSuite) TestGetLedgerByID() {
@@ -147,20 +162,25 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 
 	s.Equal(http.StatusOK, w.Code)
 
-	var ledger struct {
-		ID        string          `json:"id"`
-		AccountID string          `json:"account_id"`
-		Type      string          `json:"type"`
-		Amount    decimal.Decimal `json:"amount"`
-		Note      string          `json:"note"`
+	type getLedgerByIDResponse struct {
+		Code int `json:"code"`
+		Data struct {
+			ID        string          `json:"id"`
+			AccountID string          `json:"account_id"`
+			Type      string          `json:"type"`
+			Amount    decimal.Decimal `json:"amount"`
+			Note      string          `json:"note"`
+		} `json:"data"`
 	}
 
-	s.NoError(json.Unmarshal(w.Body.Bytes(), &ledger))
-	s.Equal(ledgerID, ledger.ID)
-	s.Equal(accountID, ledger.AccountID)
-	s.Equal(domain.LedgerTypeIncome.String(), ledger.Type)
-	s.Equal(decimal.NewFromFloat(75.00), ledger.Amount)
-	s.Equal("Test Income", ledger.Note)
+	var resp getLedgerByIDResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+	s.Equal(ledgerID, resp.Data.ID)
+	s.Equal(accountID, resp.Data.AccountID)
+	s.Equal(domain.LedgerTypeIncome.String(), resp.Data.Type)
+	s.Equal(decimal.NewFromFloat(75.00), resp.Data.Amount)
+	s.Equal("Test Income", resp.Data.Note)
 }
 
 func (s *testLedgerSuite) TestUpdateLedger() {
@@ -180,9 +200,9 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 	ledgerID := ledgers[0].ID
 
 	reqBody := []byte(`{
-		"amount": "120.00",
-		"note": "Updated Expense"
-	}`)
+  "amount": "120.00",
+  "note": "Updated Expense"
+ }`)
 
 	req := httptest.NewRequest(http.MethodPatch, "/ledgers/"+ledgerID, bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
@@ -190,6 +210,15 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 	s.router.ServeHTTP(w, req)
 
 	s.Equal(http.StatusOK, w.Code)
+
+	type updateLedgerResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp updateLedgerResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
 
 	updatedLedger, err := s.repo.GetLedgerByID(ledgerID)
 	s.NoError(err)
@@ -224,6 +253,15 @@ func (s *testLedgerSuite) TestVoidLedger() {
 
 	s.Equal(http.StatusOK, w.Code)
 
+	type voidLedgerResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp voidLedgerResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+
 	voidedLedger, err := s.repo.GetLedgerByID(ledgerID)
 	s.NoError(err)
 	s.True(voidedLedger.IsVoided)
@@ -251,12 +289,12 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	originalLedgerID := ledgers[0].ID
 
 	reqBody := []byte(fmt.Sprintf(`{
-		"account_id": "%s",
-		"date": "2023-05-02T00:00:00Z",
-		"type": "expense",
-		"amount": "170.00",
-		"note": "Adjusted Expense"
-	}`, accountID))
+  "account_id": "%s",
+  "date": "2023-05-02T00:00:00Z",
+  "type": "expense",
+  "amount": "170.00",
+  "note": "Adjusted Expense"
+ }`, accountID))
 
 	req := httptest.NewRequest(http.MethodPost, "/ledgers/"+originalLedgerID+"/adjust", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
@@ -264,6 +302,15 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.router.ServeHTTP(w, req)
 
 	s.Equal(http.StatusOK, w.Code)
+
+	type adjustLedgerResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp adjustLedgerResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
 
 	// Get all ledgers after adjustment
 	updatedLedgers, err := s.repo.GetLedgersByAccountID(accountID)

@@ -25,18 +25,19 @@ func (s *Server) registerRouters() {
 	{
 		bookkeepingX := bookkeeping.NewController(repo, repo)
 
-		v1Router.HandleFunc("POST /accounts", bookkeepingX.CreateAccount)
-		v1Router.HandleFunc("GET /accounts", bookkeepingX.GetAllAccounts)
-		v1Router.HandleFunc("GET /accounts/{id}", bookkeepingX.GetAccountByID)
-		v1Router.HandleFunc("PATCH /accounts/{id}", bookkeepingX.UpdateAccount)
-		v1Router.HandleFunc("DELETE /accounts/{id}", bookkeepingX.DeactivateAccountByID)
+		v1Router.HandleFunc("POST /accounts", bookkeepingX.CreateAccount())
+		v1Router.HandleFunc("GET /accounts", bookkeepingX.GetAllAccounts())
+		v1Router.HandleFunc("GET /accounts/{id}", bookkeepingX.GetAccountByID())
+		v1Router.HandleFunc("PATCH /accounts/{id}", bookkeepingX.UpdateAccount())
+		v1Router.HandleFunc("DELETE /accounts/{id}", bookkeepingX.DeactivateAccountByID())
+		v1Router.HandleFunc("GET /users/{user_id}/accounts", bookkeepingX.GetUserAccounts())
 
-		v1Router.HandleFunc("POST /accounts/{account_id}/ledgers", bookkeepingX.CreateLedger)
-		v1Router.HandleFunc("GET /accounts/{account_id}/ledgers/", bookkeepingX.GetLedgers)
-		v1Router.HandleFunc("GET /ledgers/{id}", bookkeepingX.GetLedgerByID)
-		v1Router.HandleFunc("PATCH /ledgers/{id}", bookkeepingX.UpdateLedger)
-		v1Router.HandleFunc("DELETE /ledgers/{id}", bookkeepingX.VoidLedger)
-		v1Router.HandleFunc("POST /ledgers/{id}/adjust", bookkeepingX.AdjustLedger)
+		v1Router.HandleFunc("POST /accounts/{account_id}/ledgers", bookkeepingX.CreateLedger())
+		v1Router.HandleFunc("GET /accounts/{account_id}/ledgers/", bookkeepingX.GetLedgers())
+		v1Router.HandleFunc("GET /ledgers/{id}", bookkeepingX.GetLedgerByID())
+		v1Router.HandleFunc("PATCH /ledgers/{id}", bookkeepingX.UpdateLedger())
+		v1Router.HandleFunc("DELETE /ledgers/{id}", bookkeepingX.VoidLedger())
+		v1Router.HandleFunc("POST /ledgers/{id}/adjust", bookkeepingX.AdjustLedger())
 	}
 	{
 		userOptions := make([]user.Option, 0)
@@ -46,16 +47,14 @@ func (s *Server) registerRouters() {
 
 		userX := user.NewController(repo, userOptions...)
 
-		v1Router.HandleFunc("GET /users", userX.GetAllUsers)
-		v1Router.HandleFunc("GET /users/{id}", userX.GetUserByID)
-		v1Router.HandleFunc("PATCH /users/{id}", userX.UpdateUser)
-		v1Router.HandleFunc("DELETE /users/{id}", userX.DeactivateUserByID)
-		internalRouter.HandleFunc("POST /users", userX.CreateUser)
+		v1Router.HandleFunc("GET /users", userX.GetAllUsers())
+		v1Router.HandleFunc("GET /users/{id}", userX.GetUserByID())
+		v1Router.HandleFunc("PATCH /users/{id}", userX.UpdateUser())
+		v1Router.HandleFunc("DELETE /users/{id}", userX.DeactivateUserByID())
+		internalRouter.HandleFunc("POST /users", userX.CreateUser())
 
-		authRouter := http.NewServeMux()
-		authRouter.HandleFunc("POST /login", userX.LoginUser)
-		publicRouter.Handle("/auth/", http.StripPrefix("/auth", authRouter))
-		internalRouter.HandleFunc("POST /auth/register", userX.RegisterUser)
+		internalRouter.HandleFunc("POST /auth/register", userX.RegisterUser())
+		publicRouter.HandleFunc("POST /auth/login", userX.LoginUser())
 	}
 
 	authMiddlewares := []middleware{}

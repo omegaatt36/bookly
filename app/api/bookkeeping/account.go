@@ -1,10 +1,12 @@
 package bookkeeping
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/omegaatt36/bookly/app"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 )
 
@@ -30,224 +32,158 @@ func (r *jsonAccount) fromDomain(account *domain.Account) {
 }
 
 // CreateAccount handles the creation of a new account
-func (x *Controller) CreateAccount(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		UserID   string `json:"user_id"`
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-	}
+func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			UserID   string `json:"user_id"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			if req.UserID == "" {
+				return nil, app.ParamError(fmt.Errorf("user_id is required"))
+			}
 
-	if req.UserID == "" {
-		http.Error(w, "user_id is required", http.StatusBadRequest)
-		return
-	}
+			if req.Name == "" {
+				return nil, app.ParamError(fmt.Errorf("name is required"))
+			}
 
-	if req.Name == "" {
-		http.Error(w, "name is required", http.StatusBadRequest)
-		return
-	}
+			if req.Currency == "" {
+				return nil, app.ParamError(fmt.Errorf("currency is required"))
+			}
 
-	if req.Currency == "" {
-		http.Error(w, "currency is required", http.StatusBadRequest)
-		return
+			return nil, x.service.CreateAccount(domain.CreateAccountRequest{
+				UserID:   req.UserID,
+				Name:     req.Name,
+				Currency: req.Currency,
+			})
+		}).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	if err := x.service.CreateAccount(domain.CreateAccountRequest{
-		UserID:   req.UserID,
-		Name:     req.Name,
-		Currency: req.Currency,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 }
 
 // GetAllAccounts handles the retrieval of all accounts
-func (x *Controller) GetAllAccounts(w http.ResponseWriter, r *http.Request) {
-	accounts, err := x.service.GetAllAccounts()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+			accounts, err := x.service.GetAllAccounts()
+			if err != nil {
+				return nil, err
+			}
+
+			jsonAccounts := make([]jsonAccount, len(accounts))
+			for index, account := range accounts {
+				jsonAccounts[index].fromDomain(account)
+			}
+
+			return jsonAccounts, nil
+		}).Call(&engine.Empty{}).ResponseJSON()
 	}
-
-	jsonAccounts := make([]jsonAccount, len(accounts))
-	for index, account := range accounts {
-		jsonAccounts[index].fromDomain(account)
-	}
-
-	bs, err := json.Marshal(jsonAccounts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs)
-
 }
 
 // GetAccountByID handles the retrieval of an account by its ID
-func (x *Controller) GetAccountByID(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
+func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var id string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
+			account, err := x.service.GetAccountByID(id)
+			if err != nil {
+				return nil, err
+			}
+
+			var jsonAccount jsonAccount
+			jsonAccount.fromDomain(account)
+
+			return &jsonAccount, nil
+		}).Param("id", &id).Call(nil).ResponseJSON()
 	}
-
-	account, err := x.service.GetAccountByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var jsonAcocunt jsonAccount
-	jsonAcocunt.fromDomain(account)
-
-	bs, err := json.Marshal(jsonAcocunt)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs)
 }
 
 // UpdateAccount handles the updating of an account
-func (x *Controller) UpdateAccount(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
-	}
-
-	var req struct {
-		Name   *string `json:"name"`
-		Status *string `json:"status"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	var accountStatus *domain.AccountStatus
-	if req.Status != nil {
-		status, err := domain.ParseAccountStatus(*req.Status)
-		if err != nil {
-			http.Error(w, "invalid account status", http.StatusBadRequest)
-			return
+func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			id     string
+			Name   *string `json:"name"`
+			Status *string `json:"status"`
 		}
 
-		accountStatus = &status
-	}
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 
-	if err := x.service.UpdateAccount(domain.UpdateAccountRequest{
-		ID:     id,
-		Name:   req.Name,
-		Status: accountStatus,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+			var accountStatus *domain.AccountStatus
+			if req.Status != nil {
+				status, err := domain.ParseAccountStatus(*req.Status)
+				if err != nil {
+					return nil, fmt.Errorf("invalid account status")
+				}
+				accountStatus = &status
+			}
 
-	w.WriteHeader(http.StatusOK)
+			return nil, x.service.UpdateAccount(domain.UpdateAccountRequest{
+				ID:     req.id,
+				Name:   req.Name,
+				Status: accountStatus,
+			})
+		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
+	}
 }
 
 // DeactivateAccountByID handles the deactivation of an account by its ID
-func (x *Controller) DeactivateAccountByID(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "parameter 'id' is required", http.StatusBadRequest)
-		return
+func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var id string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+			return nil, x.service.DeactivateAccountByID(id)
+		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
-
-	err := x.service.DeactivateAccountByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-// CreateUserAccount handles the creation of a new account for a specific user
-func (x *Controller) CreateUserAccount(w http.ResponseWriter, r *http.Request) {
-	userID := r.PathValue("userID")
-	if userID == "" {
-		http.Error(w, "userID is required", http.StatusBadRequest)
-		return
-	}
-
-	var req struct {
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-	}
-
-	if req.Name == "" {
-		http.Error(w, "name is required", http.StatusBadRequest)
-		return
-	}
-
-	if req.Currency == "" {
-		http.Error(w, "currency is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if err := x.service.CreateAccount(domain.CreateAccountRequest{
-		UserID:   userID,
-		Name:     req.Name,
-		Currency: req.Currency,
-	}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 }
 
 // GetUserAccounts handles the retrieval of all accounts for a specific user
-func (x *Controller) GetUserAccounts(w http.ResponseWriter, r *http.Request) {
-	userID := r.PathValue("userID")
-	if userID == "" {
-		http.Error(w, "userID is required", http.StatusBadRequest)
-		return
-	}
+func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var userID string
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+			accounts, err := x.service.GetAccountsByUserID(userID)
+			if err != nil {
+				return nil, err
+			}
 
-	accounts, err := x.service.GetAccountsByUserID(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+			jsonAccounts := make([]jsonAccount, len(accounts))
+			for index, account := range accounts {
+				jsonAccounts[index].fromDomain(account)
+			}
 
-	jsonAccounts := make([]jsonAccount, len(accounts))
-	for index, account := range accounts {
-		jsonAccounts[index].fromDomain(account)
+			return jsonAccounts, nil
+		}).Param("user_id", &userID).Call(&engine.Empty{}).ResponseJSON()
 	}
+}
 
-	bs, err := json.Marshal(jsonAccounts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+// CreateUserAccount handles the creation of a new account for a specific user
+func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type request struct {
+			UserID   string `json:"-"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+		}
+
+		var req request
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			if req.Name == "" {
+				return nil, app.ParamError(fmt.Errorf("name is required"))
+			}
+
+			if req.Currency == "" {
+				return nil, app.ParamError(fmt.Errorf("currency is required"))
+			}
+
+			return nil, x.service.CreateAccount(domain.CreateAccountRequest{
+				UserID:   req.UserID,
+				Name:     req.Name,
+				Currency: req.Currency,
+			})
+		}).Param("user_id", &req.UserID).BindJSON(&req).Call(req).ResponseJSON()
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs)
 }

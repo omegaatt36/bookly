@@ -40,13 +40,13 @@ func (s *testAccountSuite) SetupTest() {
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 
-	s.router.HandleFunc("POST /accounts", controller.CreateAccount)
-	s.router.HandleFunc("GET /accounts", controller.GetAllAccounts)
-	s.router.HandleFunc("GET /accounts/{id}", controller.GetAccountByID)
-	s.router.HandleFunc("PATCH /accounts/{id}", controller.UpdateAccount)
-	s.router.HandleFunc("DELETE /accounts/{id}", controller.DeactivateAccountByID)
-	s.router.HandleFunc("GET /users/{userID}/accounts", controller.GetUserAccounts)
-	s.router.HandleFunc("POST /users/{userID}/accounts", controller.CreateUserAccount)
+	s.router.HandleFunc("POST /accounts", controller.CreateAccount())
+	s.router.HandleFunc("GET /accounts", controller.GetAllAccounts())
+	s.router.HandleFunc("GET /accounts/{id}", controller.GetAccountByID())
+	s.router.HandleFunc("PATCH /accounts/{id}", controller.UpdateAccount())
+	s.router.HandleFunc("DELETE /accounts/{id}", controller.DeactivateAccountByID())
+	s.router.HandleFunc("GET /users/{user_id}/accounts", controller.GetUserAccounts())
+	s.router.HandleFunc("POST /users/{user_id}/accounts", controller.CreateUserAccount())
 
 	s.NoError(s.repo.AutoMigrate())
 }
@@ -71,7 +71,16 @@ func (s *testAccountSuite) TestCreateAccount() {
 
 	s.router.ServeHTTP(w, req)
 
-	s.Equal(http.StatusCreated, w.Code)
+	s.Equal(http.StatusOK, w.Code)
+
+	type createAccountResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp createAccountResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
 
 	accounts, err := s.repo.GetAllAccounts()
 	s.NoError(err)
@@ -94,18 +103,23 @@ func (s *testAccountSuite) TestGetAllAccounts() {
 
 	s.Equal(http.StatusOK, w.Code)
 
-	var accounts []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-		Status   string `json:"status"`
+	type getAllAccountsResponse struct {
+		Code int `json:"code"`
+		Data []struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+			Status   string `json:"status"`
+		} `json:"data"`
 	}
 
-	s.NoError(json.Unmarshal(w.Body.Bytes(), &accounts))
-	s.Len(accounts, 1)
-	s.Equal("Test Account", accounts[0].Name)
-	s.Equal("NTD", accounts[0].Currency)
-	s.Equal(domain.AccountStatusActive.String(), accounts[0].Status)
+	var resp getAllAccountsResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+	s.Len(resp.Data, 1)
+	s.Equal("Test Account", resp.Data[0].Name)
+	s.Equal("NTD", resp.Data[0].Currency)
+	s.Equal(domain.AccountStatusActive.String(), resp.Data[0].Status)
 }
 
 func (s *testAccountSuite) TestGetAccountByID() {
@@ -119,18 +133,23 @@ func (s *testAccountSuite) TestGetAccountByID() {
 
 	s.Equal(http.StatusOK, w.Code)
 
-	var account struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-		Status   string `json:"status"`
+	type getAccountByIDResponse struct {
+		Code int `json:"code"`
+		Data struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+			Status   string `json:"status"`
+		} `json:"data"`
 	}
 
-	s.NoError(json.Unmarshal(w.Body.Bytes(), &account))
-	s.Equal(accountID, account.ID)
-	s.Equal("Test Account", account.Name)
-	s.Equal("NTD", account.Currency)
-	s.Equal(domain.AccountStatusActive.String(), account.Status)
+	var resp getAccountByIDResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+	s.Equal(accountID, resp.Data.ID)
+	s.Equal("Test Account", resp.Data.Name)
+	s.Equal("NTD", resp.Data.Currency)
+	s.Equal(domain.AccountStatusActive.String(), resp.Data.Status)
 }
 
 func (s *testAccountSuite) TestUpdateAccount() {
@@ -144,6 +163,15 @@ func (s *testAccountSuite) TestUpdateAccount() {
 	s.router.ServeHTTP(w, req)
 
 	s.Equal(http.StatusOK, w.Code)
+
+	type updateAccountResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp updateAccountResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
 
 	updatedAccount, err := s.repo.GetAccountByID(accountID)
 	s.NoError(err)
@@ -161,34 +189,52 @@ func (s *testAccountSuite) TestDeactivateAccountByID() {
 
 	s.Equal(http.StatusOK, w.Code)
 
+	type deactivateAccountResponse struct {
+		Code int `json:"code"`
+		Data any `json:"data"`
+	}
+
+	var resp deactivateAccountResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+
 	deactivatedAccount, err := s.repo.GetAccountByID(accountID)
 	s.NoError(err)
 	s.Equal(domain.AccountStatusClosed, deactivatedAccount.Status)
 }
 
 func (s *testAccountSuite) TestGetAccountsByUserID() {
-	_, err := s.createSeedAccount()
+	accountID, err := s.createSeedAccount()
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodGet, "/accounts", nil)
+	acc, err := s.repo.GetAccountByID(accountID)
+	s.NoError(err)
+	s.NotNil(acc)
+
+	req := httptest.NewRequest(http.MethodGet, "/users/"+acc.UserID+"/accounts", nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
 
 	s.Equal(http.StatusOK, w.Code)
 
-	var accounts []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Currency string `json:"currency"`
-		Status   string `json:"status"`
+	type getAccountsByUserIDResponse struct {
+		Code int `json:"code"`
+		Data []struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+			Status   string `json:"status"`
+		} `json:"data"`
 	}
 
-	s.NoError(json.Unmarshal(w.Body.Bytes(), &accounts))
-	s.Len(accounts, 1)
-	s.Equal(seedAccount.Name, accounts[0].Name)
-	s.Equal(seedAccount.Currency, accounts[0].Currency)
-	s.Equal(domain.AccountStatusActive.String(), accounts[0].Status)
+	var resp getAccountsByUserIDResponse
+	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
+	s.Equal(0, resp.Code)
+	s.Len(resp.Data, 1)
+	s.Equal(seedAccount.Name, resp.Data[0].Name)
+	s.Equal(seedAccount.Currency, resp.Data[0].Currency)
+	s.Equal(domain.AccountStatusActive.String(), resp.Data[0].Status)
 }
 
 func (s *testAccountSuite) createSeedUser() (string, error) {
