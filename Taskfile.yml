@@ -6,16 +6,20 @@ env:
   DB_NAME: bookly
   DB_USER: postgres
   DB_PASSWORD: postgres
-  DB_SILENCE_LOGGER: true
+  DB_SILENCE_LOGGER: false
   DB_SLOW_THRESHOLD_MILLISECONDS: 1000
   JWT_SALT: salt
   JWT_SECRET_KEY: secret
   INTERNAL_TOKEN: secret
+  LOG_LEVEL: debug
 
 tasks:
-  run:
+  run-api:
     cmds:
-      - go run cmd/api/main.go
+      - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"
+  run-web:
+    cmds:
+      - air --build.cmd "go build -o build/web cmd/web/main.go" --build.bin "./build/web"
   test:
     cmds:
       - go test -v ./...

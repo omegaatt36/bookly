@@ -75,8 +75,8 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// GetLedgers retrieves all ledger entries for a given account
-func (x *Controller) GetLedgers() func(w http.ResponseWriter, r *http.Request) {
+// GetLedgersByAccount retrieves all ledger entries for a given account
+func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var accountID string
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {

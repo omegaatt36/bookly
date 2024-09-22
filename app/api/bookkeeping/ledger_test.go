@@ -33,7 +33,7 @@ func (s *testLedgerSuite) SetupTest() {
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger())
-	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgers())
+	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgersByAccount())
 	s.router.HandleFunc("GET /ledgers/{id}", controller.GetLedgerByID())
 	s.router.HandleFunc("PATCH /ledgers/{id}", controller.UpdateLedger())
 	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger())

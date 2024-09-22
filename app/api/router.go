@@ -33,7 +33,7 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("GET /users/{user_id}/accounts", bookkeepingX.GetUserAccounts())
 
 		v1Router.HandleFunc("POST /accounts/{account_id}/ledgers", bookkeepingX.CreateLedger())
-		v1Router.HandleFunc("GET /accounts/{account_id}/ledgers/", bookkeepingX.GetLedgers())
+		v1Router.HandleFunc("GET /accounts/{account_id}/ledgers", bookkeepingX.GetLedgersByAccount())
 		v1Router.HandleFunc("GET /ledgers/{id}", bookkeepingX.GetLedgerByID())
 		v1Router.HandleFunc("PATCH /ledgers/{id}", bookkeepingX.UpdateLedger())
 		v1Router.HandleFunc("DELETE /ledgers/{id}", bookkeepingX.VoidLedger())

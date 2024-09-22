@@ -93,6 +93,12 @@ func main() {
 			DefaultText: "8080",
 			Destination: &config.portOption.Port,
 		},
+		&cli.StringFlag{
+			Name:        "log-level",
+			EnvVars:     []string{"LOG_LEVEL"},
+			Value:       "debug",
+			Destination: &config.logLevel,
+		},
 	}
 	cliFlags = append(cliFlags, config.databaseConnectionOption.CliFlags()...)
 
