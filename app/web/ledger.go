@@ -1,10 +1,13 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/omegaatt36/bookly/app"
 )
 
 type ledger struct {
@@ -52,27 +55,33 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.sendRequest(r, "POST", "/v1/accounts/"+r.PathValue("account_id")+"/ledgers", payload, nil); err != nil {
 		slog.Error("failed to create ledger", slog.String("error", err.Error()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
 		http.Error(w, "Failed to create ledger", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("HX-Redirect", "/")
-}
-
-func (s *Server) getLedgers(r *http.Request, accountID string) ([]ledger, error) {
-	var ledgers []ledger
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s/ledgers", accountID), nil, &ledgers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ledgers: %w", err)
-	}
-	return ledgers, nil
+	s.getLedgersByAccount(w, r)
 }
 
 func (s *Server) getLedgersByAccount(w http.ResponseWriter, r *http.Request) {
 	accountID := r.PathValue("account_id")
-	ledgers, err := s.getLedgers(r, accountID)
-	if err != nil {
+
+	var ledgers []ledger
+	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s/ledgers", accountID), nil, &ledgers); err != nil {
 		slog.Error("failed to get ledgers", slog.String("error", err.Error()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
 		http.Error(w, "Failed to get ledgers", http.StatusInternalServerError)
 		return
 	}

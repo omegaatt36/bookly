@@ -19,8 +19,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	var loginResp struct {
 		Token string `json:"token"`
 	}
-	err := s.sendRequest(r, "POST", "/public/auth/login", loginData, &loginResp)
-	if err != nil {
+
+	if err := s.sendRequest(r, "POST", "/public/auth/login", loginData, &loginResp); err != nil {
 		http.Error(w, "Login failed", http.StatusUnauthorized)
 		return
 	}
@@ -40,6 +40,10 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	s.clearTokenAndRedirect(w)
+}
+
+func (s *Server) clearTokenAndRedirect(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",

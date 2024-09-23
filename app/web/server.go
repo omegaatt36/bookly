@@ -73,6 +73,15 @@ func (s *Server) Run(ctx context.Context) {
 	}
 }
 
+type sendRequestError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (e *sendRequestError) Error() string {
+	return fmt.Sprintf("failed to send request: %s", e.Message)
+}
+
 func (s *Server) sendRequest(r *http.Request, method, path string, body any, result any) error {
 	url := fmt.Sprintf("%s%s", s.serverURL, path)
 	var reqBody []byte
@@ -105,21 +114,21 @@ func (s *Server) sendRequest(r *http.Request, method, path string, body any, res
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
 	var response struct {
 		Code    int             `json:"code"`
 		Data    json.RawMessage `json:"data"`
 		Message string          `json:"message"`
 	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if response.Code != 0 {
-		return fmt.Errorf("failed to send request: %s", response.Message)
+		return &sendRequestError{
+			Code:    response.Code,
+			Message: fmt.Sprintf("failed to send request: %s", response.Message),
+		}
 	}
 
 	if result == nil {

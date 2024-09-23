@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math"
@@ -9,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omegaatt36/bookly/app"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 )
 
@@ -81,12 +84,24 @@ func rateLimiter(rate float64, capacity int) middleware {
 }
 
 func authenticated(authenticator domain.Authenticator) middleware {
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			abortWithUnauthorized := func(message string) {
+				bs, err := json.Marshal(engine.ResponseError{
+					Code:    app.CodeUnauthorized,
+					Message: message,
+				})
+				if err != nil {
+					panic(err)
+				}
 
+				http.Error(w, string(bs), http.StatusUnauthorized)
+			}
+
+			authToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 			if authToken == "" {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				abortWithUnauthorized("token is required")
 				return
 			}
 
@@ -94,12 +109,12 @@ func authenticated(authenticator domain.Authenticator) middleware {
 				Token: authToken,
 			})
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				abortWithUnauthorized(err.Error())
 				return
 			}
 
 			if !valid {
-				http.Error(w, "invalid token", http.StatusUnauthorized)
+				abortWithUnauthorized("invalid token")
 				return
 			}
 

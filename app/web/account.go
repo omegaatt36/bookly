@@ -1,9 +1,12 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/omegaatt36/bookly/app"
 )
 
 type account struct {
@@ -43,6 +46,13 @@ func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.sendRequest(r, "POST", "/v1/accounts", payload, nil); err != nil {
 		slog.Error("failed to create account", slog.String("error", err.Error()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
 		http.Error(w, "Failed to create account", http.StatusInternalServerError)
 		return
 	}
@@ -57,9 +67,15 @@ func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
 	var acc account
 	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s", accountID), nil, &acc)
 	if err != nil {
-
 		slog.Error("failed to get accounts", slog.String("error", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to get account", http.StatusInternalServerError)
 		return
 	}
 
@@ -78,8 +94,15 @@ func (s *Server) accountList(w http.ResponseWriter, r *http.Request) {
 	var accounts []account
 	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
 	if err != nil {
-		slog.Error("failed to get accounts", slog.String("error", err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
+		slog.Error("failed to get accounts", slog.String("error", err.Error()), slog.String("request", r.URL.String()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to get accounts", http.StatusInternalServerError)
 		return
 	}
 

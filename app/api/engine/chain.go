@@ -118,7 +118,7 @@ func (h *Handler[Req, Resp]) ResponseJSON() {
 		return
 	}
 
-	if err := encodeJSON(h.w, http.StatusOK, response{Data: h.resp}); err != nil {
+	if err := encodeJSON(h.w, http.StatusOK, Response{Data: h.resp}); err != nil {
 		panic(err)
 	}
 }
@@ -130,7 +130,7 @@ func (h *Handler[Req, Resp]) ResponseCreated() {
 		return
 	}
 
-	if err := encodeJSON(h.w, http.StatusCreated, response{Data: h.resp}); err != nil {
+	if err := encodeJSON(h.w, http.StatusCreated, Response{Data: h.resp}); err != nil {
 		panic(err)
 	}
 }
@@ -139,7 +139,7 @@ func (h *Handler[Req, Resp]) responseError() {
 	if h.err == nil {
 		slog.ErrorContext(h.r.Context(), "call responseError with nil error")
 
-		if err := encodeJSON(h.w, http.StatusInternalServerError, responseError{
+		if err := encodeJSON(h.w, http.StatusInternalServerError, ResponseError{
 			Code:    app.CodeInternalError,
 			Message: "",
 		}); err != nil {
@@ -149,7 +149,7 @@ func (h *Handler[Req, Resp]) responseError() {
 	}
 
 	statusCode := http.StatusInternalServerError
-	res := responseError{
+	res := ResponseError{
 		Code:    app.CodeInternalError,
 		Message: h.err.Error(),
 	}

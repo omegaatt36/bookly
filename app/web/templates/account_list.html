@@ -5,30 +5,17 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="px-4 py-2 text-left">Name</th>
-                    <th class="px-4 py-2 text-left hidden sm:table-cell">
-                        Status
-                    </th>
-                    <th class="px-4 py-2 text-left hidden md:table-cell">
-                        Currency
-                    </th>
+                    <th class="px-4 py-2 text-left hidden sm:table-cell">Status</th>
+                    <th class="px-4 py-2 text-left hidden md:table-cell">Currency</th>
                     <th class="px-4 py-2 text-left">Balance</th>
                 </tr>
             </thead>
             <tbody>
                 {{ range .Accounts }}
-                <tr
-                    hx-get="/api/accounts/{{ .ID }}"
-                    hx-target="#account-details"
-                    hx-trigger="click"
-                    class="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
-                >
+                <tr hx-get="/api/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-gray-50 cursor-pointer transition-colors duration-150">
                     <td class="px-4 py-2 border-t">{{ .Name }}</td>
-                    <td class="px-4 py-2 border-t hidden sm:table-cell">
-                        {{ .Status }}
-                    </td>
-                    <td class="px-4 py-2 border-t hidden md:table-cell">
-                        {{ .Currency }}
-                    </td>
+                    <td class="px-4 py-2 border-t hidden sm:table-cell">{{ .Status }}</td>
+                    <td class="px-4 py-2 border-t hidden md:table-cell">{{ .Currency }}</td>
                     <td class="px-4 py-2 border-t">{{ .Balance }}</td>
                 </tr>
                 {{ end }}

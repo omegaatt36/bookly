@@ -1,45 +1,15 @@
 {{ define "create_ledger.html" }}
-<div
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
-    id="ledger-modal-overlay"
->
-    <div
-        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
-    >
-        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-            Create New Ledger
-        </h3>
-        <form
-            hx-post="/api/accounts/{{ .ID }}/ledgers"
-            hx-target="#ledger-list"
-            hx-swap="outerHTML"
-        >
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" id="create-ledger-modal">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Create New Ledger</h3>
+        <form hx-post="/api/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="outerHTML">
             <div class="mb-4">
-                <label
-                    for="date"
-                    class="block text-sm font-medium text-gray-700"
-                    >Date</label
-                >
-                <input
-                    type="date"
-                    name="date"
-                    id="date"
-                    required
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
+                <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+                <input type="date" name="date" id="date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
             </div>
             <div class="mb-4">
-                <label
-                    for="type"
-                    class="block text-sm font-medium text-gray-700"
-                    >Type</label
-                >
-                <select
-                    name="type"
-                    id="type"
-                    required
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                >
+                <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
+                <select name="type" id="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     <option value="balance">Balance</option>
                     <option value="income">Income</option>
                     <option value="expense">Expense</option>
@@ -47,47 +17,22 @@
                 </select>
             </div>
             <div class="mb-4">
-                <label
-                    for="amount"
-                    class="block text-sm font-medium text-gray-700"
-                    >Amount</label
-                >
-                <input
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    id="amount"
-                    required
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                />
+                <label for="amount" class="block text-sm font-medium text-gray-700">Amount</label>
+                <input type="number" step="0.01" name="amount" id="amount" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
             </div>
             <div class="mb-4">
-                <label
-                    for="note"
-                    class="block text-sm font-medium text-gray-700"
-                    >Note</label
-                >
-                <textarea
-                    name="note"
-                    id="note"
-                    rows="3"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                ></textarea>
+                <label for="note" class="block text-sm font-medium text-gray-700">Note</label>
+                <textarea name="note" id="note" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
             </div>
             <div class="flex justify-end">
                 <button
                     type="button"
                     class="mr-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onclick="document.getElementById('ledger-modal-overlay').remove();"
+                    onclick="document.getElementById('create-ledger-modal').remove();"
                 >
                     Cancel
                 </button>
-                <button
-                    type="submit"
-                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                    Create
-                </button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Create</button>
             </div>
         </form>
     </div>

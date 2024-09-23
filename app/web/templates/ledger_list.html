@@ -1,45 +1,21 @@
 {{ define "ledger_list.html" }}
-<div class="overflow-x-auto">
+<div id="ledger-list">
     <table class="min-w-full bg-white">
         <thead class="bg-gray-100">
             <tr>
-                <th
-                    class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium"
-                >
-                    Date
-                </th>
-                <th
-                    class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium"
-                >
-                    Type
-                </th>
-                <th
-                    class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium"
-                >
-                    Amount
-                </th>
-                <th
-                    class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium"
-                >
-                    Note
-                </th>
+                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium">Date</th>
+                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium">Type</th>
+                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium">Amount</th>
+                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium">Note</th>
             </tr>
         </thead>
         <tbody>
             {{ range .Ledgers }}
             <tr class="hover:bg-gray-50">
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">
-                    {{ .Date.Format "2006-01-02" }}
-                </td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">
-                    {{ .Type }}
-                </td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">
-                    {{ .Amount }}
-                </td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">
-                    {{ .Note }}
-                </td>
+                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">{{ .Date.Format "2006-01-02" }}</td>
+                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">{{ .Type }}</td>
+                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">{{ .Amount }}</td>
+                <td class="py-2 px-3 md:px-4 text-xs md:text-sm">{{ .Note }}</td>
             </tr>
             {{ end }}
         </tbody>
