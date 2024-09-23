@@ -14,12 +14,9 @@ env:
   LOG_LEVEL: debug
 
 tasks:
-  run-api:
+  dev:
     cmds:
-      - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"
-  run-web:
-    cmds:
-      - air --build.cmd "go build -o build/web cmd/web/main.go" --build.bin "./build/web"
+      - docker compose -f deploy/dev/docker-compose.yaml up
   test:
     cmds:
       - go test -v ./...
@@ -36,6 +33,12 @@ tasks:
       - go vet -all ./...
       - misspell -error */**
       - staticcheck $(go list ./...)
+  live-api:
+    cmds:
+      - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"
+  live-web:
+    cmds:
+      - air --build.cmd "go build -o build/web cmd/web/main.go" --build.bin "./build/web"
   setup-db:
     desc: Setup the database
     cmds:

@@ -11,6 +11,7 @@ This project showcases a modern approach to building web applications with Go, f
 - Clean architecture principles
 - GORM for database operations
 - JWT-based authentication
+- Docker-based deployment
 
 ## Features
 
@@ -28,18 +29,17 @@ This project showcases a modern approach to building web applications with Go, f
 - `persistence/`: Database related code, including migrations and repositories
 - `service/`: Service layer implementing business logic
 - `deploy/`: Deployment configurations
+- `Dockerfile.*`: Docker build files for different services
 
 ## Getting Started
 
 ### Prerequisites
 
 - Go 1.23+
-- PostgreSQL or using docker
-- Docker (optional, for local database setup)
+- Docker and Docker Compose
 - [Taskfile](https://taskfile.dev/)
-- [Air](https://github.com/air-verse/air)
 
-### Setup
+### Setup and Running
 
 1. Clone the repository:
    ```
@@ -47,33 +47,44 @@ This project showcases a modern approach to building web applications with Go, f
    cd bookly
    ```
 
-2. Set up the database:
+2. Start all services using Docker Compose:
    ```
-   task setup-db
-   ```
-
-3. Run database migrations:
-   ```
-   task migrate-api
+   task dev
    ```
 
-4. Start the API server:
-   ```
-   task run-api
-   ```
+   This command will:
+   - Set up the PostgreSQL database
+   - Run database migrations
+   - Start the API server
+   - Start the web server
+   - Start Adminer for database management
 
-5. In a separate terminal, start the web server:
-   ```
-   task run-web
-   ```
+3. Access the services:
+   - Web interface: `http://localhost:8081`
+   - API: `http://localhost:8080`
+   - Adminer (database management): `http://localhost:9527`
 
-6. Visit `http://localhost:8081` in your browser to access the web interface.
+4. Register a new user via command line:
+  ```shell
+  curl -X POST 'http://localhost:8080/internal/auth/register' \
+    -H 'Content-Type: application/json' \
+    -H 'INTERNAL-TOKEN: secret' \
+    -d '{"email":"tester","password":"tester"}'
+  ```
 
 ## Development
 
 - Use `task fmt` to format the code
 - Use `task lint` to run linters
 - Use `task test` to run tests
+- Use `task live-api` to run the API with live reloading(powered by [Air](https://github.com/air-verse/air))
+- Use `task live-web` to run the web server with live reloading(powered by [Air](https://github.com/air-verse/air))
+
+## Database Management
+
+- To set up the database: `task setup-db`
+- To remove the database: `task remove-db`
+- To run migrations: `task migrate-api`
 
 ## Contributing
 

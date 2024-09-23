@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -40,6 +41,7 @@ func (a *App) action(c *cli.Context) error {
 
 	a.Action(ctx)
 	slog.InfoContext(ctx, "terminated")
+	<-time.After(time.Second)
 
 	return nil
 }

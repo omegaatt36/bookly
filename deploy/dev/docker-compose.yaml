@@ -23,6 +23,80 @@ services:
     ports:
       - 9527:8080
 
+  api-dbmigration:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.template
+      args:
+        SERVICE_NAME: api-dbmigration
+        SERVICE_PORT: 8080
+    container_name: bookly-api-dbmigration
+    environment:
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=bookly
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SILENCE_LOGGER=false
+      - SERVICE_NAME=api-dbmigration
+      - SERVICE_PORT=8080
+    networks:
+      - internal
+    depends_on:
+      - postgres
+
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.template
+      args:
+        SERVICE_NAME: api
+        SERVICE_PORT: 8080
+    container_name: bookly-api
+    restart: always
+    environment:
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=bookly
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SILENCE_LOGGER=false
+      - DB_SLOW_THRESHOLD_MILLISECONDS=1000
+      - JWT_SALT=salt
+      - JWT_SECRET_KEY=secret
+      - INTERNAL_TOKEN=secret
+      - LOG_LEVEL=debug
+      - PORT=8080
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+    depends_on:
+      api-dbmigration:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.template
+      args:
+        SERVICE_NAME: web
+        SERVICE_PORT: 8081
+    container_name: bookly-web
+    restart: always
+    environment:
+      - LOG_LEVEL=debug
+      - PORT=8081
+      - SERVER_URL=http://api:8080
+    networks:
+      - internal
+    ports:
+      - 8081:8081
+    depends_on:
+      - api
+
 networks:
   internal:
     driver: bridge
