@@ -23,7 +23,6 @@ func (s *Server) pageCreateAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
-
 func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		UserID   string `json:"user_id"`
@@ -57,8 +56,7 @@ func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect to refresh the account list
-	w.Header().Set("HX-Redirect", "/")
+	s.accountList(w, r)
 }
 
 func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
