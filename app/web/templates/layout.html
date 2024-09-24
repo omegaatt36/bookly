@@ -17,7 +17,7 @@
             <div class="container mx-auto flex justify-between items-center">
                 <div class="text-2xl font-bold text-text-highlight">Bookly</div>
                 {{ if .IsAuthenticated }}
-                <button hx-post="/api/logout" hx-target="body" class="btn btn-danger">Logout</button>
+                <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
                 {{ end }}
             </div>
         </nav>

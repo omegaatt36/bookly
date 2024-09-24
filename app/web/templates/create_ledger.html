@@ -2,7 +2,7 @@
 <div class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-ledger-modal">
     <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
         <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Ledger</h3>
-        <form hx-post="/api/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="outerHTML">
+        <form hx-post="/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="outerHTML">
             <div class="mb-4">
                 <label for="date" class="block text-sm font-medium text-text-secondary">Date</label>
                 <input
