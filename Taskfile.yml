@@ -16,7 +16,7 @@ env:
 tasks:
   dev:
     cmds:
-      - docker compose -f deploy/dev/docker-compose.yaml up
+      - docker compose -f deploy/dev/docker-compose.yaml up --build
   test:
     cmds:
       - go test -v ./...

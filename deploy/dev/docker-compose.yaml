@@ -28,8 +28,8 @@ services:
       context: ../..
       dockerfile: Dockerfile.template
       args:
-        SERVICE_NAME: api-dbmigration
-        SERVICE_PORT: 8080
+        SERVICE_NAME: "api-dbmigration"
+        SERVICE_PORT: "8080"
     container_name: bookly-api-dbmigration
     environment:
       - DB_DIALECT=postgres
@@ -39,8 +39,6 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_SILENCE_LOGGER=false
-      - SERVICE_NAME=api-dbmigration
-      - SERVICE_PORT=8080
     networks:
       - internal
     depends_on:
@@ -51,8 +49,8 @@ services:
       context: ../..
       dockerfile: Dockerfile.template
       args:
-        SERVICE_NAME: api
-        SERVICE_PORT: 8080
+        SERVICE_NAME: "api"
+        SERVICE_PORT: "8080"
     container_name: bookly-api
     restart: always
     environment:
@@ -82,8 +80,8 @@ services:
       context: ../..
       dockerfile: Dockerfile.template
       args:
-        SERVICE_NAME: web
-        SERVICE_PORT: 8081
+        SERVICE_NAME: "web"
+        SERVICE_PORT: "8081"
     container_name: bookly-web
     restart: always
     environment:

@@ -1,5 +1,8 @@
 FROM golang:1.23-alpine AS builder
 
+ARG SERVICE_NAME
+ARG SERVICE_PORT
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -7,14 +10,19 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o {{ .Env.SERVICE_NAME }} ./cmd/{{ .Env.SERVICE_NAME }}
+RUN CGO_ENABLED=0 GOOS=linux go build -o ${SERVICE_NAME} ./cmd/${SERVICE_NAME}
 
 FROM alpine:latest
 
+ARG SERVICE_NAME
+ARG SERVICE_PORT
+
+ENV BIN=/app/${SERVICE_NAME}
+
 WORKDIR /app
 
-COPY --from=builder /app/{{ .Env.SERVICE_NAME }} .
+COPY --from=builder ${BIN} .
 
-EXPOSE {{ .Env.SERVICE_PORT }}
+EXPOSE ${SERVICE_PORT}
 
-CMD ["./{{ .Env.SERVICE_NAME }}"]
+CMD ${BIN}
