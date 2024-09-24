@@ -58,8 +58,8 @@ func main() {
 		&cli.IntFlag{
 			Name:        "port",
 			EnvVars:     []string{"PORT"},
-			Value:       8081,
-			DefaultText: "8081",
+			Value:       3000,
+			DefaultText: "3000",
 			Destination: &config.portOption.Port,
 		},
 		&cli.StringFlag{

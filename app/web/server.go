@@ -29,7 +29,7 @@ type Server struct {
 func NewServer(options ...Option) *Server {
 	server := &Server{
 		serverURL: "http://localhost:8080",
-		port:      8081,
+		port:      3000,
 	}
 
 	for _, option := range options {

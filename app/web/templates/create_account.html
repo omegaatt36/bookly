@@ -1,6 +1,6 @@
 {{ define "create_account.html" }}
-<div class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-account-modal">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-gray-800">
+<div class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-account-modal">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-bg-secondary">
         <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Account</h3>
         <form hx-post="/api/accounts" hx-target="#account-list" hx-swap="outerHTML">
             <div class="mb-4">
@@ -10,7 +10,7 @@
                     name="name"
                     id="name"
                     required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 />
             </div>
             <div class="mb-4">
@@ -20,20 +20,12 @@
                     name="currency"
                     id="currency"
                     required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 />
             </div>
             <div class="flex justify-end">
-                <button
-                    type="button"
-                    class="mr-2 px-4 py-2 text-sm font-medium text-text-primary bg-bg-tertiary rounded-md hover:bg-bg-highlight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary"
-                    onclick="document.getElementById('create-account-modal').remove()"
-                >
-                    Cancel
-                </button>
-                <button type="submit" class="px-4 py-2 text-sm font-medium text-text-highlight bg-accent-primary rounded-md hover:bg-accent-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary">
-                    Create
-                </button>
+                <button type="button" class="btn btn-secondary mr-2" onclick="document.getElementById('create-account-modal').remove()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create</button>
             </div>
         </form>
     </div>

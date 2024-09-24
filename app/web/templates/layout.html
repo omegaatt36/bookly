@@ -7,10 +7,20 @@
         <title>{{ block "title" . }}Bookly{{ end }}</title>
         <script src="https://unpkg.com/htmx.org@1.8.4"></script>
         <script src="https://cdn.tailwindcss.com"></script>
+
+        <link rel="stylesheet" href="/static/css/main.css" />
+
         {{ template "base.html" }}
     </head>
-    <body class="bg-primary text-primary">
-        {{ block "nav" . }}{{ end }}
+    <body class="bg-bg-primary text-text-primary">
+        <nav class="bg-bg-secondary p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="text-2xl font-bold text-text-highlight">Bookly</div>
+                {{ if .IsAuthenticated }}
+                <button hx-post="/api/logout" hx-target="body" class="btn btn-danger">Logout</button>
+                {{ end }}
+            </div>
+        </nav>
         <div class="container mx-auto mt-8 px-4">{{ block "content" . }}{{ end }}</div>
     </body>
 </html>

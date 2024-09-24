@@ -15,7 +15,7 @@ func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
 		IsAuthenticated: isAuthenticated,
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		slog.Error("failed to render index.html", slog.String("error", err.Error()))
+	if err := s.templates.ExecuteTemplate(w, "layout.html", data); err != nil {
+		slog.Error("failed to render layout.html", slog.String("error", err.Error()))
 	}
 }

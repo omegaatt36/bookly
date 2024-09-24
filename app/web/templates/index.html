@@ -1,10 +1,1 @@
-{{ define "index.html" }} {{ template "layout.html" . }} {{ end }} {{ define "nav" }}
-<nav>
-    <div class="container">
-        <div class="brand">Bookly</div>
-        {{ if .IsAuthenticated }}
-        <button hx-post="/api/logout" hx-target="body" class="btn btn-danger">Logout</button>
-        {{ end }}
-    </div>
-</nav>
-{{ end }} {{ define "content" }} {{ if .IsAuthenticated }} {{template "dashboard.html" . }} {{ else }} {{template "login" . }} {{ end }} {{ end }}
+{{ define "index.html" }} {{ template "layout.html" . }} {{ end }} {{ define "content" }} {{ if .IsAuthenticated }} {{template "dashboard.html" . }} {{ else }} {{template "login" . }} {{ end }} {{ end }}

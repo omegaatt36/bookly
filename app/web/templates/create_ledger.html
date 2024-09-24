@@ -1,6 +1,6 @@
 {{ define "create_ledger.html" }}
-<div class="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-ledger-modal">
-    <div class="relative top-20 mx-auto p-6 border border-gray-700 max-w-md w-full shadow-xl rounded-lg bg-gray-900">
+<div class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-ledger-modal">
+    <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
         <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Ledger</h3>
         <form hx-post="/api/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="outerHTML">
             <div class="mb-4">
@@ -10,7 +10,7 @@
                     name="date"
                     id="date"
                     required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 />
             </div>
             <div class="mb-4">
@@ -19,7 +19,7 @@
                     name="type"
                     id="type"
                     required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 >
                     <option value="balance">Balance</option>
                     <option value="income">Income</option>
@@ -35,7 +35,7 @@
                     name="amount"
                     id="amount"
                     required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 />
             </div>
             <div class="mb-4">
@@ -44,20 +44,12 @@
                     name="note"
                     id="note"
                     rows="3"
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-secondary text-text-primary"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 ></textarea>
             </div>
             <div class="flex justify-end">
-                <button
-                    type="button"
-                    class="mr-2 px-4 py-2 text-sm font-medium text-text-primary bg-bg-secondary rounded-md hover:bg-bg-tertiary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary"
-                    onclick="document.getElementById('create-ledger-modal').remove();"
-                >
-                    Cancel
-                </button>
-                <button type="submit" class="px-4 py-2 text-sm font-medium text-text-highlight bg-accent-primary rounded-md hover:bg-accent-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary">
-                    Create
-                </button>
+                <button type="button" class="btn btn-secondary mr-2" onclick="document.getElementById('create-ledger-modal').remove();">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create</button>
             </div>
         </form>
     </div>

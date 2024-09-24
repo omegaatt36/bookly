@@ -60,7 +60,7 @@ This project showcases a modern approach to building web applications with Go, f
    - Start Adminer for database management
 
 3. Access the services:
-   - Web interface: `http://localhost:8081`
+   - Web interface: `http://localhost:3000`
    - API: `http://localhost:8080`
    - Adminer (database management): `http://localhost:9527`
 

@@ -81,17 +81,17 @@ services:
       dockerfile: Dockerfile.template
       args:
         SERVICE_NAME: "web"
-        SERVICE_PORT: "8081"
+        SERVICE_PORT: "3000"
     container_name: bookly-web
     restart: always
     environment:
       - LOG_LEVEL=debug
-      - PORT=8081
+      - PORT=3000
       - SERVER_URL=http://api:8080
     networks:
       - internal
     ports:
-      - 8081:8081
+      - 3000:3000
     depends_on:
       - api
 

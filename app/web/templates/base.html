@@ -1,3 +1,27 @@
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    "bg-primary": "#2e3440",
+                    "bg-secondary": "#3b4252",
+                    "bg-tertiary": "#434c5e",
+                    "bg-highlight": "#4c566a",
+                    "text-primary": "#d8dee9",
+                    "text-secondary": "#e5e9f0",
+                    "text-highlight": "#eceff4",
+                    "accent-primary": "#88c0d0",
+                    "accent-secondary": "#81a1c1",
+                    "accent-tertiary": "#5e81ac",
+                    success: "#a3be8c",
+                    warning: "#ebcb8b",
+                    error: "#bf616a",
+                    info: "#b48ead",
+                },
+            },
+        },
+    };
+</script>
 <style>
     :root {
         --bg-primary: #2e3440;
@@ -15,77 +39,66 @@
         --error: #bf616a;
         --info: #b48ead;
     }
+
     body {
         background-color: var(--bg-primary);
         color: var(--text-primary);
-        font-family: Arial, sans-serif;
+        font-family: sans-serif;
     }
+
     .container {
-        max-width: 1200px;
-        margin: 0 auto;
+        max-width: 80rem;
+        margin-left: auto;
+        margin-right: auto;
         padding: 0;
     }
+
     .btn {
         padding: 0.5rem 1rem;
         border-radius: 0.25rem;
         font-weight: bold;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: colors 0.2s;
+        display: inline-block;
+        text-align: center;
+        border: 1px solid transparent;
+        box-shadow:
+            0 1px 3px 0 rgba(0, 0, 0, 0.1),
+            0 1px 2px 0 rgba(0, 0, 0, 0.06);
     }
+
+    .btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+    }
+
     .btn-primary {
         background-color: var(--accent-primary);
         color: var(--text-highlight);
+        border-color: var(--accent-primary);
     }
+
     .btn-primary:hover {
         background-color: var(--accent-secondary);
     }
+
+    .btn-secondary {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-color: var(--bg-tertiary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-highlight);
+    }
+
     .btn-danger {
         background-color: var(--error);
         color: var(--text-highlight);
+        border-color: var(--error);
     }
+
     .btn-danger:hover {
-        opacity: 0.5;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th,
-    td {
-        padding: 0.5rem;
-        text-align: left;
-        border-bottom: 1px solid var(--bg-highlight);
-    }
-    th {
-        background-color: var(--bg-secondary);
-    }
-    tr:hover {
-        background-color: var(--bg-tertiary);
-    }
-    nav {
-        background-color: var(--bg-secondary);
-        padding: 1rem;
-    }
-    nav .container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    nav .brand {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--text-highlight);
-    }
-    nav .nav-links {
-        display: flex;
-        gap: 1rem;
-    }
-    nav .nav-links a {
-        color: var(--text-secondary);
-        text-decoration: none;
-        /* transition: color 0.2s; */
-    }
-    nav .nav-links a:hover {
-        color: var(--text-highlight);
+        opacity: 0.8;
     }
 </style>

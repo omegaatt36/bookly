@@ -3,7 +3,7 @@
     <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl font-bold text-text-primary">Account List</h1>
-            <button hx-get="/accounts/new" hx-target="body" hx-swap="beforeend" class="btn btn-primary">Create New Account</button>
+            <button hx-get="/accounts/new" hx-target="body" hx-swap="beforeend" class="btn btn-primary duration-200">Create New Account</button>
         </div>
         <div id="account-list" hx-get="/api/accounts" hx-trigger="load"></div>
     </div>
