@@ -1,26 +1,24 @@
 {{ define "account_list.html" }}
 <div id="account-list">
-    <div class="overflow-x-auto">
-        <table class="w-full bg-white shadow-md rounded-lg overflow-hidden">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-4 py-2 text-left">Name</th>
-                    <th class="px-4 py-2 text-left hidden sm:table-cell">Status</th>
-                    <th class="px-4 py-2 text-left hidden md:table-cell">Currency</th>
-                    <th class="px-4 py-2 text-left">Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{ range .Accounts }}
-                <tr hx-get="/api/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                    <td class="px-4 py-2 border-t">{{ .Name }}</td>
-                    <td class="px-4 py-2 border-t hidden sm:table-cell">{{ .Status }}</td>
-                    <td class="px-4 py-2 border-t hidden md:table-cell">{{ .Currency }}</td>
-                    <td class="px-4 py-2 border-t">{{ .Balance }}</td>
-                </tr>
-                {{ end }}
-            </tbody>
-        </table>
-    </div>
+    <table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
+        <thead class="bg-bg-tertiary">
+            <tr>
+                <th class="px-4 py-2 text-left text-text-primary">Name</th>
+                <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Status</th>
+                <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Currency</th>
+                <th class="px-4 py-2 text-left text-text-primary">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .Accounts }}
+            <tr hx-get="/api/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
+                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
+                <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Status }}</td>
+                <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Currency }}</td>
+                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Balance }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
 </div>
 {{ end }}

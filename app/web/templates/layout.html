@@ -7,12 +7,11 @@
         <title>{{ block "title" . }}Bookly{{ end }}</title>
         <script src="https://unpkg.com/htmx.org@1.8.4"></script>
         <script src="https://cdn.tailwindcss.com"></script>
+        {{ template "base.html" }}
     </head>
-    <body class="bg-gray-100">
+    <body class="bg-primary text-primary">
         {{ block "nav" . }}{{ end }}
-        <div class="container mx-auto mt-8 px-4">
-            {{ block "content" . }}{{ end }}
-        </div>
+        <div class="container mx-auto mt-8 px-4">{{ block "content" . }}{{ end }}</div>
     </body>
 </html>
 {{ end }}

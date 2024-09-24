@@ -1,9 +1,9 @@
 {{ define "index.html" }} {{ template "layout.html" . }} {{ end }} {{ define "nav" }}
-<nav class="bg-blue-500 p-4 text-white">
-    <div class="container mx-auto px-4 flex justify-between items-center">
-        <div class="text-2xl font-bold">Bookly</div>
+<nav>
+    <div class="container">
+        <div class="brand">Bookly</div>
         {{ if .IsAuthenticated }}
-        <button hx-post="/api/logout" hx-target="body" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Logout</button>
+        <button hx-post="/api/logout" hx-target="body" class="btn btn-danger">Logout</button>
         {{ end }}
     </div>
 </nav>

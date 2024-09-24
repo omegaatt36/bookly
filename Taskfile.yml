@@ -42,11 +42,11 @@ tasks:
   setup-db:
     desc: Setup the database
     cmds:
-      - docker compose -f deploy/dev/docker-compose.yaml up -d
+      - docker compose -f deploy/dev/docker-compose.yaml up postgres adminer -d
   remove-db:
     desc: Remove the database
     cmds:
-      - docker compose -f deploy/dev/docker-compose.yaml down
+      - docker compose -f deploy/dev/docker-compose.yaml postgres adminer down
   migrate-api:
     # env:
     #   ROLLBACK_LAST: true
