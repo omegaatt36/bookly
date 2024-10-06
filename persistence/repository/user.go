@@ -125,15 +125,15 @@ func (r *GORMRepository) DeactivateUserByID(id string) error {
 }
 
 // AddIdentity adds a new identity for a user
-func (r *GORMRepository) AddIdentity(userID string, identiy domain.Identity) error {
-	identity := Identity{
+func (r *GORMRepository) AddIdentity(userID string, identity domain.Identity) error {
+	id := Identity{
 		UserID:     userID,
-		Provider:   string(identiy.Provider),
-		Identifier: identiy.Identifier,
-		Credential: identiy.Credential,
+		Provider:   string(identity.Provider),
+		Identifier: identity.Identifier,
+		Credential: identity.Credential,
 	}
 
-	if err := r.db.Create(&identity).Error; err != nil {
+	if err := r.db.Create(&id).Error; err != nil {
 		return fmt.Errorf("failed to add identity: %w", err)
 	}
 

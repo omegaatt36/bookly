@@ -102,13 +102,13 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.repo.CreateLedger(domain.CreateLedgerRequest{
+	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(50.00),
 		Note:      "Test Expense",
-	})
+	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/accounts/"+accountID+"/ledgers", nil)
 	w := httptest.NewRecorder()
@@ -144,13 +144,13 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.repo.CreateLedger(domain.CreateLedgerRequest{
+	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeIncome,
 		Amount:    decimal.NewFromFloat(75.00),
 		Note:      "Test Income",
-	})
+	}))
 
 	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
 	ledgerID := ledgers[0].ID
@@ -188,13 +188,13 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.repo.CreateLedger(domain.CreateLedgerRequest{
+	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(100.00),
 		Note:      "Original Expense",
-	})
+	}))
 
 	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
 	ledgerID := ledgers[0].ID
@@ -235,13 +235,13 @@ func (s *testLedgerSuite) TestVoidLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.repo.CreateLedger(domain.CreateLedgerRequest{
+	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeIncome,
 		Amount:    decimal.NewFromFloat(200.00),
 		Note:      "Income to be voided",
-	})
+	}))
 
 	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
 	ledgerID := ledgers[0].ID
@@ -277,13 +277,13 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.repo.CreateLedger(domain.CreateLedgerRequest{
+	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(150.00),
 		Note:      "Original Expense",
-	})
+	}))
 
 	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
 	originalLedgerID := ledgers[0].ID

@@ -31,6 +31,7 @@ tasks:
       - go mod tidy
   lint:
     cmds:
+      - golangci-lint run -v --timeout=10s
       - revive -formatter friendly -config revive.toml  ./...
       - find . -name "*.json" | xargs -n 1 -t gojq . > /dev/null
       - go vet -all ./...

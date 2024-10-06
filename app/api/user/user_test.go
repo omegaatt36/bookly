@@ -88,10 +88,11 @@ func (s *testUserSuite) TestGetAllUsers() {
 	}
 
 	// Create a test user
-	s.repo.CreateUser(domain.CreateUserRequest{
+	_, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name:     "Test User",
 		Nickname: "test",
 	})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	w := httptest.NewRecorder()
@@ -122,9 +123,8 @@ func (s *testUserSuite) TestGetUserByID() {
 	}
 
 	// Create a test user
-	s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
-	users, _ := s.repo.GetAllUsers()
-	userID := users[0].ID
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
 	w := httptest.NewRecorder()
@@ -147,9 +147,8 @@ func (s *testUserSuite) TestUpdateUser() {
 		Code int `json:"code"`
 	}
 	// Create a test user
-	s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
-	users, _ := s.repo.GetAllUsers()
-	userID := users[0].ID
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
+	s.NoError(err)
 
 	reqBody := []byte(`{"name": "Updated User"}`)
 	req := httptest.NewRequest(http.MethodPatch, "/users/"+userID, bytes.NewBuffer(reqBody))
@@ -174,9 +173,8 @@ func (s *testUserSuite) TestDeactivateUserByID() {
 		Data any `json:"data"`
 	}
 	// Create a test user
-	s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
-	users, _ := s.repo.GetAllUsers()
-	userID := users[0].ID
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/users/"+userID, nil)
 	w := httptest.NewRecorder()

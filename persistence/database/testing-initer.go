@@ -40,7 +40,9 @@ func TestingInitialize(opt ConnectOption) (funcFinalize func()) {
 	opt.Testing = true
 
 	if opt.Dialect != "postgres" {
-		Initialize(opt)
+		if err := Initialize(opt); err != nil {
+			panic(err)
+		}
 
 		return func() {
 			if err := Finalize(); err != nil {
