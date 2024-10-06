@@ -95,7 +95,7 @@ func (r *GORMRepository) GetLedgerByID(id string) (*domain.Ledger, error) {
 // GetLedgersByAccountID retrieves all ledger entries for a given account ID
 func (r *GORMRepository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, error) {
 	var ledgers []Ledger
-	if err := r.db.Where("account_id = ?", accountID).Order("date desc").Find(&ledgers).Error; err != nil {
+	if err := r.db.Where("account_id = ?", accountID).Order("date DESC, updated_at DESC").Find(&ledgers).Error; err != nil {
 		return nil, fmt.Errorf("failed to get ledgers for account: %w", err)
 	}
 

@@ -1,0 +1,6 @@
+{{ define "ledger.html" }}
+<td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Date.Format "01-02" }}</td>
+<td class="px-4 py-2 border-t border-bg-highlight sm:table-cell text-text-secondary">{{ .Type }}</td>
+<td class="px-4 py-2 border-t border-bg-highlight md:table-cell text-text-secondary">{{ .Amount }}</td>
+<td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ shorten .Note }}</td>
+{{ end }}

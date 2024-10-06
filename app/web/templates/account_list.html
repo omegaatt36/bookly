@@ -10,7 +10,7 @@
     </thead>
     <tbody>
         {{ range .Accounts }}
-        <tr hx-get="/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
+        <tr hx-get="/page/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
             <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
             <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Status }}</td>
             <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Currency }}</td>

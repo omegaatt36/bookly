@@ -3,18 +3,16 @@
     <thead class="bg-bg-tertiary">
         <tr>
             <th class="px-4 py-2 text-left text-text-primary">Date</th>
-            <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Type</th>
-            <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Amount</th>
+            <th class="px-4 py-2 text-left sm:table-cell text-text-primary">Type</th>
+            <th class="px-4 py-2 text-left md:table-cell text-text-primary">Amount</th>
             <th class="px-4 py-2 text-left text-text-primary">Note</th>
         </tr>
     </thead>
     <tbody>
+        <div id="ledger-details-modal"></div>
         {{ range .Ledgers }}
-        <tr class="hover:bg-tertiary">
-            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Date.Format "2006-01-02" }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Type }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Amount }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Note }}</td>
+        <tr id="ledger-{{ .ID }}" class="hover:bg-tertiary" hx-get="/page/ledgers/{{ .ID }}" hx-target="#ledger-details-modal" hx-swap="innerHTML">
+            {{ template "ledger.html" . }}
         </tr>
         {{ end }}
     </tbody>

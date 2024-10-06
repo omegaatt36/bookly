@@ -48,6 +48,12 @@ func (s *Server) initTemplates() {
 		"now": func() time.Time {
 			return time.Now()
 		},
+		"shorten": func(s string) string {
+			if len(s) > 6 {
+				return s[:6] + "..."
+			}
+			return s
+		},
 	}
 
 	templates, err := template.New("templates").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")

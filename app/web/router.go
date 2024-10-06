@@ -18,8 +18,10 @@ func (s *Server) registerRoutes() {
 
 		s.pageIndex(w, r)
 	})
-	router.HandleFunc("GET /accounts/new", authenticatedHandler(s.pageCreateAccount))
-	router.HandleFunc("GET /accounts/{account_id}/ledgers/new", authenticatedHandler(s.pageCreateLedger))
+	router.HandleFunc("GET /page/accounts", authenticatedHandler(s.pageCreateAccount))
+	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.getAccount))
+	router.HandleFunc("GET /page/accounts/{account_id}/ledgers", authenticatedHandler(s.pageCreateLedger))
+	router.HandleFunc("GET /page/ledgers/{ledger_id}", authenticatedHandler(s.pageLedgerDetails))
 
 	// Authentication
 	router.HandleFunc("POST /login", s.login)
@@ -28,11 +30,12 @@ func (s *Server) registerRoutes() {
 	// Accounts
 	router.HandleFunc("GET /accounts", authenticatedHandler(s.accountList))
 	router.HandleFunc("POST /accounts", authenticatedHandler(s.createAccount))
-	router.HandleFunc("GET /accounts/{account_id}", authenticatedHandler(s.getAccount))
 
 	// Ledgers
-	router.HandleFunc("GET /accounts/{account_id}/ledgers", authenticatedHandler(s.getLedgersByAccount))
+	router.HandleFunc("GET /accounts/{account_id}/ledgers", authenticatedHandler(s.pageLedgersByAccount))
+
 	router.HandleFunc("POST /accounts/{account_id}/ledgers", authenticatedHandler(s.createLedger))
+	router.HandleFunc("PATCH /ledgers/{ledger_id}", authenticatedHandler(s.updateLedger))
 
 	s.router = logging(router)
 }

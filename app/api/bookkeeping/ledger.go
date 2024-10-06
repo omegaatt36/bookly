@@ -19,6 +19,7 @@ type jsonLedger struct {
 	Type         string          `json:"type"`
 	Amount       decimal.Decimal `json:"amount"`
 	Note         string          `json:"note"`
+	Adjustable   bool            `json:"adjustable"`
 	IsAdjustment bool            `json:"is_adjustment"`
 	AdjustedFrom *string         `json:"adjusted_from"`
 	IsVoided     bool            `json:"is_voided"`
@@ -32,6 +33,7 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 	l.Type = ledger.Type.String()
 	l.Amount = ledger.Amount
 	l.Note = ledger.Note
+	l.Adjustable = time.Since(ledger.CreatedAt) <= domain.EditableDuration
 	l.IsAdjustment = ledger.IsAdjustment
 	l.AdjustedFrom = ledger.AdjustedFrom
 	l.IsVoided = ledger.IsVoided

@@ -2,7 +2,7 @@
 <div id="create-ledger-modal-content" class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm">
     <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
         <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Ledger</h3>
-        <form hx-post="/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="innerHTML" hx-on::after-request="let el = document.getElementById('create-ledger-modal-content'); el.parentNode.removeChild(el);">
+        <form hx-post="/accounts/{{ .ID }}/ledgers" hx-target="#ledger-list" hx-swap="innerHTML" hx-on::after-request="closeCreateLedgerModal()">
             <div class="mb-4">
                 <label for="date" class="block text-sm font-medium text-text-secondary">Date</label>
                 <input
@@ -49,10 +49,16 @@
                 ></textarea>
             </div>
             <div class="flex justify-end">
-                <button type="button" class="btn btn-secondary mr-2" onclick="let el = document.getElementById('create-ledger-modal-content'); el.parentNode.removeChild(el);">Cancel</button>
+                <button type="button" class="btn btn-secondary mr-2" onclick="closeCreateLedgerModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Create</button>
             </div>
         </form>
     </div>
 </div>
+<script>
+    function closeCreateLedgerModal() {
+        let el = document.getElementById('create-ledger-modal-content');
+        el.parentNode.removeChild(el);
+    }
+</script>
 {{ end }}
