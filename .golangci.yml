@@ -1,0 +1,19 @@
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - copyloopvar
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+issues:
+  exclude:
+    - EXC0012
+    - EXC0014
