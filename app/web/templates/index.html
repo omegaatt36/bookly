@@ -24,7 +24,7 @@
                 <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
                     <div class="flex justify-between items-center mb-4">
                         <h1 class="text-xl font-bold text-text-primary">Accounts</h1>
-                        <button hx-get="/page/accounts" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
+                        <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
                     </div>
                     <div id="create-account-modal"></div>
                     <div id="account-list" hx-get="/accounts" hx-trigger="load"></div>

@@ -11,7 +11,7 @@
     <tbody>
         <div id="ledger-details-modal"></div>
         {{ range .Ledgers }}
-        <tr id="ledger-{{ .ID }}" class="hover:bg-tertiary" hx-get="/page/ledgers/{{ .ID }}" hx-target="#ledger-details-modal" hx-swap="innerHTML">
+        <tr id="ledger-{{ .ID }}" class="hover:bg-tertiary" hx-get="/page/ledgers/{{ .ID }}/details" hx-target="#ledger-details-modal" hx-swap="innerHTML">
             {{ template "ledger.html" . }}
         </tr>
         {{ end }}
