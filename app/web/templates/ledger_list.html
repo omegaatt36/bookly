@@ -1,24 +1,22 @@
 {{ define "ledger_list.html" }}
-<div id="ledger-list">
-    <table class="min-w-full">
-        <thead class="bg-secondary">
-            <tr>
-                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium text-text-primary">Date</th>
-                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium text-text-primary">Type</th>
-                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium text-text-primary">Amount</th>
-                <th class="py-2 px-3 md:px-4 text-left text-xs md:text-sm font-medium text-text-primary">Note</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range .Ledgers }}
-            <tr class="hover:bg-tertiary">
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm text-text-secondary">{{ .Date.Format "2006-01-02" }}</td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm text-text-secondary">{{ .Type }}</td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm text-text-secondary">{{ .Amount }}</td>
-                <td class="py-2 px-3 md:px-4 text-xs md:text-sm text-text-secondary">{{ .Note }}</td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
-</div>
+<table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
+    <thead class="bg-bg-tertiary">
+        <tr>
+            <th class="px-4 py-2 text-left text-text-primary">Date</th>
+            <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Type</th>
+            <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Amount</th>
+            <th class="px-4 py-2 text-left text-text-primary">Note</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .Ledgers }}
+        <tr class="hover:bg-tertiary">
+            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Date.Format "2006-01-02" }}</td>
+            <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Type }}</td>
+            <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Amount }}</td>
+            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Note }}</td>
+        </tr>
+        {{ end }}
+    </tbody>
+</table>
 {{ end }}

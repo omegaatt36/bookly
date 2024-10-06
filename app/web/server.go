@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 )
 
 //go:embed templates/*.html
@@ -43,7 +44,13 @@ func NewServer(options ...Option) *Server {
 }
 
 func (s *Server) initTemplates() {
-	templates, err := template.ParseFS(templatesFS, "templates/*.html")
+	funcMap := template.FuncMap{
+		"now": func() time.Time {
+			return time.Now()
+		},
+	}
+
+	templates, err := template.New("templates").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		slog.Error("failed to parse templates", slog.String("error", err.Error()))
 	}

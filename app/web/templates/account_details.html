@@ -1,7 +1,8 @@
 {{ define "account_details.html" }}
 <div class="flex items-center justify-between mb-4">
     <h2 class="text-xl md:text-2xl font-bold text-text-primary">Ledger List</h2>
-    <button hx-get="/accounts/{{.Account.ID}}/ledgers/new" hx-target="#ledger-list" hx-swap="beforeend" class="btn btn-primary">Create Ledger</button>
+    <button hx-get="/accounts/{{.Account.ID}}/ledgers/new" hx-target="#create-ledger-modal" hx-swap="innerHTML" class="btn btn-primary">Create Ledger</button>
 </div>
-<div id="ledger-list" hx-get="/accounts/{{.Account.ID}}/ledgers" hx-trigger="load" class="bg-bg-secondary rounded-lg shadow-md"></div>
+<div id="create-ledger-modal"></div>
+<div id="ledger-list" hx-get="/accounts/{{.Account.ID}}/ledgers" hx-trigger="load"></div>
 {{ end }}

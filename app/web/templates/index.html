@@ -1,1 +1,40 @@
-{{ define "index.html" }} {{ template "layout.html" . }} {{ end }} {{ define "content" }} {{ if .IsAuthenticated }} {{template "dashboard.html" . }} {{ else }} {{template "login" . }} {{ end }} {{ end }}
+{{ define "index.html" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ block "title" . }}Bookly{{ end }}</title>
+        <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        {{ template "base.html" }}
+    </head>
+    <body class="bg-bg-primary text-text-primary">
+        <nav class="bg-bg-secondary p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="text-2xl font-bold text-text-highlight">Bookly</div>
+                {{ if .IsAuthenticated }}
+                <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
+                {{ end }}
+            </div>
+        </nav>
+        <div class="container mx-auto mt-8 px-4">
+            {{ if .IsAuthenticated }}
+            <div class="flex flex-col md:flex-row -mx-4">
+                <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <h1 class="text-2xl font-bold text-text-primary">Account List</h1>
+                        <button hx-get="/accounts/new" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">Create New Account</button>
+                    </div>
+                    <div id="create-account-modal"></div>
+                    <div id="account-list" hx-get="/accounts" hx-trigger="load"></div>
+                </div>
+                <div class="w-full md:w-1/2 px-4">
+                    <div id="account-details"></div>
+                </div>
+            </div>
+            {{ else }} {{ template "login" . }} {{ end }}
+        </div>
+    </body>
+</html>
+{{ end }}
