@@ -6,7 +6,6 @@ import (
 )
 
 func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
-
 	token, err := r.Cookie("token")
 	isAuthenticated := err == nil && token.Value != ""
 

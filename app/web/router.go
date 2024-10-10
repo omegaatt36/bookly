@@ -19,7 +19,8 @@ func (s *Server) registerRoutes() {
 		s.pageIndex(w, r)
 	})
 	router.HandleFunc("GET /page/accounts/create", authenticatedHandler(s.pageCreateAccount))
-	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.getAccount))
+	router.HandleFunc("GET /page/accounts", authenticatedHandler(s.pageAccountList))
+	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.pageAccount))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers/create", authenticatedHandler(s.pageCreateLedger))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers", authenticatedHandler(s.pageLedgersByAccount))
 	router.HandleFunc("GET /page/ledgers/{ledger_id}/details", authenticatedHandler(s.pageLedgerDetails))
@@ -30,7 +31,6 @@ func (s *Server) registerRoutes() {
 	router.HandleFunc("POST /logout", s.logout)
 
 	// Accounts
-	router.HandleFunc("GET /accounts", authenticatedHandler(s.accountList))
 	router.HandleFunc("POST /accounts", authenticatedHandler(s.createAccount))
 
 	// Ledgers

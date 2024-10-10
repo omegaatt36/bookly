@@ -23,6 +23,63 @@ func (s *Server) pageCreateAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
+
+func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
+	accountID := r.PathValue("account_id")
+
+	var acc account
+	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s", accountID), nil, &acc)
+	if err != nil {
+		slog.Error("failed to get accounts", slog.String("error", err.Error()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to get account", http.StatusInternalServerError)
+		return
+	}
+
+	result := struct {
+		Account account
+	}{
+		Account: acc,
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "account_details.html", result); err != nil {
+		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
+	}
+}
+
+func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
+	var accounts []account
+	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	if err != nil {
+		slog.Error("failed to get accounts", slog.String("error", err.Error()), slog.String("request", r.URL.String()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to get accounts", http.StatusInternalServerError)
+		return
+	}
+
+	result := struct {
+		Accounts []account
+	}{
+		Accounts: accounts,
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "account_list.html", result); err != nil {
+		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
+	}
+}
+
 func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		UserID   string `json:"user_id"`
@@ -56,61 +113,6 @@ func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.accountList(w, r)
-}
-
-func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
-
-	var acc account
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s", accountID), nil, &acc)
-	if err != nil {
-		slog.Error("failed to get accounts", slog.String("error", err.Error()))
-
-		var sendRequestError *sendRequestError
-		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
-			s.clearTokenAndRedirect(w)
-			return
-		}
-
-		http.Error(w, "Failed to get account", http.StatusInternalServerError)
-		return
-	}
-
-	result := struct {
-		Account account
-	}{
-		Account: acc,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "account_details.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
-	}
-}
-
-func (s *Server) accountList(w http.ResponseWriter, r *http.Request) {
-	var accounts []account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
-	if err != nil {
-		slog.Error("failed to get accounts", slog.String("error", err.Error()), slog.String("request", r.URL.String()))
-
-		var sendRequestError *sendRequestError
-		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
-			s.clearTokenAndRedirect(w)
-			return
-		}
-
-		http.Error(w, "Failed to get accounts", http.StatusInternalServerError)
-		return
-	}
-
-	result := struct {
-		Accounts []account
-	}{
-		Accounts: accounts,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "account_list.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
-	}
+	w.Header().Set("HX-Trigger", "reloadAccounts")
+	w.WriteHeader(http.StatusOK)
 }

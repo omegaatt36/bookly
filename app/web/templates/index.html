@@ -27,7 +27,7 @@
                         <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
                     </div>
                     <div id="create-account-modal"></div>
-                    <div id="account-list" hx-get="/accounts" hx-trigger="load"></div>
+                    <div id="account-list" hx-get="/page/accounts" hx-trigger="load, reloadAccounts from:body"></div>
                 </div>
                 <div class="w-full md:w-1/2 px-4">
                     <div id="account-details"></div>

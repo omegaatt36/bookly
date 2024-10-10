@@ -148,7 +148,8 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.pageLedgersByAccount(w, r)
+	w.Header().Set("HX-Trigger", "ledgerCreated, accountUpdated")
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
@@ -186,5 +187,6 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.pageLedger(w, r)
+	w.Header().Set("HX-Trigger", "reloadLedgers, reloadAccounts")
+	w.WriteHeader(http.StatusOK)
 }

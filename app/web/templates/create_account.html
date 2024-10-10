@@ -2,7 +2,7 @@
 <div class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-account-modal-content">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-bg-secondary">
         <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Account</h3>
-        <form hx-post="/accounts" hx-target="#account-list" hx-swap="innerHTML" hx-on::after-request="closeCreateAccountModal()">
+        <form hx-post="/accounts" hx-on::after-request="closeCreateAccountModal()">
             <div class="mb-4">
                 <label for="name" class="block text-sm font-medium text-text-secondary">Name</label>
                 <input
