@@ -23,6 +23,7 @@ type Ledger struct {
 	AccountID    string
 	Date         time.Time
 	Type         LedgerType
+	Currency     string
 	Amount       decimal.Decimal
 	Note         string
 	IsAdjustment bool

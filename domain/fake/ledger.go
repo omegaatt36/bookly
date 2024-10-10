@@ -45,6 +45,9 @@ func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
 		return nil, fmt.Errorf("ledger not found: %s", id)
 	}
 
+	account := r.accounts[ledger.AccountID]
+	ledger.Currency = account.Currency
+
 	return ledger, nil
 }
 
@@ -53,9 +56,12 @@ func (r *Repository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	account := r.accounts[accountID]
+
 	ledgers := make([]*domain.Ledger, 0, len(r.ledgers))
 	for _, ledger := range r.ledgers {
 		if ledger.AccountID == accountID {
+			ledger.Currency = account.Currency
 			ledgers = append(ledgers, ledger)
 		}
 	}

@@ -15,6 +15,7 @@ type ledger struct {
 	AccountID    string     `json:"account_id"`
 	Date         time.Time  `json:"date"`
 	Type         string     `json:"type"`
+	Currency     string     `json:"currency"`
 	Amount       string     `json:"amount"` // Using string to represent decimal
 	Note         string     `json:"note"`
 	Adjustable   bool       `json:"adjustable"`
@@ -64,8 +65,8 @@ func (s *Server) pageCreateLedger(w http.ResponseWriter, r *http.Request) {
 func (s *Server) pageLedgerDetails(w http.ResponseWriter, r *http.Request) {
 	ledgerID := r.PathValue("ledger_id")
 
-	var ledgerDetails ledger
-	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, &ledgerDetails); err != nil {
+	var ledger ledger
+	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, &ledger); err != nil {
 		slog.Error("failed to get ledger details", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -78,14 +79,13 @@ func (s *Server) pageLedgerDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "ledger_details.html", ledgerDetails); err != nil {
+	if err := s.templates.ExecuteTemplate(w, "ledger_details.html", ledger); err != nil {
 		slog.Error("failed to render ledger_details.html", slog.String("error", err.Error()))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
 func (s *Server) pageLedgersByAccount(w http.ResponseWriter, r *http.Request) {
-
 	accountID := r.PathValue("account_id")
 
 	var ledgers []ledger

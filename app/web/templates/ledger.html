@@ -2,7 +2,7 @@
 <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Date.Format "01-02" }}</td>
 <td class="px-4 py-2 border-t border-bg-highlight sm:table-cell text-text-secondary">{{ .Type }}</td>
 <td class="px-4 py-2 border-t border-bg-highlight md:table-cell text-text-secondary">
-    <span {{ if .IsVoided }} class="line-through" {{ end}}>{{ .Amount }}</span>
+    <span {{ if .IsVoided }} class="line-through" {{ end}}>{{ dollar .Currency .Amount }}</span>
 </td>
 <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">
     {{ if .IsVoided }}

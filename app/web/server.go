@@ -48,11 +48,14 @@ func (s *Server) initTemplates() {
 		"now": func() time.Time {
 			return time.Now()
 		},
-		"shorten": func(s string) string {
-			if len(s) > 6 {
-				return s[:6] + "..."
+		"shorten": func(str string) string {
+			if len(str) > 6 {
+				return str[:6] + "..."
 			}
-			return s
+			return str
+		},
+		"dollar": func(currency, amount string) string {
+			return fmt.Sprintf("$%s", amount)
 		},
 	}
 

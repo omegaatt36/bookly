@@ -28,6 +28,8 @@ type Ledger struct {
 	AdjustedFrom *string         `gorm:"type:uuid"`
 	IsVoided     bool            `gorm:"not null"`
 	VoidedAt     *time.Time
+
+	Account Account
 }
 
 // toDomainLedger converts repository Ledger to domain.Ledger
@@ -39,6 +41,7 @@ func (l *Ledger) toDomainLedger() *domain.Ledger {
 		AccountID:    l.AccountID,
 		Date:         l.Date,
 		Type:         domain.LedgerType(l.Type),
+		Currency:     l.Account.Currency,
 		Amount:       l.Amount,
 		Note:         l.Note,
 		IsAdjustment: l.IsAdjustment,
@@ -82,7 +85,7 @@ func (r *GORMRepository) CreateLedger(req domain.CreateLedgerRequest) error {
 // GetLedgerByID retrieves a ledger entry by its ID
 func (r *GORMRepository) GetLedgerByID(id string) (*domain.Ledger, error) {
 	var ledger Ledger
-	if err := r.db.First(&ledger, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Account").First(&ledger, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("ledger not found: %s", id)
 		}
@@ -95,7 +98,10 @@ func (r *GORMRepository) GetLedgerByID(id string) (*domain.Ledger, error) {
 // GetLedgersByAccountID retrieves all ledger entries for a given account ID
 func (r *GORMRepository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, error) {
 	var ledgers []Ledger
-	if err := r.db.Where("account_id = ?", accountID).Order("date DESC, updated_at DESC").Find(&ledgers).Error; err != nil {
+	if err := r.db.Preload("Account").
+		Where("account_id = ?", accountID).
+		Order("date DESC, updated_at DESC").
+		Find(&ledgers).Error; err != nil {
 		return nil, fmt.Errorf("failed to get ledgers for account: %w", err)
 	}
 

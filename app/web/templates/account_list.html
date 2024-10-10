@@ -14,7 +14,7 @@
             <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
             <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Status }}</td>
             <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Currency }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Balance }}</td>
+            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ dollar .Currency .Balance }}</td>
         </tr>
         {{ end }}
     </tbody>
