@@ -36,6 +36,7 @@ func (s *Server) registerRoutes() {
 	// Ledgers
 	router.HandleFunc("POST /accounts/{account_id}/ledgers", authenticatedHandler(s.createLedger))
 	router.HandleFunc("PATCH /ledgers/{ledger_id}", authenticatedHandler(s.updateLedger))
+	router.HandleFunc("DELETE /ledgers/{ledger_id}", authenticatedHandler(s.voidLedger))
 
 	s.router = logging(router)
 }

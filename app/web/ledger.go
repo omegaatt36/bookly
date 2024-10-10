@@ -148,7 +148,7 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("HX-Trigger", "ledgerCreated, accountUpdated")
+	w.Header().Set("HX-Trigger", "reloadLedgers, reloadAccounts")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -184,6 +184,26 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Error(w, "Failed to update ledger", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("HX-Trigger", "reloadLedgers, reloadAccounts")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) voidLedger(w http.ResponseWriter, r *http.Request) {
+	ledgerID := r.PathValue("ledger_id")
+
+	if err := s.sendRequest(r, "DELETE", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, nil); err != nil {
+		slog.Error("failed to delete ledger", slog.String("error", err.Error()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to delete ledger", http.StatusInternalServerError)
 		return
 	}
 
