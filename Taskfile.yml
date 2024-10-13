@@ -37,6 +37,10 @@ tasks:
       - go vet -all ./...
       - misspell -error */**
       - staticcheck $(go list ./...)
+  build-lint:
+    cmds:
+      - docker build -t omegaatt36/bookly-lint:latest -f deploy/dev/Dockerfile.lint .
+      - echo "Build image finished, please run 'docker push omegaatt36/bookly-lint:latest'"
   live-api:
     cmds:
       - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"
