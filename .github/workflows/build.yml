@@ -1,10 +1,10 @@
 name: Build and push Docker image
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_run:
+    workflows: ["Code Quality Check"]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
@@ -16,8 +16,17 @@ jobs:
       - id: set-timestamp
         run: echo "timestamp=$(date +%Y-%m-%dT%H_%M_%S)" >> $GITHUB_OUTPUT
 
-  build-images:
+  build-and-push-images:
     needs: set-timestamp
+    if: >
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.ref == 'refs/heads/main'
+      ) ||
+      (
+        github.event_name == 'workflow_dispatch'
+      )
     runs-on: ubuntu-latest
     strategy:
       matrix:
