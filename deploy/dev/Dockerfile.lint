@@ -1,0 +1,22 @@
+FROM golang:1.23 AS builder
+
+RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+
+RUN go install golang.org/x/tools/cmd/goimports@latest && \
+    go install github.com/daixiang0/gci@latest && \
+    go install github.com/mgechev/revive@latest && \
+    go install github.com/itchyny/gojq/cmd/gojq@latest && \
+    go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    go install github.com/client9/misspell/cmd/misspell@latest && \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+FROM ubuntu:latest
+
+RUN apt update && apt install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/bin/task /usr/local/bin/task
+COPY --from=builder /go/bin/* /usr/local/bin/
+
+WORKDIR /app
+
+ENV PATH="/usr/local/bin:${PATH}"
