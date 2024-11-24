@@ -1,0 +1,36 @@
+{{ define "404.html" }}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ block "title" . }}Bookly{{ end }}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {{ template "base.html" }}
+</head>
+
+<body class="bg-bg-primary text-text-primary">
+    <nav class="bg-bg-secondary p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold text-text-highlight">Bookly</div>
+        </div>
+    </nav>
+    <div class="container mx-auto mt-8 px-4">
+        <div class="min-h-[70vh] flex items-center justify-center">
+            <div class="text-center">
+                <h1 class="text-6xl font-bold text-gray-200 mb-4">404</h1>
+                <p class="text-xl text-gray-600 mb-8">Page Not Found</p>
+                <p class="text-gray-500 mb-8">The page you're looking for doesn't exist or has been moved.</p>
+                <a href="/"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+                    Return Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+{{ end }}

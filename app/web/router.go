@@ -1,7 +1,6 @@
 package web
 
 import (
-	"log/slog"
 	"net/http"
 )
 
@@ -9,15 +8,9 @@ func (s *Server) registerRoutes() {
 	router := http.NewServeMux()
 
 	// page renderer
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			slog.Error("not found", slog.String("path", r.URL.Path))
-			http.NotFound(w, r)
-			return
-		}
+	router.HandleFunc("GET /{$}", s.pageIndex)
+	router.HandleFunc("GET /", s.page404)
 
-		s.pageIndex(w, r)
-	})
 	router.HandleFunc("GET /page/accounts/create", authenticatedHandler(s.pageCreateAccount))
 	router.HandleFunc("GET /page/accounts", authenticatedHandler(s.pageAccountList))
 	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.pageAccount))
