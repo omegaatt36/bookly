@@ -1,7 +1,7 @@
 package bookkeeping
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -43,15 +43,15 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			if req.UserID == "" {
-				return nil, app.ParamError(fmt.Errorf("user_id is required"))
+				return nil, app.ParamError(errors.New("user_id is required"))
 			}
 
 			if req.Name == "" {
-				return nil, app.ParamError(fmt.Errorf("name is required"))
+				return nil, app.ParamError(errors.New("name is required"))
 			}
 
 			if req.Currency == "" {
-				return nil, app.ParamError(fmt.Errorf("currency is required"))
+				return nil, app.ParamError(errors.New("currency is required"))
 			}
 
 			return nil, x.service.CreateAccount(domain.CreateAccountRequest{
@@ -116,7 +116,7 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 			if req.Status != nil {
 				status, err := domain.ParseAccountStatus(*req.Status)
 				if err != nil {
-					return nil, fmt.Errorf("invalid account status")
+					return nil, errors.New("invalid account status")
 				}
 				accountStatus = &status
 			}
@@ -172,11 +172,11 @@ func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Req
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			if req.Name == "" {
-				return nil, app.ParamError(fmt.Errorf("name is required"))
+				return nil, app.ParamError(errors.New("name is required"))
 			}
 
 			if req.Currency == "" {
-				return nil, app.ParamError(fmt.Errorf("currency is required"))
+				return nil, app.ParamError(errors.New("currency is required"))
 			}
 
 			return nil, x.service.CreateAccount(domain.CreateAccountRequest{

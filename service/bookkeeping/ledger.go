@@ -1,6 +1,7 @@
 package bookkeeping
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -34,7 +35,7 @@ func (s *Service) UpdateLedger(req domain.UpdateLedgerRequest) error {
 	}
 
 	if time.Since(ledger.UpdatedAt) > domain.EditableDuration {
-		return fmt.Errorf("ledger is too old to be edited")
+		return errors.New("ledger is too old to be edited")
 	}
 
 	return s.ledgerRepo.UpdateLedger(req)

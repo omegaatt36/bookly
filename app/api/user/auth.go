@@ -1,7 +1,7 @@
 package user
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/omegaatt36/bookly/app"
@@ -21,10 +21,10 @@ func (x *Controller) RegisterUser() func(w http.ResponseWriter, r *http.Request)
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			if req.Email == "" {
-				return nil, app.ParamError(fmt.Errorf("email is required"))
+				return nil, app.ParamError(errors.New("email is required"))
 			}
 			if req.Password == "" {
-				return nil, app.ParamError(fmt.Errorf("password is required"))
+				return nil, app.ParamError(errors.New("password is required"))
 			}
 
 			return nil, x.service.Register(user.RegisterRequest{
@@ -52,10 +52,10 @@ func (x *Controller) LoginUser() func(w http.ResponseWriter, r *http.Request) {
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (response, error) {
 			if req.Email == "" {
-				return response{}, app.ParamError(fmt.Errorf("email is required"))
+				return response{}, app.ParamError(errors.New("email is required"))
 			}
 			if req.Password == "" {
-				return response{}, app.ParamError(fmt.Errorf("password is required"))
+				return response{}, app.ParamError(errors.New("password is required"))
 			}
 
 			token, err := x.service.Login(user.LoginRequest{

@@ -9,7 +9,7 @@ This project showcases a modern approach to building web applications with Go, f
 - A robust backend API
 - A lightweight frontend using Go templates and HTMX
 - Clean architecture principles
-- GORM for database operations
+- SQLC/PGX for database operations
 - JWT-based authentication
 - Docker-based deployment
 
@@ -24,6 +24,9 @@ This project showcases a modern approach to building web applications with Go, f
 ## Project Structure
 
 - `cmd/`: Contains the main entry points for different executables
+  - `api/`: API service
+  - `api-dbmigration/`: Database migration tool
+  - `web/`: Web frontend service
 - `app/`: Application layer, including API and web handlers
 - `domain/`: Core business logic and interfaces
 - `persistence/`: Database related code, including migrations and repositories
@@ -77,14 +80,26 @@ This project showcases a modern approach to building web applications with Go, f
 - Use `task fmt` to format the code
 - Use `task lint` to run linters
 - Use `task test` to run tests
-- Use `task live-api` to run the API with live reloading(powered by [Air](https://github.com/air-verse/air))
-- Use `task live-web` to run the web server with live reloading(powered by [Air](https://github.com/air-verse/air))
+- Use `task live-api` to run the API with live reloading (powered by [Air](https://github.com/air-verse/air))
+- Use `task live-web` to run the web server with live reloading (powered by [Air](https://github.com/air-verse/air))
 
 ## Database Management
 
 - To set up the database: `task setup-db`
 - To remove the database: `task remove-db`
 - To run migrations: `task migrate-api`
+
+## Technology Stack
+
+- Backend: Go 1.23
+- Database: PostgreSQL 16
+- Data Access: pgx/v5, SQLC
+- Authentication: JWT
+- Web Framework: Go standard library http + templates
+- Frontend Interaction: HTMX
+- Deployment: Docker, Docker Compose
+- Logging: slog, zap
+- Code Quality: golangci-lint, revive
 
 ## Contributing
 

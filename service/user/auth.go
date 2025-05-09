@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/omegaatt36/bookly/domain"
@@ -18,7 +19,7 @@ type RegisterRequest struct {
 // Register registers a new user
 func (s *Service) Register(req RegisterRequest) error {
 	if s.mAuthenticator == nil {
-		return fmt.Errorf("authentication provider not initialized")
+		return errors.New("authentication provider not initialized")
 	}
 
 	if s.mAuthenticator[req.Provider] == nil {
@@ -64,17 +65,31 @@ type LoginRequest struct {
 // Login authenticates a user and returns a token
 func (s *Service) Login(req LoginRequest) (string, error) {
 	if s.mAuthenticator == nil {
-		return "", fmt.Errorf("authentication provider not initialized")
+		return "", errors.New("authentication provider not initialized")
 	}
 
-	if s.mAuthenticator[req.Provider] == nil {
+	authenticator, ok := s.mAuthenticator[req.Provider]
+	if !ok {
 		return "", fmt.Errorf("authentication provider not found: %s", req.Provider)
 	}
 
-	u, err := s.userRepo.GetUserByIdentity(req.Provider, req.Identifier)
+	user, identity, err := s.userRepo.GetUserByIdentity(req.Provider, req.Identifier)
 	if err != nil {
-		return "", fmt.Errorf("user not found: %w", err)
+		return "", errors.New("invalid identifier or credentials")
 	}
 
-	return s.mAuthenticator[req.Provider].GenerateToken(domain.GenerateTokenRequest{UserID: u.ID})
+	valid, err := authenticator.VerifyCredential(req.Credential, identity)
+	if err != nil {
+		return "", fmt.Errorf("credential verification failed: %w", err)
+	}
+	if !valid {
+		return "", errors.New("invalid identifier or credentials")
+	}
+
+	token, err := authenticator.GenerateToken(domain.GenerateTokenRequest{UserID: user.ID})
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return token, nil
 }

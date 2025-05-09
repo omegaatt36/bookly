@@ -1,7 +1,7 @@
 package bookkeeping
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -65,9 +65,8 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 			}
 
 			if req.Amount.IsZero() {
-				return nil, app.ParamError(fmt.Errorf("amount is required"))
+				return nil, app.ParamError(errors.New("amount is required"))
 			}
-
 			return nil, x.service.CreateLedger(domain.CreateLedgerRequest{
 				AccountID: req.accountID,
 				Date:      req.Date,
@@ -180,7 +179,7 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 			}
 
 			if req.Amount.IsZero() {
-				return nil, app.ParamError(fmt.Errorf("amount is required"))
+				return nil, app.ParamError(errors.New("amount is required"))
 			}
 
 			return nil, x.service.AdjustLedger(req.id, domain.CreateLedgerRequest{

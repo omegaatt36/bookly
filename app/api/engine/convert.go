@@ -32,15 +32,14 @@ func condConvert(payload string, val any) error {
 		}
 		rTyp.Set(reflect.ValueOf(boolVal).Convert(rTyp.Type()))
 	case reflect.Struct:
-		if isTimeStruct(val) {
-			parsedTime, err := time.ParseInLocation(time.RFC3339, payload, time.Local)
-			if err != nil {
-				return app.ParamError(fmt.Errorf("parse time rfc3339('%v') failed: %v", payload, err))
-			}
-			rTyp.Set(reflect.ValueOf(parsedTime).Convert(rTyp.Type()))
-		} else {
+		if !isTimeStruct(val) {
 			return app.ParamError(fmt.Errorf("unsupported struct type(%v)", typKind))
 		}
+		parsedTime, err := time.ParseInLocation(time.RFC3339, payload, time.Local)
+		if err != nil {
+			return app.ParamError(fmt.Errorf("parse time rfc3339('%v') failed: %v", payload, err))
+		}
+		rTyp.Set(reflect.ValueOf(parsedTime).Convert(rTyp.Type()))
 	case reflect.Slice:
 		sliceKind := reflect.TypeOf(val).Elem().Elem().Kind()
 		switch sliceKind {

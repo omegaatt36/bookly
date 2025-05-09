@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -22,6 +23,7 @@ type JWTAuthenticator struct {
 }
 
 // NewJWTAuthorizator creates a new JWT authentication service.
+// Accept userRepo as the first parameter
 func NewJWTAuthorizator(salt, secretKey string, opts ...Option) *JWTAuthenticator {
 	authorizator := JWTAuthenticator{
 		ttl:       time.Hour * 24,
@@ -67,7 +69,7 @@ func (authenticator *JWTAuthenticator) GenerateToken(req domain.GenerateTokenReq
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", fmt.Errorf("failed to parse claims")
+		return "", errors.New("failed to parse claims")
 	}
 
 	claims["sub"] = req.UserID
@@ -98,11 +100,31 @@ func (authenticator *JWTAuthenticator) ValidateToken(req domain.ValidateTokenReq
 
 	_, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return false, fmt.Errorf("invalid claims")
+		return false, errors.New("invalid claims")
 	}
 
 	if !token.Valid {
-		return false, fmt.Errorf("invalid token")
+		return false, errors.New("invalid token")
+	}
+
+	return true, nil
+}
+
+// VerifyCredential verifies the provided credential against the stored identity credential.
+// It assumes the identity.Credential is the hex-encoded Argon2 hash and the salt is in authenticator.salt.
+
+// VerifyCredential verifies if the provided credential matches the stored identity credential.
+// It is used during authentication to validate user credentials.
+func (authenticator *JWTAuthenticator) VerifyCredential(credential string, identity *domain.Identity) (bool, error) {
+	if identity.Provider != domain.IdentityProviderPassword {
+		return false, fmt.Errorf("unsupported identity provider for credential verification: %s", identity.Provider)
+	}
+
+	providedCredentialHash := argon2.IDKey([]byte(credential), []byte(authenticator.salt), 1, 64*1024, 4, 32)
+	providedCredentialHashHex := fmt.Sprintf("%x", providedCredentialHash)
+
+	if providedCredentialHashHex != identity.Credential {
+		return false, nil
 	}
 
 	return true, nil

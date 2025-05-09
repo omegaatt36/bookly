@@ -1,7 +1,7 @@
 package web
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/golang-jwt/jwt"
@@ -70,5 +70,5 @@ func (s *Server) getUserIDFromToken(tokenString string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("user_id not found in token claims")
+	return "", errors.New("user_id not found in token claims")
 }

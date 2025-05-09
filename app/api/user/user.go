@@ -1,7 +1,7 @@
 package user
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -39,11 +39,11 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			if req.Name == "" {
-				return nil, app.ParamError(fmt.Errorf("name is required"))
+				return nil, app.ParamError(errors.New("name is required"))
 			}
 
 			if req.Nickname == "" {
-				return nil, app.ParamError(fmt.Errorf("nickname is required"))
+				return nil, app.ParamError(errors.New("nickname is required"))
 			}
 
 			return nil, x.service.CreateUser(domain.CreateUserRequest{

@@ -13,6 +13,7 @@ import (
 	"github.com/omegaatt36/bookly/app/api/bookkeeping"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
+	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
 )
 
@@ -30,13 +31,14 @@ type testAccountSuite struct {
 
 	router *http.ServeMux
 
-	repo     *repository.GORMRepository
+	repo     *repository.SQLCRepository
 	finalize func()
 }
 
 func (s *testAccountSuite) SetupTest() {
 	s.finalize = database.TestingInitialize(database.PostgresOpt)
-	s.repo = repository.NewGORMRepository(database.GetDB())
+	db := database.GetDB()
+	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 
@@ -48,7 +50,7 @@ func (s *testAccountSuite) SetupTest() {
 	s.router.HandleFunc("GET /users/{user_id}/accounts", controller.GetUserAccounts())
 	s.router.HandleFunc("POST /users/{user_id}/accounts", controller.CreateUserAccount())
 
-	s.NoError(s.repo.AutoMigrate())
+	s.NoError(migration.NewMigrator(db).Upgrade())
 }
 
 func (s *testAccountSuite) TearDownTest() {

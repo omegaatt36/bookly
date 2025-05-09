@@ -15,4 +15,5 @@ type Authenticator interface {
 	HashPassword(password string) (string, error)
 	GenerateToken(GenerateTokenRequest) (string, error)
 	ValidateToken(ValidateTokenRequest) (bool, error)
+	VerifyCredential(credential string, identity *Identity) (bool, error)
 }

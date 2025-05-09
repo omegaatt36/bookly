@@ -5,37 +5,26 @@ import (
 	"log/slog"
 
 	"github.com/urfave/cli/v2"
-	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-// ConnectOption defines a generic connect option for all dialects.
+// ConnectOption defines a generic connect option for PostgreSQL.
 type ConnectOption struct {
 	Dialect  string
 	Host     string
-	Port     int // optional, if you append port in host, this option is unnecessary.
+	Port     int
 	DBName   string
 	User     string
 	Password string
-	Config   gorm.Config
 	Silence  bool
-
-	Testing bool
-
-	Logger logger.Interface
+	Testing  bool
 }
 
-// ConnStr generates connection string.
+// ConnStr generates PostgreSQL connection string.
 func (opt *ConnectOption) ConnStr() string {
 	switch opt.Dialect {
-	case "sqlite3":
-		return opt.Host
 	case "postgres":
-		return fmt.Sprintf("host=%s port=%v user=%v "+
-			"dbname=%v password=%v sslmode=disable",
-			opt.Host, opt.Port, opt.User, opt.DBName, opt.Password)
+		return fmt.Sprintf("postgres://%s:%s@%s:%v/%s?sslmode=disable",
+			opt.User, opt.Password, opt.Host, opt.Port, opt.DBName)
 	default:
 		slog.Warn("bad dialect: " + opt.Dialect)
 	}
@@ -43,27 +32,12 @@ func (opt *ConnectOption) ConnStr() string {
 	return ""
 }
 
-// Dialector generates gorm Dialector.
-func (opt *ConnectOption) Dialector() gorm.Dialector {
-	dsn := opt.ConnStr()
-	switch opt.Dialect {
-	case "sqlite3":
-		return sqlite.Open(dsn)
-	case "postgres":
-		return postgres.New(postgres.Config{DSN: dsn, PreferSimpleProtocol: true})
-	default:
-		slog.Warn("bad dialect: " + opt.Dialect)
-	}
-
-	return nil
-}
-
 // CliFlags returns cli flag list.
 func (opt *ConnectOption) CliFlags() []cli.Flag {
 	var flags []cli.Flag
 	flags = append(flags, &cli.StringFlag{
 		Name:        "db-dialect",
-		Usage:       "[sqlite3|postgres]",
+		Usage:       "postgres",
 		EnvVars:     []string{"DB_DIALECT"},
 		Value:       "postgres",
 		Required:    true,
@@ -71,7 +45,7 @@ func (opt *ConnectOption) CliFlags() []cli.Flag {
 	})
 	flags = append(flags, &cli.StringFlag{
 		Name:        "db-host",
-		Usage:       "postgres -> host, sqlite3 -> filepath",
+		Usage:       "database host",
 		EnvVars:     []string{"DB_HOST"},
 		Value:       "localhost",
 		Destination: &opt.Host,

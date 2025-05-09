@@ -12,6 +12,7 @@ import (
 	"github.com/omegaatt36/bookly/app/api/user"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
+	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
 	"github.com/omegaatt36/bookly/service/auth"
 )
@@ -21,7 +22,7 @@ type testAuthSuite struct {
 
 	router *http.ServeMux
 
-	repo     *repository.GORMRepository
+	repo     *repository.SQLCRepository
 	finalize func()
 
 	authenticator domain.Authenticator
@@ -29,7 +30,8 @@ type testAuthSuite struct {
 
 func (s *testAuthSuite) SetupTest() {
 	s.finalize = database.TestingInitialize(database.PostgresOpt)
-	s.repo = repository.NewGORMRepository(database.GetDB())
+	db := database.GetDB()
+	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 	s.authenticator = auth.NewJWTAuthorizator("salt", "secret")
 	controller := user.NewController(s.repo,
@@ -39,7 +41,7 @@ func (s *testAuthSuite) SetupTest() {
 	s.router.HandleFunc("POST /auth/register", controller.RegisterUser())
 	s.router.HandleFunc("POST /auth/login", controller.LoginUser())
 
-	s.NoError(s.repo.AutoMigrate())
+	s.NoError(migration.NewMigrator(db).Upgrade())
 }
 
 func (s *testAuthSuite) TearDownTest() {
