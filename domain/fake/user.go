@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -105,7 +106,7 @@ func (r *Repository) AddIdentity(userID string, provider domain.Identity) error 
 
 	for _, identity := range user.Identities {
 		if identity.Provider == provider.Provider && identity.Identifier == provider.Identifier {
-			return fmt.Errorf("identity already exists")
+			return errors.New("identity already exists")
 		}
 	}
 
@@ -116,17 +117,17 @@ func (r *Repository) AddIdentity(userID string, provider domain.Identity) error 
 }
 
 // GetUserByIdentity retrieves a user by their identity provider and identifier
-func (r *Repository) GetUserByIdentity(provider domain.IdentityProvider, identifier string) (*domain.User, error) {
+func (r *Repository) GetUserByIdentity(provider domain.IdentityProvider, identifier string) (*domain.User, *domain.Identity, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	for _, user := range r.users {
 		for _, identity := range user.Identities {
 			if identity.Provider == provider && identity.Identifier == identifier {
-				return user, nil
+				return user, &identity, nil
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("user not found with the given identity")
+	return nil, nil, errors.New("user not found with the given identity")
 }

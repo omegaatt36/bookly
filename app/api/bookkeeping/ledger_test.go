@@ -15,6 +15,7 @@ import (
 	"github.com/omegaatt36/bookly/app/api/bookkeeping"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
+	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
 )
 
@@ -23,13 +24,14 @@ type testLedgerSuite struct {
 
 	router *http.ServeMux
 
-	repo     *repository.GORMRepository
+	repo     *repository.SQLCRepository
 	finalize func()
 }
 
 func (s *testLedgerSuite) SetupTest() {
 	s.finalize = database.TestingInitialize(database.PostgresOpt)
-	s.repo = repository.NewGORMRepository(database.GetDB())
+	db := database.GetDB()
+	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(s.repo, s.repo)
 	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger())
@@ -39,7 +41,7 @@ func (s *testLedgerSuite) SetupTest() {
 	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger())
 	s.router.HandleFunc("POST /ledgers/{id}/adjust", controller.AdjustLedger())
 
-	s.NoError(s.repo.AutoMigrate())
+	s.NoError(migration.NewMigrator(db).Upgrade())
 }
 
 func (s *testLedgerSuite) TearDownTest() {
@@ -90,7 +92,7 @@ func (s *testLedgerSuite) TestCreateLedger() {
 	s.Equal(decimal.NewFromFloat(100.00).String(), ledger.Amount.String())
 	s.NotNil(ledger.CreatedAt)
 	s.NotNil(ledger.UpdatedAt)
-	s.Equal("2023-05-01T00:00:00Z", ledger.Date.Format(time.RFC3339))
+	s.Equal("2023-05-01T00:00:00Z", ledger.Date.UTC().Format(time.RFC3339))
 
 	account, err := s.repo.GetAccountByID(accountID)
 	s.NoError(err)

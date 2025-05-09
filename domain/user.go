@@ -34,8 +34,8 @@ type UserRepository interface {
 	GetUserByID(string) (*User, error)
 	UpdateUser(UpdateUserRequest) error
 	DeactivateUserByID(string) error
+	GetUserByIdentity(provider IdentityProvider, identifier string) (*User, *Identity, error)
 	AddIdentity(userID string, provider Identity) error
-	GetUserByIdentity(provider IdentityProvider, identifier string) (*User, error)
 }
 
 // IdentityProvider represents an identity provider

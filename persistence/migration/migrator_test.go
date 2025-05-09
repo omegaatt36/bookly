@@ -7,10 +7,9 @@ import (
 
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/migration"
-	apimigration "github.com/omegaatt36/bookly/persistence/migration/api"
 )
 
-func TestMigrateAPI(t *testing.T) {
+func TestMigrateSQLFiles(t *testing.T) {
 	s := assert.New(t)
 
 	finalize := database.TestingInitialize(database.PostgresOpt)
@@ -18,7 +17,7 @@ func TestMigrateAPI(t *testing.T) {
 
 	db := database.GetDB()
 
-	mg := migration.NewMigrator(db, []any{}, apimigration.MigrationList)
+	mg := migration.NewMigrator(db)
 
 	s.NoError(mg.Upgrade())
 }

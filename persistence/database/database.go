@@ -1,19 +1,22 @@
 package database
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
-	"time"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
+	pgxslog "github.com/mcosta74/pgx-slog"
 )
 
 // database defines database instance.
 type database struct {
 	Opt ConnectOption
-	db  *gorm.DB
+	db  *pgxpool.Pool
 }
 
 var mutex sync.Mutex
@@ -41,10 +44,11 @@ func Finalize() error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if err := db.Close(); err != nil {
-		return fmt.Errorf("close database error: %w", err)
+	if db == nil {
+		return errors.New("database not initialized")
 	}
 
+	db.Close()
 	db = nil
 
 	return nil
@@ -53,46 +57,21 @@ func Finalize() error {
 func initializeDB(opt ConnectOption) error {
 	db = &database{}
 	db.Opt = opt
-	if err := db.Open(); err != nil {
-		return err
-	}
-
-	sqlDB, err := db.db.DB()
-	if err != nil {
-		return err
-	}
-
-	if opt.Dialect == "postgres" {
-		sqlDB.SetConnMaxLifetime(10 * time.Minute)
-		sqlDB.SetMaxIdleConns(20)
-		sqlDB.SetMaxOpenConns(20)
-	}
-
-	return nil
+	return db.Open()
 }
 
 // GetDB gets db from singleton.
-func GetDB() *gorm.DB {
-	return db.getDB()
+func GetDB() *pgxpool.Pool {
+	return db.db
 }
 
-// AutoMigrate migrates table.
-func AutoMigrate(models []any) {
-	for _, m := range models {
-		err := db.getDB().AutoMigrate(m)
-		if err != nil {
-			slog.Error("AutoMigrate error", slog.String("error", err.Error()))
-		}
+// GetDBContext gets a connection from the pool.
+func GetDBContext(ctx context.Context) (*pgx.Conn, error) {
+	conn, err := db.db.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire connection: %w", err)
 	}
-}
-
-// getDB get gorm db instance.
-func (db *database) getDB() *gorm.DB {
-	if db.db == nil {
-		panic("database is not initialized.")
-	}
-
-	return db.db.Session(&gorm.Session{})
+	return conn.Conn(), nil
 }
 
 // Open opens database connection.
@@ -101,36 +80,37 @@ func (db *database) Open() error {
 		return nil
 	}
 
-	dialector := db.Opt.Dialector()
-	if dialector == nil {
-		return fmt.Errorf("gorm driver open dialector fail, connect str: (%v)", db.Opt.ConnStr())
-	}
-
-	if db.Opt.Silence {
-		db.Opt.Config.Logger = logger.Discard
-	} else if db.Opt.Logger != nil {
-		db.Opt.Config.Logger = db.Opt.Logger
-	}
-	conn, err := gorm.Open(dialector, &db.Opt.Config)
+	connStr := db.Opt.ConnStr()
+	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		return fmt.Errorf("sql.Open(%v): %w", db.Opt.ConnStr(), err)
+		return fmt.Errorf("failed to parse connection string: %w", err)
 	}
 
-	db.db = conn
+	if !db.Opt.Silence {
+		pgxLogger := pgxslog.NewLogger(
+			slog.Default(),
+		)
+		tracer := &tracelog.TraceLog{
+			Logger:   pgxLogger,
+			LogLevel: tracelog.LogLevelDebug,
+		}
 
+		config.ConnConfig.Tracer = tracer
+	}
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	db.db = pool
 	return nil
 }
 
 // Close closes db connection.
-func (db *database) Close() error {
-	realConn, err := db.db.DB()
-	if err != nil {
-		return fmt.Errorf("get db connection when close db error: %w", err)
+func (db *database) Close() {
+	if db.db != nil {
+		db.db.Close()
+		db.db = nil
 	}
-
-	if err := realConn.Close(); err != nil {
-		return fmt.Errorf("close db connection error: %w", err)
-	}
-
-	return nil
 }

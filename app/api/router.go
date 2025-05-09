@@ -14,14 +14,15 @@ import (
 func (s *Server) registerRouters() {
 	authenticators := make(map[domain.IdentityProvider]domain.Authenticator)
 	if s.jwtSalt != nil && s.jwtSecret != nil {
-		authenticators[domain.IdentityProviderPassword] = auth.NewJWTAuthorizator(*s.jwtSalt, *s.jwtSecret)
+		authenticators[domain.IdentityProviderPassword] =
+			auth.NewJWTAuthorizator(*s.jwtSalt, *s.jwtSecret)
 	}
 
 	publicRouter := http.NewServeMux()
 	internalRouter := http.NewServeMux()
 	v1Router := http.NewServeMux()
 
-	repo := repository.NewGORMRepository(database.GetDB())
+	repo := repository.NewSQLCRepository(database.GetDB())
 	{
 		bookkeepingX := bookkeeping.NewController(repo, repo)
 

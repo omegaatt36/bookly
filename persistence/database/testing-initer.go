@@ -1,13 +1,13 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync/atomic"
 	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -20,12 +20,6 @@ var (
 		User:     "postgres",
 		Password: "postgres",
 	}
-
-	// SQLiteOpt is shared in-memory database.
-	SQLiteOpt = ConnectOption{
-		Dialect: "sqlite3",
-		Host:    "file::memory:?cache=shared",
-	}
 )
 
 var cnt atomic.Int32
@@ -36,58 +30,69 @@ func randomDBName() string {
 
 // TestingInitialize creates new db for testing.
 func TestingInitialize(opt ConnectOption) (funcFinalize func()) {
-	opt.Config.DisableForeignKeyConstraintWhenMigrating = true
 	opt.Testing = true
 
 	if opt.Dialect != "postgres" {
-		if err := Initialize(opt); err != nil {
-			panic(err)
-		}
-
-		return func() {
-			if err := Finalize(); err != nil {
-				slog.Error("Failed to finalize database", "error", err)
-				panic(err)
-			}
-		}
+		slog.Error("Only postgres is supported for testing")
+		panic("Only postgres is supported for testing")
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=postgres sslmode=disable",
-		opt.Host, opt.Port, opt.User, opt.Password)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Connect to postgres database to create test database
+	adminConnStr := fmt.Sprintf("postgres://%s:%s@%s:%v/postgres?sslmode=disable",
+		opt.User, opt.Password, opt.Host, opt.Port)
+	
+	adminPool, err := pgxpool.New(context.Background(), adminConnStr)
 	if err != nil {
 		slog.Error("Failed to connect to postgres", "error", err)
 		panic(err)
 	}
+	defer adminPool.Close()
 
+	// Generate random database name for this test
 	randomDBName := randomDBName()
 
-	if err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", randomDBName)).Error; err != nil {
+	// Create test database
+	_, err = adminPool.Exec(context.Background(), fmt.Sprintf("CREATE DATABASE %s", randomDBName))
+	if err != nil {
 		slog.Error("Failed to create test database", "error", err)
 		panic(err)
 	}
 
+	// Set database name in options
 	opt.DBName = randomDBName
 	if err := Initialize(opt); err != nil {
 		slog.Error("Failed to initialize database", "error", err)
 		panic(err)
 	}
 
+	// Create UUID extension in new database
+	_, err = GetDB().Exec(context.Background(), "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+	if err != nil {
+		slog.Error("Failed to install UUID extension", "error", err)
+		panic(err)
+	}
+
+	// Return cleanup function
 	funcFinalize = func() {
 		if err := Finalize(); err != nil {
 			slog.Error("Failed to finalize database", "error", err)
 			panic(err)
 		}
 
-		if err := db.Exec(fmt.Sprintf("DROP DATABASE %s", randomDBName)).Error; err != nil {
+		// Reconnect to postgres database to drop test database
+		adminPool, err := pgxpool.New(context.Background(), adminConnStr)
+		if err != nil {
+			slog.Error("Failed to reconnect to postgres for cleanup", "error", err)
+			panic(err)
+		}
+		defer adminPool.Close()
+
+		// Drop test database
+		_, err = adminPool.Exec(context.Background(), fmt.Sprintf("DROP DATABASE %s", randomDBName))
+		if err != nil {
 			slog.Error("Failed to drop test database", "error", err)
 			panic(err)
 		}
-	}
-
-	if err := GetDB().Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
-		slog.Error("Failed to install UUID extension", "error", err)
-		panic(err)
 	}
 
 	return

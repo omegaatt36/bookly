@@ -1,23 +1,27 @@
 package repository
 
-import "gorm.io/gorm"
+import (
+	"github.com/jackc/pgx/v5/pgxpool"
 
-// GORMRepository represents a generic gorm repository which implements repository interface.
-type GORMRepository struct {
-	db *gorm.DB
+	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/persistence/repository/sqlc"
+)
+
+// SQLCRepository is a wrapper around the SQLC repository implementation
+type SQLCRepository struct {
+	*sqlc.Repository
 }
 
-// NewGORMRepository creates a new gorm repository.
-func NewGORMRepository(db *gorm.DB) *GORMRepository {
-	return &GORMRepository{db: db}
+// NewSQLCRepository creates a new SQLC repository
+func NewSQLCRepository(db *pgxpool.Pool) *SQLCRepository {
+	return &SQLCRepository{
+		Repository: sqlc.NewRepository(db),
+	}
 }
 
-// AutoMigrate migrates tables.
-func (r *GORMRepository) AutoMigrate() error {
-	return r.db.AutoMigrate(
-		&Account{},
-		&Ledger{},
-		&User{},
-		&Identity{},
-	)
-}
+// Ensure SQLCRepository implements all required interfaces
+var (
+	_ domain.AccountRepository = (*SQLCRepository)(nil)
+	_ domain.LedgerRepository  = (*SQLCRepository)(nil)
+	_ domain.UserRepository    = (*SQLCRepository)(nil)
+)

@@ -9,12 +9,12 @@ import (
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/migration"
-	"github.com/omegaatt36/bookly/persistence/migration/api"
 )
 
 var config struct {
 	databaseConnectionOption database.ConnectOption
 	rollback                 bool
+	migrationDir             string
 }
 
 func before(_ *cli.Context) error {
@@ -26,8 +26,9 @@ func after(_ *cli.Context) error {
 }
 
 func action(ctx context.Context) {
-	db := database.GetDB().Debug()
-	mg := migration.NewMigrator(db, []any{}, api.MigrationList)
+	db := database.GetDB()
+
+	mg := migration.NewMigrator(db)
 
 	if config.rollback {
 		if err := mg.Rollback(); err != nil {
@@ -51,7 +52,14 @@ func main() {
 			EnvVars:     []string{"ROLLBACK_LAST"},
 			Value:       false,
 			Destination: &config.rollback,
-		}}
+		},
+		&cli.StringFlag{
+			Name:        "migration-dir",
+			EnvVars:     []string{"MIGRATION_DIR"},
+			Value:       "",
+			Destination: &config.migrationDir,
+		},
+	}
 	cliFlags = append(cliFlags, config.databaseConnectionOption.CliFlags()...)
 
 	server := app.App{
