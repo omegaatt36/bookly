@@ -54,7 +54,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			ledgerType, err := domain.ParseLedgerType(req.Type)
 			if err != nil {
 				return nil, err
@@ -82,7 +82,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var accountID string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
 			ledgers, err := x.service.GetLedgersByAccountID(accountID)
 			if err != nil {
 				return nil, err
@@ -102,7 +102,7 @@ func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.R
 func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
 			ledger, err := x.service.GetLedgerByID(id)
 			if err != nil {
 				return nil, err
@@ -128,7 +128,7 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			var ledgerType *domain.LedgerType
 			if req.Type != nil {
 				t, err := domain.ParseLedgerType(*req.Type)
@@ -153,7 +153,7 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			return nil, x.service.VoidLedger(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
@@ -172,7 +172,7 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			ledgerType, err := domain.ParseLedgerType(req.Type)
 			if err != nil {
 				return nil, err

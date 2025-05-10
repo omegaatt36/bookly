@@ -21,7 +21,7 @@ type App struct {
 	Action func(context.Context)
 }
 
-func (a *App) action(c *cli.Context) error {
+func (a *App) action(_ *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)

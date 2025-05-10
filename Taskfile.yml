@@ -31,16 +31,56 @@ tasks:
       - go mod tidy
   lint:
     cmds:
-      - golangci-lint run -v --timeout=60s
+      - golangci-lint --config .golangci.yml run --timeout=60s
       - revive -formatter friendly -config revive.toml  ./...
       - find . -name "*.json" | xargs -n 1 -t gojq . > /dev/null
       - go vet -all ./...
       - misspell -error */**
       - staticcheck $(go list ./...)
-  build-lint:
+  build-lint-binaries:
+    desc: Cross compile lint tools for multiple architectures
     cmds:
-      - docker build -t omegaatt36/bookly-lint:latest -f deploy/dev/Dockerfile.lint .
-      - echo "Build image finished, please run 'docker push omegaatt36/bookly-lint:latest'"
+      - mkdir -p bin
+      - mkdir -p bin/linux_amd64 bin/linux_arm64
+      # Download modules first
+      - go get golang.org/x/tools/cmd/goimports
+      - go get github.com/daixiang0/gci
+      - go get github.com/mgechev/revive
+      - go get github.com/itchyny/gojq/cmd/gojq
+      - go get honnef.co/go/tools/cmd/staticcheck
+      - go get github.com/client9/misspell/cmd/misspell
+      - go get github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+      # Build for AMD64
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/goimports golang.org/x/tools/cmd/goimports
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/gci github.com/daixiang0/gci
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/revive github.com/mgechev/revive
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/gojq github.com/itchyny/gojq/cmd/gojq
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/staticcheck honnef.co/go/tools/cmd/staticcheck
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/misspell github.com/client9/misspell/cmd/misspell
+      - GOOS=linux GOARCH=amd64 go build -o bin/linux_amd64/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+      # Build for ARM64
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/goimports golang.org/x/tools/cmd/goimports
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/gci github.com/daixiang0/gci
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/revive github.com/mgechev/revive
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/gojq github.com/itchyny/gojq/cmd/gojq
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/staticcheck honnef.co/go/tools/cmd/staticcheck
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/misspell github.com/client9/misspell/cmd/misspell
+      - GOOS=linux GOARCH=arm64 go build -o bin/linux_arm64/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+      # Download taskfile for both architectures
+      - curl -SL https://github.com/go-task/task/releases/download/v3.28.0/task_linux_amd64.tar.gz | tar -xzf - -C bin/linux_amd64 task
+      - curl -SL https://github.com/go-task/task/releases/download/v3.28.0/task_linux_arm64.tar.gz | tar -xzf - -C bin/linux_arm64 task
+      - echo "Successfully built binaries for linux/amd64 and linux/arm64"
+
+  build-lint:
+    desc: Build multi-platform Docker image using pre-compiled binaries
+    deps: [build-lint-binaries]
+    cmds:
+      - docker buildx create --use --name multi-platform-builder || true
+      - docker buildx build --platform linux/amd64,linux/arm64
+        -t omegaatt36/bookly-lint:latest
+        -f deploy/dev/Dockerfile.lint
+        --push .
+      - echo "Multi-platform image built and pushed for linux/amd64 and linux/arm64"
   live-api:
     cmds:
       - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"

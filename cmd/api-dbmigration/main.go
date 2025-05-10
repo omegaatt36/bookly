@@ -25,7 +25,7 @@ func after(_ *cli.Context) error {
 	return database.Finalize()
 }
 
-func action(ctx context.Context) {
+func action(_ context.Context) {
 	db := database.GetDB()
 
 	mg := migration.NewMigrator(db)

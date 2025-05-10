@@ -22,7 +22,7 @@ func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 // page404 renders the 404 page
-func (s *Server) page404(w http.ResponseWriter, r *http.Request) {
+func (s *Server) page404(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	if err := s.templates.ExecuteTemplate(w, "404.html", nil); err != nil {
 		slog.Error("failed to render 404.html", slog.String("error", err.Error()))

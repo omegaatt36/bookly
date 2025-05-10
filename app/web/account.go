@@ -17,7 +17,7 @@ type account struct {
 	Balance  string `json:"balance"`
 }
 
-func (s *Server) pageCreateAccount(w http.ResponseWriter, r *http.Request) {
+func (s *Server) pageCreateAccount(w http.ResponseWriter, _ *http.Request) {
 	if err := s.templates.ExecuteTemplate(w, "create_account.html", nil); err != nil {
 		slog.Error("failed to render new_account.html", slog.String("error", err.Error()))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

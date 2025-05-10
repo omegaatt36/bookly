@@ -54,7 +54,7 @@ func (s *Server) initTemplates() {
 			}
 			return str
 		},
-		"dollar": func(currency, amount string) string {
+		"dollar": func(_, amount string) string {
 			return fmt.Sprintf("$%s", amount)
 		},
 	}

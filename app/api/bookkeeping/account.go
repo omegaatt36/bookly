@@ -41,7 +41,7 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			if req.UserID == "" {
 				return nil, app.ParamError(errors.New("user_id is required"))
 			}
@@ -66,7 +66,7 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 // GetAllAccounts handles the retrieval of all accounts
 func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
 			accounts, err := x.service.GetAllAccounts()
 			if err != nil {
 				return nil, err
@@ -86,7 +86,7 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
 			account, err := x.service.GetAccountByID(id)
 			if err != nil {
 				return nil, err
@@ -110,7 +110,7 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 
 			var accountStatus *domain.AccountStatus
 			if req.Status != nil {
@@ -134,7 +134,7 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			return nil, x.service.DeactivateAccountByID(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
@@ -144,7 +144,7 @@ func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http
 func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userID string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
 			accounts, err := x.service.GetAccountsByUserID(userID)
 			if err != nil {
 				return nil, err
@@ -170,7 +170,7 @@ func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Req
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			if req.Name == "" {
 				return nil, app.ParamError(errors.New("name is required"))
 			}

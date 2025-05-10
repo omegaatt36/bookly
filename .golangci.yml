@@ -1,19 +1,33 @@
+version: "2"
+run:
+  issues-exit-code: 1
+  relative-path-mode: gomod
+  tests: true
+  go: "1.24"
 linters:
-  disable-all: true
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - revive
     - copyloopvar
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-issues:
-  exclude:
-    - EXC0012
-    - EXC0014
+    - revive
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+output:
+  # formats:
+  #   json:
+  #     path: stdout
+  show-stats: false

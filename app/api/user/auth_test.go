@@ -57,7 +57,7 @@ func TestAuthSuite(t *testing.T) {
 func (s *testAuthSuite) TestRegisterAndLogin() {
 	reqBody := []byte(`{"email": "test@example.com", "password": "password123"}`)
 
-	s.T().Run("Register", func(t *testing.T) {
+	s.T().Run("Register", func(_ *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(reqBody))
 		w := httptest.NewRecorder()
 
@@ -81,7 +81,7 @@ func (s *testAuthSuite) TestRegisterAndLogin() {
 		} `json:"data"`
 	}
 
-	s.T().Run("Login", func(t *testing.T) {
+	s.T().Run("Login", func(_ *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBuffer(reqBody))
 		w := httptest.NewRecorder()
 

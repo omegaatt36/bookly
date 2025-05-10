@@ -37,7 +37,7 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			if req.Name == "" {
 				return nil, app.ParamError(errors.New("name is required"))
 			}
@@ -57,7 +57,7 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 // GetAllUsers retrieves all users from the system.
 func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
 			users, err := x.service.GetAllUsers()
 			if err != nil {
 				return nil, err
@@ -77,7 +77,7 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonUser, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonUser, error) {
 			u, err := x.service.GetUserByID(id)
 			if err != nil {
 				return nil, err
@@ -101,7 +101,7 @@ func (x *Controller) UpdateUser() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 
 			return nil, x.service.UpdateUser(domain.UpdateUserRequest{
 				ID:       req.id,
@@ -117,7 +117,7 @@ func (x *Controller) DeactivateUserByID() func(w http.ResponseWriter, r *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
 
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			return nil, x.service.DeactivateUserByID(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}

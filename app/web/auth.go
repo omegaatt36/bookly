@@ -39,7 +39,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) logout(w http.ResponseWriter, _ *http.Request) {
 	s.clearTokenAndRedirect(w)
 }
 

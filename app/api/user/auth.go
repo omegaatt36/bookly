@@ -19,7 +19,7 @@ func (x *Controller) RegisterUser() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
 			if req.Email == "" {
 				return nil, app.ParamError(errors.New("email is required"))
 			}
@@ -50,7 +50,7 @@ func (x *Controller) LoginUser() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (response, error) {
+		engine.Chain(r, w, func(_ *engine.Context, req request) (response, error) {
 			if req.Email == "" {
 				return response{}, app.ParamError(errors.New("email is required"))
 			}
