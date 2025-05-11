@@ -1,0 +1,1584 @@
+openapi: 3.1.0
+info:
+  title: Bookly API
+  version: 1.0.0
+  description: API documentation for Bookly, a personal finance application.
+tags:
+  - name: accounts
+    description: Operations related to user accounts
+  - name: ledgers
+    description: Operations related to ledger entries within accounts
+  - name: recurring
+    description: Operations related to recurring transactions
+  - name: reminders
+    description: Operations related to recurring transaction reminders
+  - name: auth
+    description: Authentication and authorization operations
+  - name: users
+    description: Operations related to user management
+paths:
+  /accounts:
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Create a new account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        200:
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Get all accounts for the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountsResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the account to retrieve or manage
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Get an account by ID
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    patch:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Update an account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        200:
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    delete:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Deactivate an account
+      description: Marks the account as inactive without deleting it.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Account deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /users/{user_id}/accounts:
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the user
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Get all accounts for a specific user
+      description: Admin only operation to retrieve all accounts for a given user.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of accounts for the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountsResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - accounts
+      summary: Create a new account for a specific user
+      description: Admin only operation to create an account for a given user.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountForUserRequest"
+      responses:
+        201:
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse" # Assuming it returns the created account
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /accounts/{account_id}/ledgers:
+    parameters:
+      - name: account_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the account
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Create a new ledger entry for an account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLedgerRequest"
+      responses:
+        200:
+          description: Ledger entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Get all ledger entries for an account
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of ledger entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgersResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /ledgers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the ledger entry
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Get a ledger entry by ID
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Ledger entry details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    patch:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Update a ledger entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLedgerRequest"
+      responses:
+        200:
+          description: Ledger entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    delete:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Void a ledger entry
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Ledger entry voided successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /ledgers/{id}/adjust:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the ledger entry to adjust
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - ledgers
+      summary: Adjust a ledger entry
+      description: Creates a new ledger entry that adjusts the balance based on the original entry.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustLedgerRequest"
+      responses:
+        200:
+          description: Ledger entry adjusted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse" # Assuming it returns an empty response on success
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /recurring:
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - recurring
+      summary: Create a new recurring transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecurringTransactionRequest"
+      responses:
+        200:
+          description: Recurring transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTransactionResponseWrapper"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - recurring
+      summary: Get all recurring transactions for the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of recurring transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTransactionsResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /recurring/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the recurring transaction
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - recurring
+      summary: Get a recurring transaction by ID
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Recurring transaction details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTransactionResponseWrapper"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    put:
+      servers:
+        - url: /v1
+      tags:
+        - recurring
+      summary: Update a recurring transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRecurringTransactionRequest"
+      responses:
+        200:
+          description: Recurring transaction updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTransactionResponseWrapper"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    delete:
+      servers:
+        - url: /v1
+      tags:
+        - recurring
+      summary: Delete a recurring transaction
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Recurring transaction deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /recurring/reminders:
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - reminders
+      summary: Get all active reminders for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of reminders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemindersResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /recurring/reminders/{id}/read:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the reminder to mark as read
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - reminders
+      summary: Mark a reminder as read
+      security:
+        - bearerAuth: []
+      requestBody:
+        content: {} # No request body needed
+      responses:
+        200:
+          description: Reminder marked as read successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReminderResponseWrapper"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /auth/login:
+    post:
+      servers:
+        - url: /public
+      tags:
+        - auth
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        200:
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponseWrapper"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /auth/register:
+    post:
+      servers:
+        - url: /internal
+      tags:
+        - auth
+      summary: Register a new user
+      description: This endpoint is for internal use (e.g., by an admin panel) or initial setup. Standard users should use the public login endpoint.
+      security:
+        - internalTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse" # Assuming registration returns empty on success
+        401:
+          $ref: "#/components/responses/UnauthorizedError" # For internal token auth failure
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /users:
+    post:
+      servers:
+        - url: /internal
+      tags:
+        - users
+      summary: Create a new user
+      description: Can be used internally or potentially for public sign-up depending on configuration. Requires internal token if accessed via /internal.
+      security:
+        - internalTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError" # For internal token auth failure
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - users
+      summary: Get all users
+      description: Admin only operation to retrieve all users.
+      security:
+        - bearerAuth: [] # Requires authenticated user, admin check implied
+      responses:
+        200:
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsersResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError" # Implied admin check failure
+        500:
+          $ref: "#/components/responses/InternalError"
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The ID of the user
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - users
+      summary: Get user by ID
+      description: Get details for a specific user. Users can only retrieve their own details unless admin.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError" # Implied ownership/admin check failure
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    patch:
+      servers:
+        - url: /v1
+      tags:
+        - users
+      summary: Update user
+      description: Update details for a specific user. Users can only update their own details unless admin.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        200:
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse" # Assuming update returns empty on success
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError" # Implied ownership/admin check failure
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        400:
+          $ref: "#/components/responses/ParamError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    delete:
+      servers:
+        - url: /v1
+      tags:
+        - users
+      summary: Deactivate user
+      description: Marks a user as disabled. Users can only deactivate themselves unless admin.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse" # Assuming deactivate returns empty on success
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError" # Implied ownership/admin check failure
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"'
+    internalTokenAuth:
+      type: apiKey
+      in: header
+      name: INTERNAL-TOKEN
+      description: Authentication using a predefined internal token.
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+            example:
+              code: 10001
+              message: "user not authenticated"
+    ForbiddenError:
+      description: The user does not have the necessary permissions for a resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+            example:
+              code: 10002
+              message: "access denied"
+    NotFoundError:
+      description: The specified resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+            example:
+              code: 10003
+              message: "resource not found"
+    ParamError:
+      description: Invalid parameters provided in the request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+            example:
+              code: 20001
+              message: "invalid parameter: name is required"
+    InternalError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+            example:
+              code: 99999
+              message: "internal server error"
+  schemas:
+    EmptyResponse:
+      description: Standard empty response wrapper
+      type: object
+      properties:
+        code:
+          type: integer
+          description: API response code (0 for success)
+          example: 0
+        data:
+          type: null
+          nullable: true
+          example: null
+    AccountResponse:
+      description: Standard response wrapper for a single account
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/jsonAccount"
+    AccountsResponse:
+      description: Standard response wrapper for a list of accounts
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/jsonAccount"
+    LedgerResponse:
+      description: Standard response wrapper for a single ledger entry
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/jsonLedger"
+    LedgersResponse:
+      description: Standard response wrapper for a list of ledger entries
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/jsonLedger"
+    RecurringTransactionResponseWrapper:
+      description: Standard response wrapper for a single recurring transaction
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/RecurringTransactionResponse"
+    RecurringTransactionsResponse:
+      description: Standard response wrapper for a list of recurring transactions
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringTransactionResponse"
+    ReminderResponseWrapper:
+      description: Standard response wrapper for a single reminder
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/ReminderResponse"
+    RemindersResponse:
+      description: Standard response wrapper for a list of reminders
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReminderResponse"
+    UserResponse:
+      description: Standard response wrapper for a single user
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/jsonUser"
+    UsersResponse:
+      description: Standard response wrapper for a list of users
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/jsonUser"
+    LoginResponseWrapper:
+      description: Standard response wrapper for login response
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 0
+        data:
+          $ref: "#/components/schemas/LoginResponse"
+    ErrorResponse:
+      description: Standard error response format
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Application specific error code
+        message:
+          type: string
+          description: A human-readable description of the error
+    jsonAccount:
+      description: Account object
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the account
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the account was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the account was last updated
+        name:
+          type: string
+          description: Name of the account
+        status:
+          type: string
+          enum: [active, closed]
+          description: Status of the account
+        currency:
+          type: string
+          description: Currency of the account (e.g., "USD", "TWD")
+        balance:
+          type: string
+          description: Current balance of the account (as a decimal string)
+      required:
+        - id
+        - created_at
+        - updated_at
+        - name
+        - status
+        - currency
+        - balance
+
+    CreateAccountRequest:
+      description: Request body for creating a new account
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the account
+          example: "My Savings"
+        currency:
+          type: string
+          description: Currency of the account (e.g., "USD", "TWD")
+          example: "TWD"
+      required:
+        - name
+        - currency
+
+    UpdateAccountRequest:
+      description: Request body for updating an existing account
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name for the account
+          example: "My Updated Savings"
+        status:
+          type: string
+          enum: [active, closed]
+          description: Status of the account
+          example: "closed"
+
+    CreateAccountForUserRequest:
+      description: Request body for creating a new account for a specific user
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the account
+          example: "User's New Account"
+        currency:
+          type: string
+          description: Currency of the account (e.g., "USD", "TWD")
+          example: "USD"
+      required:
+        - name
+        - currency
+
+    jsonLedger:
+      description: Ledger entry object
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the ledger entry
+        account_id:
+          type: string
+          format: uuid
+          description: The ID of the associated account
+        date:
+          type: string
+          format: date-time
+          description: Date and time of the ledger entry
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: Type of the ledger entry
+        currency:
+          type: string
+          description: Currency of the entry (should match account currency)
+        amount:
+          type: string
+          description: Amount of the transaction (as a decimal string)
+        note:
+          type: string
+          description: Optional note for the entry
+        adjustable:
+          type: boolean
+          description: Indicates if the entry can be adjusted (based on age)
+        is_adjustment:
+          type: boolean
+          description: Indicates if this entry is an adjustment to another entry
+        adjusted_from:
+          type: string
+          format: uuid
+          nullable: true
+          description: The ID of the original entry this is adjusting, if applicable
+        is_voided:
+          type: boolean
+          description: Indicates if the entry has been voided
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the entry was voided, if applicable
+      required:
+        - id
+        - account_id
+        - date
+        - type
+        - currency
+        - amount
+        - adjustable
+        - is_adjustment
+        - is_voided
+
+    CreateLedgerRequest:
+      description: Request body for creating a new ledger entry
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+          description: Date and time of the ledger entry
+          example: "2023-10-27T10:00:00Z"
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: Type of the ledger entry
+          example: "expense"
+        amount:
+          type: string
+          description: Amount of the transaction (as a decimal string)
+          example: "50.50"
+        note:
+          type: string
+          description: Optional note for the entry
+          example: "Groceries"
+      required:
+        - date
+        - type
+        - amount
+
+    UpdateLedgerRequest:
+      description: Request body for updating a ledger entry
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+          description: New date and time of the ledger entry
+          example: "2023-10-27T11:00:00Z"
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: New type of the ledger entry
+          example: "income"
+        amount:
+          type: string
+          description: New amount of the transaction (as a decimal string)
+          example: "60.00"
+        note:
+          type: string
+          description: New optional note for the entry
+          example: "Updated Groceries"
+
+    AdjustLedgerRequest:
+      description: Request body for adjusting a ledger entry
+      type: object
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: The ID of the account for the adjustment entry (can be different from original)
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        date:
+          type: string
+          format: date-time
+          description: Date and time of the adjustment entry
+          example: "2023-10-28T10:00:00Z"
+        type:
+          type: string
+          enum: [income, expense, transfer] # Adjusted entries will create regular ledger entries with `is_adjustment` flag. Original enum from jsonLedger includes 'adjustment' type, but the request might only allow base types. Sticking to base types for request based on the CreateLedgerRequest enum.
+          description: Type of the adjustment ledger entry
+          example: "expense"
+        amount:
+          type: string
+          description: Amount of the adjustment transaction (as a decimal string)
+          example: "170.00"
+        note:
+          type: string
+          description: Optional note for the adjustment entry
+          example: "Adjustment for original expense"
+      required:
+        - account_id
+        - date
+        - type
+        - amount
+
+    RecurringTransactionResponse:
+      description: Recurring transaction object
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the recurring transaction
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the recurring transaction was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the recurring transaction was last updated
+        name:
+          type: string
+          description: Name of the recurring transaction
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: Type of the transaction
+        amount:
+          type: string
+          description: Amount of the transaction (as a decimal string)
+        note:
+          type: string
+          description: Optional note
+        start_date:
+          type: string
+          format: date-time
+          description: The date the recurring transaction starts
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: The date the recurring transaction ends, if any
+        recur_type:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          description: How often the transaction recurs
+        status:
+          type: string
+          enum: [active, paused, completed, cancelled]
+          description: Current status of the recurring transaction
+        frequency:
+          type: integer
+          description: How many units of recur_type between transactions (e.g., 2 for every 2 weeks)
+        day_of_week:
+          type: integer
+          nullable: true
+          description: Specific day of the week for weekly recurrence (0 for Sunday, 6 for Saturday)
+        day_of_month:
+          type: integer
+          nullable: true
+          description: Specific day of the month for monthly recurrence
+        month_of_year:
+          type: integer
+          nullable: true
+          description: Specific month of the year for yearly recurrence
+        last_executed:
+          type: string
+          format: date-time
+          nullable: true
+          description: The last date the transaction was executed
+        next_due:
+          type: string
+          format: date-time
+          description: The next date the transaction is due
+      required:
+        - id
+        - created_at
+        - updated_at
+        - name
+        - type
+        - amount
+        - start_date
+        - recur_type
+        - status
+        - frequency
+        - next_due
+
+    CreateRecurringTransactionRequest:
+      description: Request body for creating a new recurring transaction
+      type: object
+      properties:
+        account_id:
+          type: string
+          format: uuid
+          description: The ID of the associated account
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        name:
+          type: string
+          description: Name of the recurring transaction
+          example: "Monthly Rent"
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: Type of the transaction
+          example: "expense"
+        amount:
+          type: string
+          description: Amount of the transaction (as a decimal string)
+          example: "15000.00"
+        note:
+          type: string
+          description: Optional note
+          example: "Apartment rent payment"
+        start_date:
+          type: string
+          format: date-time
+          description: The date the recurring transaction starts
+          example: "2023-11-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: The date the recurring transaction ends, if any
+          example: "2025-10-31T00:00:00Z"
+        recur_type:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          description: How often the transaction recurs
+          example: "monthly"
+        frequency:
+          type: integer
+          description: How many units of recur_type between transactions (e.g., 2 for every 2 weeks)
+          example: 1
+        day_of_week:
+          type: integer
+          nullable: true
+          description: Specific day of the week for weekly recurrence (0 for Sunday, 6 for Saturday)
+          minimum: 0
+          maximum: 6
+          example: 1 # Monday
+        day_of_month:
+          type: integer
+          nullable: true
+          description: Specific day of the month for monthly recurrence
+          minimum: 1
+          maximum: 31
+          example: 1
+        month_of_year:
+          type: integer
+          nullable: true
+          description: Specific month of the year for yearly recurrence
+          minimum: 1
+          maximum: 12
+          example: 1
+      required:
+        - account_id
+        - name
+        - type
+        - amount
+        - start_date
+        - recur_type
+        - frequency
+
+    UpdateRecurringTransactionRequest:
+      description: Request body for updating a recurring transaction
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name of the recurring transaction
+          example: "Updated Monthly Rent"
+        type:
+          type: string
+          enum: [income, expense, transfer]
+          description: New type of the transaction
+          example: "income"
+        amount:
+          type: string
+          description: New amount of the transaction (as a decimal string)
+          example: "16000.00"
+        note:
+          type: string
+          description: New optional note
+          example: "Updated note"
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: The new date the recurring transaction ends, if any
+          example: "2026-10-31T00:00:00Z"
+        recur_type:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          description: New way often the transaction recurs
+          example: "yearly"
+        status:
+          type: string
+          enum: [active, paused, completed, cancelled]
+          description: New current status of the recurring transaction
+          example: "paused"
+        frequency:
+          type: integer
+          description: New how many units of recur_type between transactions (e.g., 2 for every 2 weeks)
+          example: 2
+        day_of_week:
+          type: integer
+          nullable: true
+          description: New specific day of the week for weekly recurrence (0 for Sunday, 6 for Saturday)
+          minimum: 0
+          maximum: 6
+          example: 5 # Friday
+        day_of_month:
+          type: integer
+          nullable: true
+          description: New specific day of the month for monthly recurrence
+          minimum: 1
+          maximum: 31
+          example: 15
+        month_of_year:
+          type: integer
+          nullable: true
+          description: New specific month of the year for yearly recurrence
+          minimum: 1
+          maximum: 12
+          example: 6 # June
+
+    ReminderResponse:
+      description: Reminder object
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the reminder
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the reminder was created
+        recurring_transaction_id:
+          type: string
+          format: uuid
+          description: The ID of the associated recurring transaction
+        reminder_date:
+          type: string
+          format: date-time
+          description: The date the reminder is due
+        is_read:
+          type: boolean
+          description: Indicates if the reminder has been marked as read
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the reminder was marked as read, if applicable
+      required:
+        - id
+        - created_at
+        - recurring_transaction_id
+        - reminder_date
+        - is_read
+
+    LoginRequest:
+      description: Request body for user login
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        password:
+          type: string
+          description: User's password
+          example: "password123"
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      description: Response body for successful user login
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT authentication token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - token
+
+    RegisterRequest:
+      description: Request body for user registration
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "newuser@example.com"
+        password:
+          type: string
+          description: User's password
+          example: "securepassword"
+      required:
+        - email
+        - password
+
+    CreateUserRequest:
+      description: Request body for creating a new user
+      type: object
+      properties:
+        name:
+          type: string
+          description: User's full name or display name
+          example: "John Doe"
+        nickname:
+          type: string
+          description: User's chosen nickname
+          example: "johndoe"
+      required:
+        - name
+        - nickname
+
+    jsonUser:
+      description: User object
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the user
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was last updated
+        name:
+          type: string
+          description: User's full name or display name
+        nickname:
+          type: string
+          description: User's chosen nickname
+        disabled:
+          type: boolean
+          description: Indicates if the user account is disabled
+      required:
+        - id
+        - created_at
+        - updated_at
+        - name
+        - nickname
+        - disabled
+
+    UpdateUserRequest:
+      description: Request body for updating user information
+      type: object
+      properties:
+        name:
+          type: string
+          description: New full name or display name for the user
+          example: "Jane Doe"
+        nickname:
+          type: string
+          description: New nickname for the user
+          example: "janedoe"
