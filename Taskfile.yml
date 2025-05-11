@@ -100,3 +100,7 @@ tasks:
     #   ROLLBACK_LAST: true
     cmds:
       - go run cmd/api-dbmigration/main.go
+  openapi:
+    desc: Serve OpenAPI documentation using Swagger UI
+    cmds:
+      - docker run --rm -p 8087:8080 -e SWAGGER_JSON=/app/openapi.yaml -v ${PWD}/doc:/app swaggerapi/swagger-ui
