@@ -1,36 +1,60 @@
 {{ define "404.html" }}
 <!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ block "title" . }}Bookly{{ end }}</title>
+        <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        {{ template "base.html" }}
+    </head>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ block "title" . }}Bookly{{ end }}</title>
-    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    {{ template "base.html" }}
-</head>
+    <body class="bg-bg-primary text-text-primary">
+        <nav class="bg-bg-secondary p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="text-2xl font-bold text-text-highlight">
+                    <a href="/">Bookly</a>
+                </div>
 
-<body class="bg-bg-primary text-text-primary">
-    <nav class="bg-bg-secondary p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="text-2xl font-bold text-text-highlight">Bookly</div>
-        </div>
-    </nav>
-    <div class="container mx-auto mt-8 px-4">
-        <div class="min-h-[70vh] flex items-center justify-center">
-            <div class="text-center">
-                <h1 class="text-6xl font-bold text-gray-200 mb-4">404</h1>
-                <p class="text-xl text-gray-600 mb-8">Page Not Found</p>
-                <p class="text-gray-500 mb-8">The page you're looking for doesn't exist or has been moved.</p>
-                <a href="/"
-                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
-                    Return Home
-                </a>
+                <div class="nav-links hidden md:flex items-center space-x-4">
+                    <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
+                    <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
+                    <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
+                </div>
+
+                <div id="hamburger" class="hamburger md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <div id="sidebar-close" class="sidebar-close">&times;</div>
+            </div>
+            <div class="sidebar-menu">
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Home</a>
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
+                <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
+                <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
             </div>
         </div>
-    </div>
-</body>
 
+        <div id="overlay" class="overlay"></div>
+        <div class="container mx-auto mt-8 px-4">
+            <div class="min-h-[70vh] flex items-center justify-center">
+                <div class="text-center">
+                    <h1 class="text-6xl font-bold text-gray-200 mb-4">404</h1>
+                    <p class="text-xl text-gray-600 mb-8">Page Not Found</p>
+                    <p class="text-gray-500 mb-8">The page you're looking for doesn't exist or has been moved.</p>
+                    <a href="/page/accounts" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"> Return Home </a>
+                </div>
+            </div>
+        </div>
+    </body>
 </html>
 {{ end }}

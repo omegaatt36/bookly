@@ -10,9 +10,22 @@ type Controller struct {
 	service *bookkeeping.Service
 }
 
+// NewControllerRequest represents a request to create a new controller
+type NewControllerRequest struct {
+	AccountRepository              domain.AccountRepository
+	LedgerRepository               domain.LedgerRepository
+	RecurringTransactionRepository domain.RecurringTransactionRepository
+	ReminderRepository             domain.ReminderRepository
+}
+
 // NewController creates a new controller
-func NewController(accountRepo domain.AccountRepository, ledgerRepo domain.LedgerRepository) *Controller {
+func NewController(req NewControllerRequest) *Controller {
 	return &Controller{
-		service: bookkeeping.NewService(accountRepo, ledgerRepo),
+		service: bookkeeping.NewService(bookkeeping.NewServiceRequest{
+			AccountRepo:              req.AccountRepository,
+			LedgerRepo:               req.LedgerRepository,
+			RecurringTransactionRepo: req.RecurringTransactionRepository,
+			ReminderRepo:             req.ReminderRepository,
+		}),
 	}
 }

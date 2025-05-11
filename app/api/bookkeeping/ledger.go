@@ -54,7 +54,21 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(req.accountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
+			}
+
 			ledgerType, err := domain.ParseLedgerType(req.Type)
 			if err != nil {
 				return nil, err
@@ -82,7 +96,21 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var accountID string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(accountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
+			}
+
 			ledgers, err := x.service.GetLedgersByAccountID(accountID)
 			if err != nil {
 				return nil, err
@@ -102,10 +130,24 @@ func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.R
 func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
 			ledger, err := x.service.GetLedgerByID(id)
 			if err != nil {
 				return nil, err
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(ledger.AccountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
 			}
 
 			var jsonLedger jsonLedger
@@ -128,7 +170,27 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify ledger ownership
+			ledger, err := x.service.GetLedgerByID(req.id)
+			if err != nil {
+				return nil, err
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(ledger.AccountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
+			}
+
 			var ledgerType *domain.LedgerType
 			if req.Type != nil {
 				t, err := domain.ParseLedgerType(*req.Type)
@@ -153,7 +215,27 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify ledger ownership
+			ledger, err := x.service.GetLedgerByID(id)
+			if err != nil {
+				return nil, err
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(ledger.AccountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
+			}
+
 			return nil, x.service.VoidLedger(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
@@ -172,7 +254,38 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify ledger ownership
+			ledger, err := x.service.GetLedgerByID(req.id)
+			if err != nil {
+				return nil, err
+			}
+
+			// Verify original account ownership
+			account, err := x.service.GetAccountByID(ledger.AccountID)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
+			}
+
+			// Verify new account ownership if changing account
+			if req.AccountID != ledger.AccountID {
+				newAccount, err := x.service.GetAccountByID(req.AccountID)
+				if err != nil {
+					return nil, err
+				}
+				if newAccount.UserID != userID {
+					return nil, app.Forbidden(errors.New("access denied: new account does not belong to user"))
+				}
+			}
+
 			ledgerType, err := domain.ParseLedgerType(req.Type)
 			if err != nil {
 				return nil, err

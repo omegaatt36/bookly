@@ -1,0 +1,211 @@
+{{ define "create_recurring.html" }}
+<div id="create-recurring-modal-content" class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm">
+    <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
+        <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Recurring Transaction</h3>
+        <form hx-post="/recurring" hx-on::after-request="closeCreateRecurringModal()">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-text-secondary">Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="account_id" class="block text-sm font-medium text-text-secondary">Account</label>
+                <select
+                    name="account_id"
+                    id="account_id"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    <option value="">Select an account</option>
+                    {{ range . }}
+                    <option value="{{ .ID }}">{{ .Name }} ({{ .Currency }})</option>
+                    {{ end }}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="type" class="block text-sm font-medium text-text-secondary">Type</label>
+                <select
+                    name="type"
+                    id="type"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                    <option value="transfer">Transfer</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="amount" class="block text-sm font-medium text-text-secondary">Amount</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="amount"
+                    id="amount"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="start_date" class="block text-sm font-medium text-text-secondary">Start Date</label>
+                <input
+                    type="date"
+                    name="start_date"
+                    id="start_date"
+                    value="{{ now.Format "2006-01-02" }}"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="end_date" class="block text-sm font-medium text-text-secondary">End Date (Optional)</label>
+                <input
+                    type="date"
+                    name="end_date"
+                    id="end_date"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                />
+            </div>
+            <div class="mb-4">
+                <label for="recur_type" class="block text-sm font-medium text-text-secondary">Recurrence Type</label>
+                <select
+                    name="recur_type"
+                    id="recur_type"
+                    required
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                    onchange="toggleRecurrenceFields()"
+                >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="frequency" class="block text-sm font-medium text-text-secondary">Frequency</label>
+                <div class="flex items-center">
+                    <span class="text-text-secondary mr-2">Every</span>
+                    <input
+                        type="number"
+                        name="frequency"
+                        id="frequency"
+                        min="1"
+                        value="1"
+                        required
+                        class="w-20 rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                    />
+                    <span class="text-text-secondary ml-2" id="frequency-unit">day(s)</span>
+                </div>
+            </div>
+            <div id="weekly-options" class="mb-4 hidden">
+                <label for="day_of_week" class="block text-sm font-medium text-text-secondary">Day of Week</label>
+                <select
+                    name="day_of_week"
+                    id="day_of_week"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                </select>
+            </div>
+            <div id="monthly-options" class="mb-4 hidden">
+                <label for="day_of_month" class="block text-sm font-medium text-text-secondary">Day of Month</label>
+                <select
+                    name="day_of_month"
+                    id="day_of_month"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    {{ range $i := seq 1 31 }}
+                    <option value="{{ $i }}">{{ $i }}</option>
+                    {{ end }}
+                </select>
+            </div>
+            <div id="yearly-options" class="mb-4 hidden">
+                <label for="month_of_year" class="block text-sm font-medium text-text-secondary">Month</label>
+                <select
+                    name="month_of_year"
+                    id="month_of_year"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="note" class="block text-sm font-medium text-text-secondary">Note</label>
+                <textarea
+                    name="note"
+                    id="note"
+                    rows="3"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                ></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" class="btn btn-secondary mr-2" onclick="closeCreateRecurringModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    function closeCreateRecurringModal() {
+        let el = document.getElementById('create-recurring-modal-content');
+        el.parentNode.removeChild(el);
+    }
+    
+    function toggleRecurrenceFields() {
+        const recurType = document.getElementById('recur_type').value;
+        const frequencyUnit = document.getElementById('frequency-unit');
+        const weeklyOptions = document.getElementById('weekly-options');
+        const monthlyOptions = document.getElementById('monthly-options');
+        const yearlyOptions = document.getElementById('yearly-options');
+        
+        // Hide all options first
+        weeklyOptions.classList.add('hidden');
+        monthlyOptions.classList.add('hidden');
+        yearlyOptions.classList.add('hidden');
+        
+        // Update frequency unit text and show relevant options
+        switch (recurType) {
+            case 'daily':
+                frequencyUnit.textContent = 'day(s)';
+                break;
+            case 'weekly':
+                frequencyUnit.textContent = 'week(s)';
+                weeklyOptions.classList.remove('hidden');
+                break;
+            case 'monthly':
+                frequencyUnit.textContent = 'month(s)';
+                monthlyOptions.classList.remove('hidden');
+                break;
+            case 'yearly':
+                frequencyUnit.textContent = 'year(s)';
+                yearlyOptions.classList.remove('hidden');
+                break;
+        }
+    }
+    
+    // Initial toggle
+    document.addEventListener('DOMContentLoaded', toggleRecurrenceFields);
+</script>
+{{ end }}

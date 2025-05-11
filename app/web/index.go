@@ -9,6 +9,13 @@ func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
 	isAuthenticated := err == nil && token.Value != ""
 
+	if isAuthenticated {
+		// 如果用戶已驗證，重定向到 accounts 頁面
+		http.Redirect(w, r, "/page/accounts", http.StatusSeeOther)
+		return
+	}
+
+	// 如果未驗證，顯示登錄頁面
 	data := struct {
 		IsAuthenticated bool
 	}{

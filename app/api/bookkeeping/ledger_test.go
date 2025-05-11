@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/omegaatt36/bookly/app/api/bookkeeping"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/migration"
@@ -26,6 +27,7 @@ type testLedgerSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
+	userID   string
 }
 
 func (s *testLedgerSuite) SetupTest() {
@@ -33,13 +35,26 @@ func (s *testLedgerSuite) SetupTest() {
 	db := database.GetDB()
 	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
-	controller := bookkeeping.NewController(s.repo, s.repo)
-	s.router.HandleFunc("POST /accounts/{account_id}/ledgers", controller.CreateLedger())
-	s.router.HandleFunc("GET /accounts/{account_id}/ledgers", controller.GetLedgersByAccount())
-	s.router.HandleFunc("GET /ledgers/{id}", controller.GetLedgerByID())
-	s.router.HandleFunc("PATCH /ledgers/{id}", controller.UpdateLedger())
-	s.router.HandleFunc("DELETE /ledgers/{id}", controller.VoidLedger())
-	s.router.HandleFunc("POST /ledgers/{id}/adjust", controller.AdjustLedger())
+	controller := bookkeeping.NewController(bookkeeping.NewControllerRequest{
+		s.repo, s.repo, nil, nil,
+	})
+	authMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := engine.WithUserID(r.Context(), s.userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+
+	registerWithAuth := func(pattern string, handler http.Handler) {
+		s.router.Handle(pattern, authMiddleware(handler))
+	}
+
+	registerWithAuth("POST /accounts/{account_id}/ledgers", http.HandlerFunc(controller.CreateLedger()))
+	registerWithAuth("GET /accounts/{account_id}/ledgers", http.HandlerFunc(controller.GetLedgersByAccount()))
+	registerWithAuth("GET /ledgers/{id}", http.HandlerFunc(controller.GetLedgerByID()))
+	registerWithAuth("PATCH /ledgers/{id}", http.HandlerFunc(controller.UpdateLedger()))
+	registerWithAuth("DELETE /ledgers/{id}", http.HandlerFunc(controller.VoidLedger()))
+	registerWithAuth("POST /ledgers/{id}/adjust", http.HandlerFunc(controller.AdjustLedger()))
 
 	s.NoError(migration.NewMigrator(db).Upgrade())
 }
@@ -344,6 +359,8 @@ func (s *testLedgerSuite) createSeedUser() (string, error) {
 		Name: seedUser.Name,
 	})
 	s.NoError(err)
+
+	s.userID = userID
 
 	return userID, nil
 }

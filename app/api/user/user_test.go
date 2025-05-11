@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/app/api/user"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
@@ -23,6 +24,7 @@ type testUserSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
+	userID   string
 }
 
 func (s *testUserSuite) SetupTest() {
@@ -31,11 +33,23 @@ func (s *testUserSuite) SetupTest() {
 	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 	controller := user.NewController(s.repo)
-	s.router.HandleFunc("POST /users", controller.CreateUser())
-	s.router.HandleFunc("GET /users", controller.GetAllUsers())
-	s.router.HandleFunc("GET /users/{id}", controller.GetUserByID())
-	s.router.HandleFunc("PATCH /users/{id}", controller.UpdateUser())
-	s.router.HandleFunc("DELETE /users/{id}", controller.DeactivateUserByID())
+
+	authMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := engine.WithUserID(r.Context(), s.userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+
+	registerWithAuth := func(pattern string, handler http.Handler) {
+		s.router.Handle(pattern, authMiddleware(handler))
+	}
+
+	s.router.HandleFunc("POST /users", controller.CreateUser()) // 不需要認證
+	registerWithAuth("GET /users", http.HandlerFunc(controller.GetAllUsers()))
+	registerWithAuth("GET /users/{id}", http.HandlerFunc(controller.GetUserByID()))
+	registerWithAuth("PATCH /users/{id}", http.HandlerFunc(controller.UpdateUser()))
+	registerWithAuth("DELETE /users/{id}", http.HandlerFunc(controller.DeactivateUserByID()))
 
 	s.NoError(migration.NewMigrator(db).Upgrade())
 }
@@ -90,11 +104,13 @@ func (s *testUserSuite) TestGetAllUsers() {
 	}
 
 	// Create a test user
-	_, err := s.repo.CreateUser(domain.CreateUserRequest{
+	userID, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name:     "Test User",
 		Nickname: "test",
 	})
 	s.NoError(err)
+
+	s.userID = userID
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	w := httptest.NewRecorder()
@@ -128,6 +144,8 @@ func (s *testUserSuite) TestGetUserByID() {
 	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
 	s.NoError(err)
 
+	s.userID = userID
+
 	req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
 	w := httptest.NewRecorder()
 
@@ -151,6 +169,8 @@ func (s *testUserSuite) TestUpdateUser() {
 	// Create a test user
 	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
 	s.NoError(err)
+
+	s.userID = userID
 
 	reqBody := []byte(`{"name": "Updated User"}`)
 	req := httptest.NewRequest(http.MethodPatch, "/users/"+userID, bytes.NewBuffer(reqBody))
@@ -177,6 +197,8 @@ func (s *testUserSuite) TestDeactivateUserByID() {
 	// Create a test user
 	userID, err := s.repo.CreateUser(domain.CreateUserRequest{Name: "Test User", Nickname: "test"})
 	s.NoError(err)
+
+	s.userID = userID
 
 	req := httptest.NewRequest(http.MethodDelete, "/users/"+userID, nil)
 	w := httptest.NewRecorder()

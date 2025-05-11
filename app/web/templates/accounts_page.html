@@ -1,10 +1,10 @@
-{{ define "index.html" }}
+{{ define "accounts_page.html" }}
 <!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ block "title" . }}Bookly{{ end }}</title>
+        <title>Accounts - Bookly</title>
         <script src="https://unpkg.com/htmx.org@2.0.3"></script>
         <script src="https://cdn.tailwindcss.com"></script>
         {{ template "base.html" }}
@@ -17,32 +17,27 @@
                 </div>
 
                 <div class="nav-links hidden md:flex items-center space-x-4">
-                    {{ if .IsAuthenticated }}
                     <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
                     <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
                     <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
                     <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
-                    {{ end }}
                 </div>
 
-                {{ if .IsAuthenticated }}
                 <div id="hamburger" class="hamburger md:hidden">
                     <span></span>
                     <span></span>
                     <span></span>
                 </div>
-                {{ end }}
             </div>
         </nav>
 
-        {{ if .IsAuthenticated }}
         <div id="sidebar" class="sidebar">
             <div class="sidebar-header">
                 <h2 class="text-lg font-bold">Menu</h2>
                 <div id="sidebar-close" class="sidebar-close">&times;</div>
             </div>
             <div class="sidebar-menu">
-                <a href="/" class="btn btn-secondary w-full text-left mb-2">Home</a>
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Home</a>
                 <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
                 <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
                 <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
@@ -51,9 +46,8 @@
         </div>
 
         <div id="overlay" class="overlay"></div>
-        {{ end }}
+        
         <div class="container mx-auto mt-8 px-4">
-            {{ if .IsAuthenticated }}
             <div class="flex flex-col md:flex-row -mx-4">
                 <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
                     <div class="flex justify-between items-center mb-4">
@@ -61,13 +55,33 @@
                         <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
                     </div>
                     <div id="create-account-modal"></div>
-                    <div id="account-list" hx-get="/page/accounts" hx-trigger="load, reloadAccounts from:body"></div>
+                    <div id="account-list">
+                        <table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
+                            <thead class="bg-bg-tertiary">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-text-primary">Name</th>
+                                    <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Status</th>
+                                    <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Currency</th>
+                                    <th class="px-4 py-2 text-left text-text-primary">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{ range .Accounts }}
+                                <tr hx-get="/page/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
+                                    <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
+                                    <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Status }}</td>
+                                    <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Currency }}</td>
+                                    <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ dollar .Currency .Balance }}</td>
+                                </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="w-full md:w-1/2 px-4">
                     <div id="account-details"></div>
                 </div>
             </div>
-            {{ else }} {{ template "login" . }} {{ end }}
         </div>
     </body>
 </html>

@@ -24,11 +24,6 @@ func encodeJSON[T any](w http.ResponseWriter, status int, v T) error {
 // Empty represents an empty struct.
 type Empty struct{}
 
-// Context represents a context.
-type Context struct {
-	Request *http.Request
-}
-
 // Handler collects input and output adapter behavior.
 type Handler[Req, Resp any] struct {
 	r    *http.Request
@@ -106,7 +101,17 @@ func (h *Handler[Req, Resp]) Call(req Req) *Handler[Req, Resp] {
 		return h
 	}
 
-	h.resp, h.err = h.call(&Context{h.r}, req)
+	// Create the context with the request
+	ctx := &Context{Request: h.r}
+
+	// Get the userID from the request context
+	// This userID was set by the authenticated middleware
+	userID := getUserIDFromContext(h.r.Context())
+	if userID != "" {
+		ctx.SetUserID(userID)
+	}
+
+	h.resp, h.err = h.call(ctx, req)
 
 	return h
 }

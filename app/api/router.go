@@ -22,10 +22,18 @@ func (s *Server) registerRouters() {
 	internalRouter := http.NewServeMux()
 	v1Router := http.NewServeMux()
 
-	repo := repository.NewSQLCRepository(database.GetDB())
+	db := database.GetDB()
+	repo := repository.NewSQLCRepository(db)
 	{
-		bookkeepingX := bookkeeping.NewController(repo, repo)
+		// Create and configure bookkeeping controller
+		bookkeepingX := bookkeeping.NewController(bookkeeping.NewControllerRequest{
+			AccountRepository:              repo,
+			LedgerRepository:               repo,
+			RecurringTransactionRepository: repo,
+			ReminderRepository:             repo,
+		})
 
+		// Register account routes
 		v1Router.HandleFunc("POST /accounts", bookkeepingX.CreateAccount())
 		v1Router.HandleFunc("GET /accounts", bookkeepingX.GetAllAccounts())
 		v1Router.HandleFunc("GET /accounts/{id}", bookkeepingX.GetAccountByID())
@@ -33,12 +41,16 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("DELETE /accounts/{id}", bookkeepingX.DeactivateAccountByID())
 		v1Router.HandleFunc("GET /users/{user_id}/accounts", bookkeepingX.GetUserAccounts())
 
+		// Register ledger routes
 		v1Router.HandleFunc("POST /accounts/{account_id}/ledgers", bookkeepingX.CreateLedger())
 		v1Router.HandleFunc("GET /accounts/{account_id}/ledgers", bookkeepingX.GetLedgersByAccount())
 		v1Router.HandleFunc("GET /ledgers/{id}", bookkeepingX.GetLedgerByID())
 		v1Router.HandleFunc("PATCH /ledgers/{id}", bookkeepingX.UpdateLedger())
 		v1Router.HandleFunc("DELETE /ledgers/{id}", bookkeepingX.VoidLedger())
 		v1Router.HandleFunc("POST /ledgers/{id}/adjust", bookkeepingX.AdjustLedger())
+
+		// Register recurring transaction routes
+		bookkeepingX.RegisterRecurringRoutes(v1Router)
 	}
 	{
 		userOptions := make([]user.Option, 0)
@@ -68,6 +80,8 @@ func (s *Server) registerRouters() {
 	router.Handle("/v1/", http.StripPrefix("/v1", chainMiddleware(authMiddlewares...)(v1Router)))
 	router.Handle("/internal/", http.StripPrefix("/internal", onlyInternal(*s.internalToken)(internalRouter)))
 	router.Handle("/public/", http.StripPrefix("/public", publicRouter))
+
+	// Recurring transaction functionality is now integrated into the bookkeeping controller
 
 	s.router = chainMiddleware(rateLimiter(10, 100), logging)(router)
 }
