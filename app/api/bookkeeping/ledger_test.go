@@ -74,11 +74,11 @@ func (s *testLedgerSuite) TestCreateLedger() {
 	s.NoError(err)
 
 	reqBody := []byte(`{
-  "date": "2023-05-01T00:00:00Z",
-  "type": "income",
-  "amount": "100.00",
-  "note": "Test Ledger"
- }`)
+		"date": "2023-05-01T00:00:00Z",
+		"type": "income",
+		"amount": "100.00",
+		"note": "Test Ledger"
+	}`)
 
 	req := httptest.NewRequest(http.MethodPost, "/accounts/"+accountID+"/ledgers", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
@@ -119,13 +119,14 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
+	_, err = s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(50.00),
 		Note:      "Test Expense",
-	}))
+	})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/accounts/"+accountID+"/ledgers", nil)
 	w := httptest.NewRecorder()
@@ -161,16 +162,14 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
+	ledgerID, err := s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeIncome,
 		Amount:    decimal.NewFromFloat(75.00),
 		Note:      "Test Income",
-	}))
-
-	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
-	ledgerID := ledgers[0].ID
+	})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/ledgers/"+ledgerID, nil)
 	w := httptest.NewRecorder()
@@ -205,21 +204,19 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
+	ledgerID, err := s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(100.00),
 		Note:      "Original Expense",
-	}))
-
-	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
-	ledgerID := ledgers[0].ID
+	})
+	s.NoError(err)
 
 	reqBody := []byte(`{
-  "amount": "120.00",
-  "note": "Updated Expense"
- }`)
+		"amount": "120.00",
+		"note": "Updated Expense"
+	}`)
 
 	req := httptest.NewRequest(http.MethodPatch, "/ledgers/"+ledgerID, bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
@@ -252,16 +249,14 @@ func (s *testLedgerSuite) TestVoidLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
+	ledgerID, err := s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeIncome,
 		Amount:    decimal.NewFromFloat(200.00),
 		Note:      "Income to be voided",
-	}))
-
-	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
-	ledgerID := ledgers[0].ID
+	})
+	s.NoError(err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/ledgers/"+ledgerID, nil)
 	w := httptest.NewRecorder()
@@ -294,24 +289,22 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.NoError(err)
 
 	// Create a test ledger
-	s.NoError(s.repo.CreateLedger(domain.CreateLedgerRequest{
+	originalLedgerID, err := s.repo.CreateLedger(domain.CreateLedgerRequest{
 		AccountID: accountID,
 		Date:      time.Now(),
 		Type:      domain.LedgerTypeExpense,
 		Amount:    decimal.NewFromFloat(150.00),
 		Note:      "Original Expense",
-	}))
-
-	ledgers, _ := s.repo.GetLedgersByAccountID(accountID)
-	originalLedgerID := ledgers[0].ID
+	})
+	s.NoError(err)
 
 	reqBody := []byte(fmt.Sprintf(`{
-  "account_id": "%s",
-  "date": "2023-05-02T00:00:00Z",
-  "type": "expense",
-  "amount": "170.00",
-  "note": "Adjusted Expense"
- }`, accountID))
+		"account_id": "%s",
+		"date": "2023-05-02T00:00:00Z",
+		"type": "expense",
+		"amount": "170.00",
+		"note": "Adjusted Expense"
+	}`, accountID))
 
 	req := httptest.NewRequest(http.MethodPost, "/ledgers/"+originalLedgerID+"/adjust", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()

@@ -101,7 +101,7 @@ func (s *Service) ProcessDueTransactions(ctx context.Context) error {
 			Note:      transaction.Note + " (Recurring: " + transaction.Name + ")",
 		}
 
-		err := s.ledgerRepo.CreateLedger(ledgerReq)
+		_, err := s.ledgerRepo.CreateLedger(ledgerReq)
 		if err != nil {
 			slog.Error("failed to create ledger entry for recurring transaction",
 				"transaction_id", transaction.ID,

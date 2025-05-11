@@ -17,7 +17,7 @@ INSERT INTO reminders (
     recurring_transaction_id, reminder_date
 ) VALUES (
     $1, $2
-) RETURNING id, created_at, updated_at, recurring_transaction_id, reminder_date, is_read, read_at
+) RETURNING id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at
 `
 
 type CreateReminderParams struct {
@@ -32,6 +32,7 @@ func (q *Queries) CreateReminder(ctx context.Context, arg CreateReminderParams) 
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.RecurringTransactionID,
 		&i.ReminderDate,
 		&i.IsRead,
@@ -40,11 +41,24 @@ func (q *Queries) CreateReminder(ctx context.Context, arg CreateReminderParams) 
 	return i, err
 }
 
+const deleteReminder = `-- name: DeleteReminder :exec
+UPDATE reminders
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) DeleteReminder(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteReminder, id)
+	return err
+}
+
 const getActiveRemindersByUserID = `-- name: GetActiveRemindersByUserID :many
-SELECT r.id, r.created_at, r.updated_at, r.recurring_transaction_id, r.reminder_date, r.is_read, r.read_at
+SELECT r.id, r.created_at, r.updated_at, r.deleted_at, r.recurring_transaction_id, r.reminder_date, r.is_read, r.read_at
 FROM reminders r
 JOIN recurring_transactions rt ON r.recurring_transaction_id = rt.id
-WHERE rt.user_id = $1 AND r.is_read = FALSE AND r.reminder_date <= $2
+WHERE rt.user_id = $1 AND r.is_read = FALSE AND r.reminder_date <= $2 AND r.deleted_at IS NULL AND rt.deleted_at IS NULL
 ORDER BY r.reminder_date ASC
 `
 
@@ -66,6 +80,7 @@ func (q *Queries) GetActiveRemindersByUserID(ctx context.Context, arg GetActiveR
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.RecurringTransactionID,
 			&i.ReminderDate,
 			&i.IsRead,
@@ -82,8 +97,8 @@ func (q *Queries) GetActiveRemindersByUserID(ctx context.Context, arg GetActiveR
 }
 
 const getReminderByID = `-- name: GetReminderByID :one
-SELECT id, created_at, updated_at, recurring_transaction_id, reminder_date, is_read, read_at FROM reminders
-WHERE id = $1
+SELECT id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at FROM reminders
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetReminderByID(ctx context.Context, id string) (Reminder, error) {
@@ -93,6 +108,7 @@ func (q *Queries) GetReminderByID(ctx context.Context, id string) (Reminder, err
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.RecurringTransactionID,
 		&i.ReminderDate,
 		&i.IsRead,
@@ -102,8 +118,8 @@ func (q *Queries) GetReminderByID(ctx context.Context, id string) (Reminder, err
 }
 
 const getRemindersByRecurringTransactionID = `-- name: GetRemindersByRecurringTransactionID :many
-SELECT id, created_at, updated_at, recurring_transaction_id, reminder_date, is_read, read_at FROM reminders
-WHERE recurring_transaction_id = $1
+SELECT id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at FROM reminders
+WHERE recurring_transaction_id = $1 AND deleted_at IS NULL
 ORDER BY reminder_date ASC
 `
 
@@ -120,6 +136,7 @@ func (q *Queries) GetRemindersByRecurringTransactionID(ctx context.Context, recu
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.RecurringTransactionID,
 			&i.ReminderDate,
 			&i.IsRead,
@@ -136,12 +153,14 @@ func (q *Queries) GetRemindersByRecurringTransactionID(ctx context.Context, recu
 }
 
 const getUpcomingReminders = `-- name: GetUpcomingReminders :many
-SELECT r.id, r.created_at, r.updated_at, r.recurring_transaction_id, r.reminder_date, r.is_read, r.read_at, rt.name AS transaction_name, rt.amount, rt.type
+SELECT r.id, r.created_at, r.updated_at, r.deleted_at, r.recurring_transaction_id, r.reminder_date, r.is_read, r.read_at, rt.name AS transaction_name, rt.amount, rt.type
 FROM reminders r
 JOIN recurring_transactions rt ON r.recurring_transaction_id = rt.id
 WHERE rt.user_id = $1
   AND r.is_read = FALSE
   AND r.reminder_date BETWEEN $2 AND $3
+  AND r.deleted_at IS NULL
+  AND rt.deleted_at IS NULL
 ORDER BY r.reminder_date ASC
 `
 
@@ -155,6 +174,7 @@ type GetUpcomingRemindersRow struct {
 	ID                     string
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
+	DeletedAt              pgtype.Timestamptz
 	RecurringTransactionID string
 	ReminderDate           pgtype.Timestamptz
 	IsRead                 bool
@@ -177,6 +197,7 @@ func (q *Queries) GetUpcomingReminders(ctx context.Context, arg GetUpcomingRemin
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.RecurringTransactionID,
 			&i.ReminderDate,
 			&i.IsRead,
@@ -199,9 +220,10 @@ const markReminderAsRead = `-- name: MarkReminderAsRead :one
 UPDATE reminders
 SET
     is_read = TRUE,
-    read_at = NOW()
-WHERE id = $1
-RETURNING id, created_at, updated_at, recurring_transaction_id, reminder_date, is_read, read_at
+    read_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at
 `
 
 func (q *Queries) MarkReminderAsRead(ctx context.Context, id string) (Reminder, error) {
@@ -211,6 +233,7 @@ func (q *Queries) MarkReminderAsRead(ctx context.Context, id string) (Reminder, 
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.RecurringTransactionID,
 		&i.ReminderDate,
 		&i.IsRead,

@@ -2,8 +2,10 @@ package sqlc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/sqlcgen"
@@ -188,6 +190,9 @@ func (r *Repository) UpdateRecurringTransaction(ctx context.Context, req domain.
 
 	result, err := r.querier.UpdateRecurringTransaction(ctx, params)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -204,15 +209,25 @@ func (r *Repository) UpdateRecurringTransactionExecution(ctx context.Context, id
 
 	result, err := r.querier.UpdateRecurringTransactionExecution(ctx, params)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, err
 	}
 
 	return mapToRecurringTransaction(result), nil
 }
 
-// DeleteRecurringTransaction marks a recurring transaction as cancelled
+// DeleteRecurringTransaction implements the domain.RecurringTransactionRepository interface
+// This method performs a soft delete by setting the deleted_at timestamp and status to cancelled.
 func (r *Repository) DeleteRecurringTransaction(ctx context.Context, id string) error {
-	return r.querier.DeleteRecurringTransaction(ctx, id)
+	// The SQL query now sets deleted_at and status = 'cancelled'.
+	err := r.querier.DeleteRecurringTransaction(ctx, id)
+	if err != nil {
+		// It's good practice to wrap errors for context
+		return fmt.Errorf("failed to soft delete recurring transaction: %w", err)
+	}
+	return nil
 }
 
 // Helper functions

@@ -3,13 +3,18 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE,
     disabled BOOLEAN NOT NULL DEFAULT FALSE,
     name VARCHAR(255) NOT NULL,
     nickname VARCHAR(255)
 );
 
+-- Users Table Indexes
+CREATE INDEX idx_users_deleted_at ON users (deleted_at);
+CREATE INDEX idx_users_disabled ON users (disabled);
+
 -- Add user_id column to accounts if it doesn't exist already
-DO $$ 
+DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 

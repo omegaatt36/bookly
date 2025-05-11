@@ -12,7 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const createLedger = `-- name: CreateLedger :exec
+const createLedger = `-- name: CreateLedger :one
 INSERT INTO ledgers (
     account_id,
     date,
@@ -23,7 +23,7 @@ INSERT INTO ledgers (
     adjusted_from
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
-)
+) RETURNING id
 `
 
 type CreateLedgerParams struct {
@@ -36,8 +36,8 @@ type CreateLedgerParams struct {
 	AdjustedFrom pgtype.UUID
 }
 
-func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) error {
-	_, err := q.db.Exec(ctx, createLedger,
+func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (string, error) {
+	row := q.db.QueryRow(ctx, createLedger,
 		arg.AccountID,
 		arg.Date,
 		arg.Type,
@@ -46,12 +46,27 @@ func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) erro
 		arg.IsAdjustment,
 		arg.AdjustedFrom,
 	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
+const deleteLedger = `-- name: DeleteLedger :exec
+UPDATE ledgers
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) DeleteLedger(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteLedger, id)
 	return err
 }
 
 const getLedgerAmount = `-- name: GetLedgerAmount :one
 SELECT amount FROM ledgers
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -63,12 +78,12 @@ func (q *Queries) GetLedgerAmount(ctx context.Context, id string) (decimal.Decim
 }
 
 const getLedgerByID = `-- name: GetLedgerByID :one
-SELECT 
-    l.id, l.created_at, l.updated_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
+SELECT
+    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
     a.currency
 FROM ledgers l
 JOIN accounts a ON l.account_id = a.id
-WHERE l.id = $1
+WHERE l.id = $1 AND l.deleted_at IS NULL AND a.deleted_at IS NULL
 LIMIT 1
 `
 
@@ -76,6 +91,7 @@ type GetLedgerByIDRow struct {
 	ID           string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 	AccountID    string
 	Date         pgtype.Timestamptz
 	Type         string
@@ -95,6 +111,7 @@ func (q *Queries) GetLedgerByID(ctx context.Context, id string) (GetLedgerByIDRo
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.AccountID,
 		&i.Date,
 		&i.Type,
@@ -110,12 +127,12 @@ func (q *Queries) GetLedgerByID(ctx context.Context, id string) (GetLedgerByIDRo
 }
 
 const getLedgersByAccountID = `-- name: GetLedgersByAccountID :many
-SELECT 
-    l.id, l.created_at, l.updated_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
+SELECT
+    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
     a.currency
 FROM ledgers l
 JOIN accounts a ON l.account_id = a.id
-WHERE l.account_id = $1
+WHERE l.account_id = $1 AND l.deleted_at IS NULL AND a.deleted_at IS NULL
 ORDER BY l.date DESC, l.updated_at DESC
 `
 
@@ -123,6 +140,7 @@ type GetLedgersByAccountIDRow struct {
 	ID           string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 	AccountID    string
 	Date         pgtype.Timestamptz
 	Type         string
@@ -148,6 +166,7 @@ func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID string) (
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.AccountID,
 			&i.Date,
 			&i.Type,
@@ -170,14 +189,14 @@ func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID string) (
 }
 
 const updateLedger = `-- name: UpdateLedger :exec
-UPDATE ledgers 
-SET 
+UPDATE ledgers
+SET
     date = CASE WHEN $1::timestamptz IS NULL THEN date ELSE $1 END,
     type = CASE WHEN $2::text IS NULL THEN type ELSE $2 END,
     amount = CASE WHEN $3::decimal IS NULL THEN amount ELSE $3 END,
     note = CASE WHEN $4::text IS NULL THEN note ELSE $4 END,
     updated_at = NOW()
-WHERE id = $5
+WHERE id = $5 AND deleted_at IS NULL
 `
 
 type UpdateLedgerParams struct {
@@ -200,12 +219,12 @@ func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) erro
 }
 
 const voidLedger = `-- name: VoidLedger :exec
-UPDATE ledgers 
-SET 
+UPDATE ledgers
+SET
     is_voided = true,
     voided_at = NOW(),
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) VoidLedger(ctx context.Context, id string) error {

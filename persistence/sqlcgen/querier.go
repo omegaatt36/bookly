@@ -14,14 +14,18 @@ import (
 type Querier interface {
 	AddIdentity(ctx context.Context, arg AddIdentityParams) error
 	CreateAccount(ctx context.Context, arg CreateAccountParams) error
-	CreateLedger(ctx context.Context, arg CreateLedgerParams) error
+	CreateLedger(ctx context.Context, arg CreateLedgerParams) (string, error)
 	CreateRecurringTransaction(ctx context.Context, arg CreateRecurringTransactionParams) (RecurringTransaction, error)
 	CreateReminder(ctx context.Context, arg CreateReminderParams) (Reminder, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (string, error)
 	DeactivateAccountByID(ctx context.Context, arg DeactivateAccountByIDParams) error
 	DeactivateUserByID(ctx context.Context, id string) error
+	DeleteAccount(ctx context.Context, id string) error
 	DeleteIdentity(ctx context.Context, arg DeleteIdentityParams) error
+	DeleteLedger(ctx context.Context, id string) error
 	DeleteRecurringTransaction(ctx context.Context, id string) error
+	DeleteReminder(ctx context.Context, id string) error
+	DeleteUser(ctx context.Context, id string) error
 	GetAccountByID(ctx context.Context, id string) (Account, error)
 	GetAccountsByUserID(ctx context.Context, userID string) ([]Account, error)
 	GetActiveRecurringTransactionsDue(ctx context.Context, nextDue pgtype.Timestamptz) ([]RecurringTransaction, error)

@@ -81,13 +81,16 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 			if req.Amount.IsZero() {
 				return nil, app.ParamError(errors.New("amount is required"))
 			}
-			return nil, x.service.CreateLedger(domain.CreateLedgerRequest{
+
+			_, err = x.service.CreateLedger(domain.CreateLedgerRequest{
 				AccountID: req.accountID,
 				Date:      req.Date,
 				Type:      ledgerType,
 				Amount:    req.Amount,
 				Note:      req.Note,
 			})
+
+			return nil, err
 		}).Param("account_id", &req.accountID).BindJSON(&req).Call(req).ResponseJSON()
 	}
 }

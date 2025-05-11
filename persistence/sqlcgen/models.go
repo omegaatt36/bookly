@@ -13,6 +13,7 @@ type Account struct {
 	ID        string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	DeletedAt pgtype.Timestamptz
 	UserID    string
 	Name      string
 	Status    string
@@ -33,6 +34,7 @@ type Ledger struct {
 	ID           string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 	AccountID    string
 	Date         pgtype.Timestamptz
 	Type         string
@@ -48,6 +50,7 @@ type RecurringTransaction struct {
 	ID           string
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 	UserID       string
 	AccountID    string
 	Name         string
@@ -70,6 +73,7 @@ type Reminder struct {
 	ID                     string
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
+	DeletedAt              pgtype.Timestamptz
 	RecurringTransactionID string
 	ReminderDate           pgtype.Timestamptz
 	IsRead                 bool
@@ -80,6 +84,7 @@ type User struct {
 	ID        string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	DeletedAt pgtype.Timestamptz
 	Disabled  bool
 	Name      string
 	Nickname  pgtype.Text

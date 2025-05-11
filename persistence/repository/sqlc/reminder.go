@@ -2,11 +2,14 @@ package sqlc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/sqlcgen"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // CreateReminder creates a new reminder for a recurring transaction
@@ -61,6 +64,9 @@ func (r *Repository) GetActiveRemindersByUserID(ctx context.Context, userID stri
 func (r *Repository) GetReminderByID(ctx context.Context, id string) (*domain.Reminder, error) {
 	result, err := r.querier.GetReminderByID(ctx, id)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -75,6 +81,14 @@ func (r *Repository) MarkReminderAsRead(ctx context.Context, id string) (*domain
 	}
 
 	return mapToReminder(result), nil
+}
+
+// DeleteReminder implements the domain.ReminderRepository interface for soft delete
+func (r *Repository) DeleteReminder(ctx context.Context, id string) error {
+	if err := r.querier.DeleteReminder(ctx, id); err != nil {
+		return fmt.Errorf("failed to soft delete reminder: %w", err)
+	}
+	return nil
 }
 
 // GetUpcomingReminders gets upcoming reminders for a user within a date range

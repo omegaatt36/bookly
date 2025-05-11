@@ -102,4 +102,5 @@ type ReminderRepository interface {
 	GetActiveRemindersByUserID(ctx context.Context, userID string, before time.Time) ([]*Reminder, error)
 	GetReminderByID(ctx context.Context, id string) (*Reminder, error)
 	MarkReminderAsRead(ctx context.Context, id string) (*Reminder, error)
+	DeleteReminder(ctx context.Context, id string) error
 }

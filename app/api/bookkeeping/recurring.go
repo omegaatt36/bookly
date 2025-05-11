@@ -298,7 +298,7 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 				return nil, err
 			}
 
-			return &engine.Empty{}, nil
+			return nil, nil
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
 }

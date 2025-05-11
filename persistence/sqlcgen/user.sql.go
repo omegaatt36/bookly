@@ -67,7 +67,7 @@ UPDATE users
 SET
     disabled = true,
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) DeactivateUserByID(ctx context.Context, id string) error {
@@ -75,9 +75,23 @@ func (q *Queries) DeactivateUserByID(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+UPDATE users
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteUser, id)
+	return err
+}
+
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT id, created_at, updated_at, disabled, name, nickname FROM users
-ORDER BY updated_at
+SELECT id, created_at, updated_at, deleted_at, disabled, name, nickname FROM users
+WHERE deleted_at IS NULL
+ORDER BY id
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -93,6 +107,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.Disabled,
 			&i.Name,
 			&i.Nickname,
@@ -108,8 +123,8 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, created_at, updated_at, disabled, name, nickname FROM users
-WHERE id = $1
+SELECT id, created_at, updated_at, deleted_at, disabled, name, nickname FROM users
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -120,6 +135,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.Disabled,
 		&i.Name,
 		&i.Nickname,
@@ -143,7 +159,7 @@ SELECT
     i.last_used_at AS identity_last_used_at
 FROM users u
 JOIN identities i ON u.id = i.user_id
-WHERE i.provider = $1 AND i.identifier = $2
+WHERE i.provider = $1 AND i.identifier = $2 AND u.deleted_at IS NULL
 LIMIT 1
 `
 
@@ -194,7 +210,7 @@ SET
     nickname = CASE WHEN $2::text IS NULL THEN nickname ELSE $2 END,
     disabled = CASE WHEN $3::boolean IS NULL THEN disabled ELSE $3 END,
     updated_at = NOW()
-WHERE id = $4
+WHERE id = $4 AND deleted_at IS NULL
 `
 
 type UpdateUserParams struct {

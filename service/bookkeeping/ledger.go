@@ -9,12 +9,13 @@ import (
 )
 
 // CreateLedger creates a new ledger based on the provided CreateLedgerRequest.
-func (s *Service) CreateLedger(req domain.CreateLedgerRequest) error {
+func (s *Service) CreateLedger(req domain.CreateLedgerRequest) (string, error) {
 	if _, err := s.accountRepo.GetAccountByID(req.AccountID); err != nil {
-		return fmt.Errorf("account not found: %s, %w", req.AccountID, err)
+		return "", fmt.Errorf("account not found: %s, %w", req.AccountID, err)
 	}
 
 	return s.ledgerRepo.CreateLedger(req)
+
 }
 
 // GetLedgerByID retrieves a ledger by its ID.

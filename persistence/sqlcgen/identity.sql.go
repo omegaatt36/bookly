@@ -83,7 +83,7 @@ func (q *Queries) GetIdentityByProviderAndIdentifier(ctx context.Context, arg Ge
 
 const updateIdentityCredential = `-- name: UpdateIdentityCredential :exec
 UPDATE identities
-SET 
+SET
     credential = $3,
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2
@@ -102,7 +102,7 @@ func (q *Queries) UpdateIdentityCredential(ctx context.Context, arg UpdateIdenti
 
 const updateIdentityLastUsed = `-- name: UpdateIdentityLastUsed :exec
 UPDATE identities
-SET 
+SET
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2
 `

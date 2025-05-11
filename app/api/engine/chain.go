@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/omegaatt36/bookly/app"
+	"github.com/omegaatt36/bookly/domain"
 )
 
 func encodeJSON[T any](w http.ResponseWriter, status int, v T) error {
@@ -160,7 +161,13 @@ func (h *Handler[Req, Resp]) responseError() {
 	}
 
 	var codeError *app.CodedError
-	if errors.As(h.err, &codeError) {
+
+	switch {
+	case errors.Is(h.err, domain.ErrNotFound):
+		statusCode = http.StatusNotFound
+		res.Code = app.CodeNotFound
+		res.Message = h.err.Error()
+	case errors.As(h.err, &codeError):
 		statusCode = codeError.StatusCode
 		res.Code = codeError.AppCode
 		res.Message = codeError.Error()

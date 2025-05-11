@@ -9,14 +9,14 @@ LIMIT 1;
 
 -- name: UpdateIdentityCredential :exec
 UPDATE identities
-SET 
+SET
     credential = $3,
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2;
 
 -- name: UpdateIdentityLastUsed :exec
 UPDATE identities
-SET 
+SET
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2;
 
