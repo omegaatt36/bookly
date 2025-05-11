@@ -10,10 +10,16 @@ type ValidateTokenRequest struct {
 	Token string
 }
 
+// TokenValidationResponse defines the response for token validation
+type TokenValidationResponse struct {
+	Valid  bool
+	UserID string
+}
+
 // Authenticator represents an authentication service
 type Authenticator interface {
 	HashPassword(password string) (string, error)
 	GenerateToken(GenerateTokenRequest) (string, error)
-	ValidateToken(ValidateTokenRequest) (bool, error)
+	ValidateToken(ValidateTokenRequest) (TokenValidationResponse, error)
 	VerifyCredential(credential string, identity *Identity) (bool, error)
 }

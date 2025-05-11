@@ -104,7 +104,7 @@ func authenticated(authenticator domain.Authenticator) middleware {
 				return
 			}
 
-			valid, err := authenticator.ValidateToken(domain.ValidateTokenRequest{
+			tokenResult, err := authenticator.ValidateToken(domain.ValidateTokenRequest{
 				Token: authToken,
 			})
 			if err != nil {
@@ -112,10 +112,14 @@ func authenticated(authenticator domain.Authenticator) middleware {
 				return
 			}
 
-			if !valid {
+			if !tokenResult.Valid {
 				abortWithUnauthorized("invalid token")
 				return
 			}
+
+			// Store user ID in request context for the engine to retrieve
+			ctx := engine.WithUserID(r.Context(), tokenResult.UserID)
+			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)
 		})

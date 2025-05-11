@@ -35,15 +35,15 @@ func (r *jsonAccount) fromDomain(account *domain.Account) {
 func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			UserID   string `json:"user_id"`
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
-			if req.UserID == "" {
-				return nil, app.ParamError(errors.New("user_id is required"))
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
 			if req.Name == "" {
@@ -55,7 +55,7 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 			}
 
 			return nil, x.service.CreateAccount(domain.CreateAccountRequest{
-				UserID:   req.UserID,
+				UserID:   userID,
 				Name:     req.Name,
 				Currency: req.Currency,
 			})
@@ -63,11 +63,16 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// GetAllAccounts handles the retrieval of all accounts
+// GetAllAccounts handles the retrieval of all accounts for the current authenticated user
 func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
-			accounts, err := x.service.GetAllAccounts()
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			accounts, err := x.service.GetAccountsByUserID(userID)
 			if err != nil {
 				return nil, err
 			}
@@ -82,14 +87,24 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// GetAccountByID handles the retrieval of an account by its ID
+// GetAccountByID handles the retrieval of an account by its ID for the current authenticated user
 func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
 			account, err := x.service.GetAccountByID(id)
 			if err != nil {
 				return nil, err
+			}
+
+			// Verify account ownership
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
 			}
 
 			var jsonAccount jsonAccount
@@ -110,7 +125,20 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(req.id)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
+			}
 
 			var accountStatus *domain.AccountStatus
 			if req.Status != nil {
@@ -134,7 +162,21 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+			userID := ctx.GetUserID()
+			if userID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(id)
+			if err != nil {
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
+			}
+
 			return nil, x.service.DeactivateAccountByID(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
@@ -160,7 +202,7 @@ func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// CreateUserAccount handles the creation of a new account for a specific user
+// CreateUserAccount handles the creation of a new account for a specific user (admin only)
 func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
@@ -170,13 +212,25 @@ func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Req
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			// Admin validation would go here
+			// For now we'll just use the authenticated user's ID
+			authenticatedUserID := ctx.GetUserID()
+			if authenticatedUserID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
 			if req.Name == "" {
 				return nil, app.ParamError(errors.New("name is required"))
 			}
 
 			if req.Currency == "" {
 				return nil, app.ParamError(errors.New("currency is required"))
+			}
+
+			// In a real admin scenario, we'd use req.UserID, but for now validate that it matches authenticated user
+			if req.UserID != authenticatedUserID {
+				return nil, app.Forbidden(errors.New("can only create accounts for yourself"))
 			}
 
 			return nil, x.service.CreateAccount(domain.CreateAccountRequest{

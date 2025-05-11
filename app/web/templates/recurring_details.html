@@ -1,0 +1,95 @@
+{{ define "recurring_details.html" }}
+<div class="bg-bg-secondary rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4 text-text-primary">Recurring Transaction Details</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <p class="text-text-secondary font-medium">Name</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.Name }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Type</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.Type }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Amount</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.Amount }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Status</p>
+            <p class="text-text-primary">
+                {{ if eq .RecurringTransaction.Status "active" }}
+                    <span class="px-2 py-1 rounded-full bg-success bg-opacity-20 text-success">Active</span>
+                {{ else if eq .RecurringTransaction.Status "paused" }}
+                    <span class="px-2 py-1 rounded-full bg-warning bg-opacity-20 text-warning">Paused</span>
+                {{ else }}
+                    <span class="px-2 py-1 rounded-full bg-error bg-opacity-20 text-error">{{ .RecurringTransaction.Status }}</span>
+                {{ end }}
+            </p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Start Date</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.StartDate.Format "2006-01-02" }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">End Date</p>
+            <p class="text-text-primary">{{ if .RecurringTransaction.EndDate }}{{ .RecurringTransaction.EndDate.Format "2006-01-02" }}{{ else }}No end date{{ end }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Recurrence</p>
+            <p class="text-text-primary">
+                {{ if eq .RecurringTransaction.RecurType "daily" }}
+                    Daily
+                {{ else if eq .RecurringTransaction.RecurType "weekly" }}
+                    Weekly ({{ if .RecurringTransaction.DayOfWeek }}Day {{ .RecurringTransaction.DayOfWeek }}{{ else }}Any day{{ end }})
+                {{ else if eq .RecurringTransaction.RecurType "monthly" }}
+                    Monthly ({{ if .RecurringTransaction.DayOfMonth }}Day {{ .RecurringTransaction.DayOfMonth }}{{ else }}Any day{{ end }})
+                {{ else if eq .RecurringTransaction.RecurType "yearly" }}
+                    Yearly ({{ if .RecurringTransaction.MonthOfYear }}Month {{ .RecurringTransaction.MonthOfYear }}{{ else }}Any month{{ end }})
+                {{ else }}
+                    {{ .RecurringTransaction.RecurType }}
+                {{ end }}
+                {{ if ne .RecurringTransaction.Frequency 1 }}
+                    every {{ .RecurringTransaction.Frequency }}
+                {{ end }}
+            </p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Note</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.Note }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Last Executed</p>
+            <p class="text-text-primary">{{ if .RecurringTransaction.LastExecuted }}{{ .RecurringTransaction.LastExecuted.Format "2006-01-02" }}{{ else }}Never{{ end }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary font-medium">Next Due</p>
+            <p class="text-text-primary">{{ .RecurringTransaction.NextDue.Format "2006-01-02" }}</p>
+        </div>
+    </div>
+    
+    <div class="flex space-x-2">
+        <button
+            hx-put="/recurring/{{ .RecurringTransaction.ID }}"
+            hx-include="form"
+            hx-confirm="Are you sure you want to {{ if eq .RecurringTransaction.Status "active" }}pause{{ else }}activate{{ end }} this recurring transaction?"
+            class="{{ if eq .RecurringTransaction.Status "active" }}btn-warning{{ else }}btn-success{{ end }} btn"
+        >
+            {{ if eq .RecurringTransaction.Status "active" }}Pause{{ else }}Activate{{ end }}
+        </button>
+        <button
+            hx-delete="/recurring/{{ .RecurringTransaction.ID }}"
+            hx-confirm="Are you sure you want to delete this recurring transaction? This cannot be undone."
+            class="btn btn-danger"
+        >
+            Delete
+        </button>
+        <a href="/page/recurring" class="btn btn-secondary">Back to List</a>
+    </div>
+    
+    <!-- Hidden form for status updates -->
+    <form class="hidden">
+        <input type="hidden" name="status" value="{{ if eq .RecurringTransaction.Status "active" }}paused{{ else }}active{{ end }}">
+    </form>
+</div>
+{{ end }}

@@ -1,0 +1,67 @@
+name: CI Testing
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bookly
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL to be ready... ($i/30)"
+            sleep 1
+          done
+          echo "PostgreSQL did not become ready in time"
+          exit 1
+
+      - name: Run tests
+        run: task test
+        env:
+          DB_DIALECT: postgres
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: bookly
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_SILENCE_LOGGER: true
+          DB_SLOW_THRESHOLD_MILLISECONDS: 1000
+          JWT_SALT: salt
+          JWT_SECRET_KEY: secret
+          INTERNAL_TOKEN: secret
+          LOG_LEVEL: debug

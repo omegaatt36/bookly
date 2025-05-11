@@ -3,6 +3,7 @@ package user_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +27,7 @@ type testAuthSuite struct {
 	finalize func()
 
 	authenticator domain.Authenticator
+	userID        string
 }
 
 func (s *testAuthSuite) SetupTest() {
@@ -55,7 +57,8 @@ func TestAuthSuite(t *testing.T) {
 }
 
 func (s *testAuthSuite) TestRegisterAndLogin() {
-	reqBody := []byte(`{"email": "test@example.com", "password": "password123"}`)
+	email := "test@example.com"
+	reqBody := []byte(fmt.Sprintf(`{"email": "%s", "password": "password"}`, email))
 
 	s.T().Run("Register", func(_ *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewBuffer(reqBody))
@@ -72,6 +75,8 @@ func (s *testAuthSuite) TestRegisterAndLogin() {
 		user := users[0]
 		s.Equal("test@example.com", user.Name)
 		s.False(user.Disabled)
+
+		s.userID = user.ID
 	})
 
 	type loginResponse struct {
@@ -93,11 +98,14 @@ func (s *testAuthSuite) TestRegisterAndLogin() {
 
 		s.NotEmpty(resp.Data.Token)
 
-		valid, err := s.authenticator.ValidateToken(domain.ValidateTokenRequest{
+		result, err := s.authenticator.ValidateToken(domain.ValidateTokenRequest{
 			Token: resp.Data.Token,
 		})
 
 		s.NoError(err)
-		s.True(valid)
+		s.True(result.Valid)
+		user, _, err := s.repo.GetUserByIdentity(domain.IdentityProviderPassword, email)
+		s.NoError(err)
+		s.Equal(user.ID, result.UserID)
 	})
 }

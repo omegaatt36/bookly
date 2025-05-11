@@ -101,4 +101,192 @@
     .btn-danger:hover {
         opacity: 0.8;
     }
+
+    .btn-warning {
+        background-color: var(--warning);
+        color: var(--text-highlight);
+        border-color: var(--warning);
+    }
+
+    .btn-warning:hover {
+        opacity: 0.8;
+    }
+
+    .btn-success {
+        background-color: var(--success);
+        color: var(--text-highlight);
+        border-color: var(--success);
+    }
+
+    .btn-success:hover {
+        opacity: 0.8;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .hamburger {
+        cursor: pointer;
+        display: none;
+        width: 24px;
+        height: 20px;
+        position: relative;
+        margin-left: auto;
+    }
+
+    .hamburger span {
+        display: block;
+        position: absolute;
+        height: 2px;
+        width: 100%;
+        background: var(--text-highlight);
+        border-radius: 2px;
+        transition: transform 0.25s ease-in-out;
+    }
+
+    .hamburger span:nth-child(1) {
+        top: 0;
+    }
+
+    .hamburger span:nth-child(2) {
+        top: 9px;
+    }
+
+    .hamburger span:nth-child(3) {
+        bottom: 0;
+    }
+
+    .hamburger.active span:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+
+    /* 側邊欄樣式 */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        right: -250px;
+        width: 250px;
+        height: 100%;
+        background-color: var(--bg-secondary);
+        z-index: 999;
+        transition: right 0.3s ease;
+        overflow-y: auto;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar.open {
+        right: 0;
+    }
+
+    .sidebar-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--bg-highlight);
+    }
+
+    .sidebar-close {
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: var(--text-primary);
+    }
+
+    .sidebar-menu {
+        padding: 1rem;
+    }
+
+    .sidebar-menu a,
+    .sidebar-menu button {
+        display: block;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        text-decoration: none;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+    .sidebar-menu a:hover,
+    .sidebar-menu button:hover {
+        background-color: var(--bg-highlight);
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+        display: none;
+    }
+
+    .overlay.active {
+        display: block;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+        .hamburger {
+            display: block;
+        }
+
+        .nav-links {
+            display: none;
+        }
+    }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const hamburger = document.getElementById("hamburger");
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("overlay");
+        const sidebarClose = document.getElementById("sidebar-close");
+
+        if (hamburger) {
+            hamburger.addEventListener("click", function () {
+                this.classList.toggle("active");
+                sidebar.classList.toggle("open");
+                overlay.classList.toggle("active");
+                document.body.style.overflow = sidebar.classList.contains("open") ? "hidden" : "";
+            });
+        }
+
+        if (sidebarClose) {
+            sidebarClose.addEventListener("click", closeSidebar);
+        }
+
+        if (overlay) {
+            overlay.addEventListener("click", closeSidebar);
+        }
+
+        const sidebarLinks = document.querySelectorAll(".sidebar-menu a, .sidebar-menu button");
+        sidebarLinks.forEach((link) => {
+            link.addEventListener("click", closeSidebar);
+        });
+
+        function closeSidebar() {
+            if (hamburger) hamburger.classList.remove("active");
+            if (sidebar) sidebar.classList.remove("open");
+            if (overlay) overlay.classList.remove("active");
+            document.body.style.overflow = "";
+        }
+    });
+</script>

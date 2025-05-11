@@ -52,14 +52,16 @@ func (s *testAuthSuite) TestGenerateAndValidateToken() {
 	s.NotEmpty(token)
 
 	// Validate the generated token
-	valid, err := authenticator.ValidateToken(domain.ValidateTokenRequest{Token: token})
+	result, err := authenticator.ValidateToken(domain.ValidateTokenRequest{Token: token})
 	s.NoError(err)
-	s.True(valid)
+	s.True(result.Valid)
+	s.Equal(userID, result.UserID)
 
 	// Test with invalid token
-	valid, err = authenticator.ValidateToken(domain.ValidateTokenRequest{Token: "invalid-token"})
+	result, err = authenticator.ValidateToken(domain.ValidateTokenRequest{Token: "invalid-token"})
 	s.Error(err)
-	s.False(valid)
+	s.False(result.Valid)
+	s.Empty(result.UserID)
 }
 
 func (s *testAuthSuite) TestTokenExpiration() {
@@ -75,8 +77,9 @@ func (s *testAuthSuite) TestTokenExpiration() {
 
 	normalAuthenticator := auth.NewJWTAuthorizator(s.salt, s.secretKey, auth.WithTTL(time.Second))
 
-	valid, err := normalAuthenticator.ValidateToken(domain.ValidateTokenRequest{Token: token})
+	result, err := normalAuthenticator.ValidateToken(domain.ValidateTokenRequest{Token: token})
 	s.Error(err)
 	s.Equal("Token is expired", err.Error())
-	s.False(valid)
+	s.False(result.Valid)
+	s.Empty(result.UserID)
 }

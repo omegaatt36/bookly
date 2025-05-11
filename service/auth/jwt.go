@@ -84,8 +84,8 @@ func (authenticator *JWTAuthenticator) GenerateToken(req domain.GenerateTokenReq
 	return tokenString, nil
 }
 
-// ValidateToken validates a token for a user.
-func (authenticator *JWTAuthenticator) ValidateToken(req domain.ValidateTokenRequest) (bool, error) {
+// ValidateToken validates a token for a user and returns the associated user ID.
+func (authenticator *JWTAuthenticator) ValidateToken(req domain.ValidateTokenRequest) (domain.TokenValidationResponse, error) {
 	token, err := jwt.Parse(req.Token, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -95,19 +95,27 @@ func (authenticator *JWTAuthenticator) ValidateToken(req domain.ValidateTokenReq
 	})
 
 	if err != nil {
-		return false, err
+		return domain.TokenValidationResponse{Valid: false}, err
 	}
 
-	_, ok := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return false, errors.New("invalid claims")
+		return domain.TokenValidationResponse{Valid: false}, errors.New("invalid claims")
 	}
 
 	if !token.Valid {
-		return false, errors.New("invalid token")
+		return domain.TokenValidationResponse{Valid: false}, errors.New("invalid token")
 	}
 
-	return true, nil
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return domain.TokenValidationResponse{Valid: false}, errors.New("user_id not found in token")
+	}
+
+	return domain.TokenValidationResponse{
+		Valid:  true,
+		UserID: userID,
+	}, nil
 }
 
 // VerifyCredential verifies the provided credential against the stored identity credential.

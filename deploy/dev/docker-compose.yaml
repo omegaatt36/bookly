@@ -75,6 +75,30 @@ services:
       api-dbmigration:
         condition: service_completed_successfully
 
+  crond:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.template
+      args:
+        SERVICE_NAME: "crond"
+        SERVICE_PORT: "8080" # Crond doesn't expose a port, using a placeholder
+    container_name: bookly-crond
+    restart: always
+    environment:
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=bookly
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SILENCE_LOGGER=false
+      - DB_SLOW_THRESHOLD_MILLISECONDS=1000
+      - LOG_LEVEL=debug
+    networks:
+      - internal
+    depends_on:
+      - postgres # Crond needs the database to be running
+
   web:
     build:
       context: ../..

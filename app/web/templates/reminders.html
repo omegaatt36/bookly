@@ -1,10 +1,10 @@
-{{ define "index.html" }}
+{{ define "reminders.html" }}
 <!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ block "title" . }}Bookly{{ end }}</title>
+        <title>Reminders - Bookly</title>
         <script src="https://unpkg.com/htmx.org@2.0.3"></script>
         <script src="https://cdn.tailwindcss.com"></script>
         {{ template "base.html" }}
@@ -17,32 +17,27 @@
                 </div>
 
                 <div class="nav-links hidden md:flex items-center space-x-4">
-                    {{ if .IsAuthenticated }}
                     <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
                     <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
                     <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
                     <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
-                    {{ end }}
                 </div>
 
-                {{ if .IsAuthenticated }}
                 <div id="hamburger" class="hamburger md:hidden">
                     <span></span>
                     <span></span>
                     <span></span>
                 </div>
-                {{ end }}
             </div>
         </nav>
 
-        {{ if .IsAuthenticated }}
         <div id="sidebar" class="sidebar">
             <div class="sidebar-header">
                 <h2 class="text-lg font-bold">Menu</h2>
                 <div id="sidebar-close" class="sidebar-close">&times;</div>
             </div>
             <div class="sidebar-menu">
-                <a href="/" class="btn btn-secondary w-full text-left mb-2">Home</a>
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Home</a>
                 <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
                 <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
                 <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
@@ -51,23 +46,37 @@
         </div>
 
         <div id="overlay" class="overlay"></div>
-        {{ end }}
         <div class="container mx-auto mt-8 px-4">
-            {{ if .IsAuthenticated }}
-            <div class="flex flex-col md:flex-row -mx-4">
-                <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
-                    <div class="flex justify-between items-center mb-4">
-                        <h1 class="text-xl font-bold text-text-primary">Accounts</h1>
-                        <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
-                    </div>
-                    <div id="create-account-modal"></div>
-                    <div id="account-list" hx-get="/page/accounts" hx-trigger="load, reloadAccounts from:body"></div>
-                </div>
-                <div class="w-full md:w-1/2 px-4">
-                    <div id="account-details"></div>
-                </div>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-text-primary">Reminders</h1>
             </div>
-            {{ else }} {{ template "login" . }} {{ end }}
+
+            <div id="reminders-list" hx-trigger="load, reloadReminders from:body">
+                {{ if . }}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{ range . }}
+                    <div class="bg-bg-secondary rounded-lg shadow p-4 {{ if .IsRead }}opacity-50{{ end }}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-lg text-text-primary">Reminder: {{ .ReminderDate.Format "2006-01-02" }}</h3>
+                                <p class="text-text-secondary">Transaction: {{ .RecurringTransactionID }}</p>
+                            </div>
+                            {{ if not .IsRead }}
+                            <button hx-post="/reminders/{{ .ID }}/read" hx-swap="outerHTML" hx-target="closest div" class="btn btn-secondary btn-sm">Mark as Read</button>
+                            {{ else }}
+                            <span class="text-sm text-text-secondary">Read: {{ .ReadAt.Format "2006-01-02 15:04" }}</span>
+                            {{ end }}
+                        </div>
+                    </div>
+                    {{ end }}
+                </div>
+                {{ else }}
+                <div class="bg-bg-secondary rounded-lg shadow p-6 text-center">
+                    <p class="text-text-primary text-lg">No reminders available</p>
+                    <p class="text-text-secondary mt-2">You'll see reminders for your recurring transactions here when they're due</p>
+                </div>
+                {{ end }}
+            </div>
         </div>
     </body>
 </html>

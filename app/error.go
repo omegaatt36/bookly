@@ -54,6 +54,24 @@ func AuthError() error {
 		StatusCode: http.StatusUnauthorized}
 }
 
+// Unauthorized generates an unauthorized error with a custom message.
+func Unauthorized(err error) error {
+	return &CodedError{
+		Err:        err,
+		StatusCode: http.StatusUnauthorized,
+		AppCode:    CodeUnauthorized,
+	}
+}
+
+// Forbidden generates a forbidden error with a custom message.
+func Forbidden(err error) error {
+	return &CodedError{
+		Err:        err,
+		StatusCode: http.StatusForbidden,
+		AppCode:    CodeForbidden,
+	}
+}
+
 // ParamError generates BadParamError.
 func ParamError(err error) error {
 	if err != nil {
@@ -72,5 +90,6 @@ func NotFoundError() error {
 	return &CodedError{
 		Err:        errors.New("error not found"),
 		StatusCode: http.StatusNotFound,
+		AppCode:    CodeNotFound,
 	}
 }

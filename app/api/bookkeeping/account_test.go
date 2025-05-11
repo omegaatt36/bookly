@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/omegaatt36/bookly/app/api/bookkeeping"
+	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/migration"
@@ -33,6 +34,7 @@ type testAccountSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
+	userID   string
 }
 
 func (s *testAccountSuite) SetupTest() {
@@ -40,15 +42,28 @@ func (s *testAccountSuite) SetupTest() {
 	db := database.GetDB()
 	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
-	controller := bookkeeping.NewController(s.repo, s.repo)
+	controller := bookkeeping.NewController(bookkeeping.NewControllerRequest{
+		s.repo, s.repo, nil, nil,
+	})
 
-	s.router.HandleFunc("POST /accounts", controller.CreateAccount())
-	s.router.HandleFunc("GET /accounts", controller.GetAllAccounts())
-	s.router.HandleFunc("GET /accounts/{id}", controller.GetAccountByID())
-	s.router.HandleFunc("PATCH /accounts/{id}", controller.UpdateAccount())
-	s.router.HandleFunc("DELETE /accounts/{id}", controller.DeactivateAccountByID())
-	s.router.HandleFunc("GET /users/{user_id}/accounts", controller.GetUserAccounts())
-	s.router.HandleFunc("POST /users/{user_id}/accounts", controller.CreateUserAccount())
+	authMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := engine.WithUserID(r.Context(), s.userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+
+	registerWithAuth := func(pattern string, handler http.Handler) {
+		s.router.Handle(pattern, authMiddleware(handler))
+	}
+
+	registerWithAuth("POST /accounts", http.HandlerFunc(controller.CreateAccount()))
+	registerWithAuth("GET /accounts", http.HandlerFunc(controller.GetAllAccounts()))
+	registerWithAuth("GET /accounts/{id}", http.HandlerFunc(controller.GetAccountByID()))
+	registerWithAuth("PATCH /accounts/{id}", http.HandlerFunc(controller.UpdateAccount()))
+	registerWithAuth("DELETE /accounts/{id}", http.HandlerFunc(controller.DeactivateAccountByID()))
+	registerWithAuth("GET /users/{user_id}/accounts", http.HandlerFunc(controller.GetUserAccounts()))
+	registerWithAuth("POST /users/{user_id}/accounts", http.HandlerFunc(controller.CreateUserAccount()))
 
 	s.NoError(migration.NewMigrator(db).Upgrade())
 }
@@ -244,6 +259,8 @@ func (s *testAccountSuite) createSeedUser() (string, error) {
 		Name: seedUser.Name,
 	})
 	s.NoError(err)
+
+	s.userID = userID
 
 	return userID, nil
 }

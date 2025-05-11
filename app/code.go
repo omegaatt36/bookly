@@ -6,4 +6,5 @@ const (
 	CodeBadParam      = 1001
 	CodeNotFound      = 1002
 	CodeUnauthorized  = 1003
+	CodeForbidden     = 1004
 )

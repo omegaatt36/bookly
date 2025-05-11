@@ -75,8 +75,10 @@ func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
 		Accounts: accounts,
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "account_list.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
+	// 使用完整的頁面模板，而不是片段模板
+	if err := s.templates.ExecuteTemplate(w, "accounts_page.html", result); err != nil {
+		slog.Error("failed to render accounts_page.html", slog.String("error", err.Error()))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 

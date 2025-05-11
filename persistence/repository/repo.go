@@ -21,7 +21,9 @@ func NewSQLCRepository(db *pgxpool.Pool) *SQLCRepository {
 
 // Ensure SQLCRepository implements all required interfaces
 var (
-	_ domain.AccountRepository = (*SQLCRepository)(nil)
-	_ domain.LedgerRepository  = (*SQLCRepository)(nil)
-	_ domain.UserRepository    = (*SQLCRepository)(nil)
+	_ domain.AccountRepository              = (*SQLCRepository)(nil)
+	_ domain.LedgerRepository               = (*SQLCRepository)(nil)
+	_ domain.UserRepository                 = (*SQLCRepository)(nil)
+	_ domain.RecurringTransactionRepository = (*SQLCRepository)(nil)
+	_ domain.ReminderRepository             = (*SQLCRepository)(nil)
 )

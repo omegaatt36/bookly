@@ -1,0 +1,100 @@
+{{ define "recurring_list.html" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Recurring Transactions - Bookly</title>
+        <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        {{ template "base.html" }}
+    </head>
+    <body class="bg-bg-primary text-text-primary">
+        <nav class="bg-bg-secondary p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="text-2xl font-bold text-text-highlight">
+                    <a href="/">Bookly</a>
+                </div>
+
+                <div class="nav-links hidden md:flex items-center space-x-4">
+                    <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
+                    <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
+                    <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
+                    <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
+                </div>
+
+                <div id="hamburger" class="hamburger md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="text-lg font-bold">Menu</h2>
+                <div id="sidebar-close" class="sidebar-close">&times;</div>
+            </div>
+            <div class="sidebar-menu">
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Home</a>
+                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
+                <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
+                <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
+                <button hx-post="/logout" hx-target="body" class="btn btn-danger w-full text-left">Logout</button>
+            </div>
+        </div>
+
+        <div id="overlay" class="overlay"></div>
+        <div class="container mx-auto mt-8 px-4">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-text-primary">Recurring Transactions</h1>
+                <button hx-get="/page/recurring/create" hx-target="#create-recurring-modal" hx-swap="innerHTML" class="btn btn-primary">New Recurring Transaction</button>
+            </div>
+
+            <div id="create-recurring-modal"></div>
+
+            <div id="recurring-list" hx-trigger="load, reloadRecurring from:body">
+                <div class="overflow-x-auto">
+                    <table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
+                        <thead class="bg-bg-tertiary">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-text-primary">Name</th>
+                                <th class="px-4 py-2 text-left text-text-primary">Type</th>
+                                <th class="px-4 py-2 text-left text-text-primary">Amount</th>
+                                <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Frequency</th>
+                                <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Next Due</th>
+                                <th class="px-4 py-2 text-left text-text-primary">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ range .RecurringTransactions }}
+                            <tr hx-get="/page/recurring/{{ .ID }}" hx-target="#recurring-details" hx-swap="innerHTML" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
+                                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
+                                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Type }}</td>
+                                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Amount }}</td>
+                                <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">
+                                    {{ if eq .RecurType "daily" }}Daily{{ else if eq .RecurType "weekly" }}Weekly{{ else if eq .RecurType "monthly" }}Monthly{{ else if eq .RecurType "yearly" }}Yearly{{ else }}{{ .RecurType }}{{ end }}
+                                </td>
+                                <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .NextDue.Format "2006-01-02" }}</td>
+                                <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">
+                                    {{ if eq .Status "active" }}
+                                    <span class="px-2 py-1 rounded-full bg-success bg-opacity-20 text-success">Active</span>
+                                    {{ else if eq .Status "paused" }}
+                                    <span class="px-2 py-1 rounded-full bg-warning bg-opacity-20 text-warning">Paused</span>
+                                    {{ else }}
+                                    <span class="px-2 py-1 rounded-full bg-error bg-opacity-20 text-error">{{ .Status }}</span>
+                                    {{ end }}
+                                </td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="recurring-details" class="mt-8"></div>
+        </div>
+    </body>
+</html>
+{{ end }}

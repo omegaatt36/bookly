@@ -38,6 +38,8 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 
 		var req request
 		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+			// Allow user creation without auth - this is typically for signup
+			// In a real system with admin roles, we would check if the authenticated user has admin privileges
 			if req.Name == "" {
 				return nil, app.ParamError(errors.New("name is required"))
 			}
@@ -57,7 +59,12 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 // GetAllUsers retrieves all users from the system.
 func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
+			// Admin validation would go here in a real system
+			// For now, check if the user is authenticated
+			if ctx.GetUserID() == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
 			users, err := x.service.GetAllUsers()
 			if err != nil {
 				return nil, err
@@ -77,7 +84,17 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*jsonUser, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonUser, error) {
+			authenticatedUserID := ctx.GetUserID()
+			if authenticatedUserID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// User can only retrieve their own information unless they're an admin
+			// In a real system, we would check admin role here
+			if id != authenticatedUserID {
+				return nil, app.Forbidden(errors.New("access denied: cannot view other user's information"))
+			}
 			u, err := x.service.GetUserByID(id)
 			if err != nil {
 				return nil, err
@@ -101,7 +118,17 @@ func (x *Controller) UpdateUser() func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+			authenticatedUserID := ctx.GetUserID()
+			if authenticatedUserID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// User can only update their own information unless they're an admin
+			// In a real system, we would check admin role here
+			if req.id != authenticatedUserID {
+				return nil, app.Forbidden(errors.New("access denied: cannot update other user's information"))
+			}
 
 			return nil, x.service.UpdateUser(domain.UpdateUserRequest{
 				ID:       req.id,
@@ -117,7 +144,17 @@ func (x *Controller) DeactivateUserByID() func(w http.ResponseWriter, r *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
 
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
+			authenticatedUserID := ctx.GetUserID()
+			if authenticatedUserID == "" {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// User can only deactivate their own account unless they're an admin
+			// In a real system, we would check admin role here
+			if id != authenticatedUserID {
+				return nil, app.Forbidden(errors.New("access denied: cannot deactivate other user's account"))
+			}
 			return nil, x.service.DeactivateUserByID(id)
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}

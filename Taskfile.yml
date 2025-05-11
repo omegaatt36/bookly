@@ -6,7 +6,7 @@ env:
   DB_NAME: bookly
   DB_USER: postgres
   DB_PASSWORD: postgres
-  DB_SILENCE_LOGGER: false
+  DB_SILENCE_LOGGER: true
   DB_SLOW_THRESHOLD_MILLISECONDS: 1000
   JWT_SALT: salt
   JWT_SECRET_KEY: secret
