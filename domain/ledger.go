@@ -52,10 +52,11 @@ type UpdateLedgerRequest struct {
 
 // LedgerRepository represents a ledger repository
 type LedgerRepository interface {
-	CreateLedger(CreateLedgerRequest) error
+	CreateLedger(CreateLedgerRequest) (string, error)
 	GetLedgerByID(string) (*Ledger, error)
 	GetLedgersByAccountID(string) ([]*Ledger, error)
 	UpdateLedger(UpdateLedgerRequest) error
 	VoidLedger(id string) error
 	AdjustLedger(originalID string, adjustment CreateLedgerRequest) error
+	DeleteLedger(id string) error
 }

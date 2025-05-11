@@ -48,7 +48,7 @@ UPDATE accounts
 SET
     status = $1,
     updated_at = NOW()
-WHERE id = $2
+WHERE id = $2 AND deleted_at IS NULL
 `
 
 type DeactivateAccountByIDParams struct {
@@ -61,9 +61,22 @@ func (q *Queries) DeactivateAccountByID(ctx context.Context, arg DeactivateAccou
 	return err
 }
 
+const deleteAccount = `-- name: DeleteAccount :exec
+UPDATE accounts
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) DeleteAccount(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteAccount, id)
+	return err
+}
+
 const getAccountByID = `-- name: GetAccountByID :one
-SELECT id, created_at, updated_at, user_id, name, status, currency, balance FROM accounts
-WHERE id = $1
+SELECT id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance FROM accounts
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
@@ -74,6 +87,7 @@ func (q *Queries) GetAccountByID(ctx context.Context, id string) (Account, error
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.UserID,
 		&i.Name,
 		&i.Status,
@@ -84,8 +98,8 @@ func (q *Queries) GetAccountByID(ctx context.Context, id string) (Account, error
 }
 
 const getAccountsByUserID = `-- name: GetAccountsByUserID :many
-SELECT id, created_at, updated_at, user_id, name, status, currency, balance FROM accounts
-WHERE user_id = $1
+SELECT id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance FROM accounts
+WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at
 `
 
@@ -102,6 +116,7 @@ func (q *Queries) GetAccountsByUserID(ctx context.Context, userID string) ([]Acc
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.UserID,
 			&i.Name,
 			&i.Status,
@@ -119,7 +134,8 @@ func (q *Queries) GetAccountsByUserID(ctx context.Context, userID string) ([]Acc
 }
 
 const getAllAccounts = `-- name: GetAllAccounts :many
-SELECT id, created_at, updated_at, user_id, name, status, currency, balance FROM accounts
+SELECT id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance FROM accounts
+WHERE deleted_at IS NULL
 ORDER BY created_at
 `
 
@@ -136,6 +152,7 @@ func (q *Queries) GetAllAccounts(ctx context.Context) ([]Account, error) {
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.UserID,
 			&i.Name,
 			&i.Status,
@@ -157,7 +174,7 @@ UPDATE accounts
 SET
     balance = balance + $1,
     updated_at = NOW()
-WHERE id = $2
+WHERE id = $2 AND deleted_at IS NULL
 `
 
 type IncreaseAccountBalanceParams struct {
@@ -178,7 +195,7 @@ SET
     currency = CASE WHEN $3::text IS NULL THEN currency ELSE $3 END,
     status = CASE WHEN $4::text IS NULL THEN status ELSE $4 END,
     updated_at = NOW()
-WHERE id = $5
+WHERE id = $5 AND deleted_at IS NULL
 `
 
 type UpdateAccountParams struct {

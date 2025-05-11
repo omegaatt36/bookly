@@ -50,7 +50,13 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("POST /ledgers/{id}/adjust", bookkeepingX.AdjustLedger())
 
 		// Register recurring transaction routes
-		bookkeepingX.RegisterRecurringRoutes(v1Router)
+		v1Router.HandleFunc("POST /recurring", bookkeepingX.CreateRecurringTransaction())
+		v1Router.HandleFunc("GET /recurring", bookkeepingX.GetRecurringTransactions())
+		v1Router.HandleFunc("GET /recurring/{id}", bookkeepingX.GetRecurringTransaction())
+		v1Router.HandleFunc("PUT /recurring/{id}", bookkeepingX.UpdateRecurringTransaction())
+		v1Router.HandleFunc("DELETE /recurring/{id}", bookkeepingX.DeleteRecurringTransaction())
+		v1Router.HandleFunc("GET /recurring/reminders", bookkeepingX.GetReminders())
+		v1Router.HandleFunc("POST /recurring/reminders/{id}/read", bookkeepingX.MarkReminderAsRead())
 	}
 	{
 		userOptions := make([]user.Option, 0)
@@ -80,8 +86,6 @@ func (s *Server) registerRouters() {
 	router.Handle("/v1/", http.StripPrefix("/v1", chainMiddleware(authMiddlewares...)(v1Router)))
 	router.Handle("/internal/", http.StripPrefix("/internal", onlyInternal(*s.internalToken)(internalRouter)))
 	router.Handle("/public/", http.StripPrefix("/public", publicRouter))
-
-	// Recurring transaction functionality is now integrated into the bookkeeping controller
 
 	s.router = chainMiddleware(rateLimiter(10, 100), logging)(router)
 }

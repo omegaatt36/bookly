@@ -1,6 +1,6 @@
 -- name: CreateRecurringTransaction :one
 INSERT INTO recurring_transactions (
-    user_id, account_id, name, type, amount, note, 
+    user_id, account_id, name, type, amount, note,
     start_date, end_date, recur_type, status, frequency,
     day_of_week, day_of_month, month_of_year, next_due
 ) VALUES (
@@ -9,21 +9,21 @@ INSERT INTO recurring_transactions (
 
 -- name: GetRecurringTransactionByID :one
 SELECT * FROM recurring_transactions
-WHERE id = $1 LIMIT 1;
+WHERE id = $1 AND deleted_at IS NULL LIMIT 1;
 
 -- name: GetRecurringTransactionsByUserID :many
 SELECT * FROM recurring_transactions
-WHERE user_id = $1
+WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY next_due ASC;
 
 -- name: GetActiveRecurringTransactionsDue :many
 SELECT * FROM recurring_transactions
-WHERE status = 'active' AND next_due <= $1
+WHERE status = 'active' AND next_due <= $1 AND deleted_at IS NULL
 ORDER BY next_due ASC;
 
 -- name: UpdateRecurringTransaction :one
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
     name = CASE WHEN sqlc.narg('name')::text IS NULL THEN name ELSE sqlc.narg('name') END,
     type = CASE WHEN sqlc.narg('type')::text IS NULL THEN type ELSE sqlc.narg('type') END,
@@ -36,21 +36,22 @@ SET
     day_of_week = CASE WHEN sqlc.narg('day_of_week')::int IS NULL THEN day_of_week ELSE sqlc.narg('day_of_week') END,
     day_of_month = CASE WHEN sqlc.narg('day_of_month')::int IS NULL THEN day_of_month ELSE sqlc.narg('day_of_month') END,
     month_of_year = CASE WHEN sqlc.narg('month_of_year')::int IS NULL THEN month_of_year ELSE sqlc.narg('month_of_year') END
-WHERE id = sqlc.arg('id')
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL
 RETURNING *;
 
 -- name: UpdateRecurringTransactionExecution :one
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
     last_executed = sqlc.arg('last_executed'),
     next_due = sqlc.arg('next_due')
-WHERE id = sqlc.arg('id')
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL
 RETURNING *;
 
 -- name: DeleteRecurringTransaction :exec
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
-    status = 'cancelled'
-WHERE id = sqlc.arg('id');
+    status = 'cancelled',
+    deleted_at = NOW()
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL;

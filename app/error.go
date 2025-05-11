@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -91,5 +92,14 @@ func NotFoundError() error {
 		Err:        errors.New("error not found"),
 		StatusCode: http.StatusNotFound,
 		AppCode:    CodeNotFound,
+	}
+}
+
+// InternalError creates an internal server error.
+func InternalError(err error) *CodedError {
+	return &CodedError{
+		Err:        fmt.Errorf("internal server error: %w", err),
+		StatusCode: http.StatusInternalServerError,
+		AppCode:    CodeInternalError,
 	}
 }

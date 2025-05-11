@@ -9,11 +9,12 @@ RETURNING id;
 
 -- name: GetAllUsers :many
 SELECT * FROM users
-ORDER BY updated_at;
+WHERE deleted_at IS NULL
+ORDER BY id;
 
 -- name: GetUserByID :one
 SELECT * FROM users
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: UpdateUser :exec
@@ -23,14 +24,21 @@ SET
     nickname = CASE WHEN sqlc.narg('nickname')::text IS NULL THEN nickname ELSE sqlc.narg('nickname') END,
     disabled = CASE WHEN sqlc.narg('disabled')::boolean IS NULL THEN disabled ELSE sqlc.narg('disabled') END,
     updated_at = NOW()
-WHERE id = sqlc.arg('id');
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
 
 -- name: DeactivateUserByID :exec
 UPDATE users
 SET
     disabled = true,
     updated_at = NOW()
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NULL;
+
+-- name: DeleteUser :exec
+UPDATE users
+SET
+    deleted_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: AddIdentity :exec
 INSERT INTO identities (
@@ -59,5 +67,5 @@ SELECT
     i.last_used_at AS identity_last_used_at
 FROM users u
 JOIN identities i ON u.id = i.user_id
-WHERE i.provider = $1 AND i.identifier = $2
+WHERE i.provider = $1 AND i.identifier = $2 AND u.deleted_at IS NULL
 LIMIT 1;

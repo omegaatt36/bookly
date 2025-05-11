@@ -22,6 +22,7 @@ type Account struct {
 	Status    AccountStatus
 	Currency  string
 	Balance   decimal.Decimal
+	DeletedAt *time.Time
 }
 
 // CreateAccountRequest defines the request to create a ledger account
@@ -46,6 +47,7 @@ type AccountRepository interface {
 	GetAccountByID(string) (*Account, error)
 	UpdateAccount(UpdateAccountRequest) error
 	DeactivateAccountByID(string) error
+	DeleteAccount(string) error
 	GetAllAccounts() ([]*Account, error)
 	GetAccountsByUserID(string) ([]*Account, error)
 }

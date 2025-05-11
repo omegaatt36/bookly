@@ -7,15 +7,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/sqlcgen"
 )
 
 // CreateLedger implements the domain.LedgerRepository interface
-func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) error {
-	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
+func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (string, error) {
+	var ledgerID string
+	err := r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Create the ledger entry
-		err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
+		var err error
+		ledgerID, err = repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
 			AccountID:    req.AccountID,
 			Date:         pgtype.Timestamptz{Time: req.Date, Valid: true},
 			Type:         string(req.Type),
@@ -39,12 +43,17 @@ func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) error {
 
 		return nil
 	})
+
+	return ledgerID, err
 }
 
 // GetLedgerByID implements the domain.LedgerRepository interface
 func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
 	ledger, err := r.querier.GetLedgerByID(r.ctx, id)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, fmt.Errorf("failed to get ledger: %w", err)
 	}
 
@@ -202,15 +211,17 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 }
 
 // VoidLedger implements the domain.LedgerRepository interface
+// This method now also performs a soft delete by setting the deleted_at timestamp.
 func (r *Repository) VoidLedger(id string) error {
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Get the ledger to find the amount and account ID
+		// The GetLedgerByID query already filters out soft-deleted records.
 		ledger, err := repo.querier.GetLedgerByID(repo.ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to get ledger for voiding: %w", err)
 		}
 
-		// Void the ledger
+		// Void the ledger (SQL query now also sets deleted_at)
 		if err := repo.querier.VoidLedger(repo.ctx, id); err != nil {
 			return fmt.Errorf("failed to void ledger: %w", err)
 		}
@@ -228,7 +239,36 @@ func (r *Repository) VoidLedger(id string) error {
 	})
 }
 
-// AdjustLedger implements the domain.LedgerRepository interface
+// DeleteLedger implements the domain.LedgerRepository interface for soft delete
+func (r *Repository) DeleteLedger(id string) error {
+	// We need to get the ledger first to reverse the balance impact before soft deleting.
+	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
+		// Get the ledger to find the amount and account ID
+		// The GetLedgerByID query already filters out soft-deleted records.
+		ledger, err := repo.querier.GetLedgerByID(repo.ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to get ledger for soft deletion: %w", err)
+		}
+
+		// Soft delete the ledger
+		if err := repo.querier.DeleteLedger(repo.ctx, id); err != nil {
+			return fmt.Errorf("failed to soft delete ledger: %w", err)
+		}
+
+		// Reverse the amount in the account balance
+		reverseAmount := ledger.Amount.Neg()
+		if err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+			Balance: reverseAmount,
+			ID:      ledger.AccountID,
+		}); err != nil {
+			return fmt.Errorf("failed to update account balance for soft deleted ledger: %w", err)
+		}
+
+		return nil
+	})
+}
+
+// AdjustLedger adjusts a ledger by its original ID.
 func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLedgerRequest) error {
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Parse UUID from originalID
@@ -238,7 +278,7 @@ func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLed
 		}
 
 		// Create a new ledger entry marked as an adjustment
-		err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
+		_, err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
 			AccountID:    adjustment.AccountID,
 			Date:         pgtype.Timestamptz{Time: adjustment.Date, Valid: true},
 			Type:         string(adjustment.Type),

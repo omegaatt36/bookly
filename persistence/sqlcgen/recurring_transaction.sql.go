@@ -14,12 +14,12 @@ import (
 
 const createRecurringTransaction = `-- name: CreateRecurringTransaction :one
 INSERT INTO recurring_transactions (
-    user_id, account_id, name, type, amount, note, 
+    user_id, account_id, name, type, amount, note,
     start_date, end_date, recur_type, status, frequency,
     day_of_week, day_of_month, month_of_year, next_due
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-) RETURNING id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
+) RETURNING id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
 `
 
 type CreateRecurringTransactionParams struct {
@@ -63,6 +63,7 @@ func (q *Queries) CreateRecurringTransaction(ctx context.Context, arg CreateRecu
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.UserID,
 		&i.AccountID,
 		&i.Name,
@@ -85,10 +86,11 @@ func (q *Queries) CreateRecurringTransaction(ctx context.Context, arg CreateRecu
 
 const deleteRecurringTransaction = `-- name: DeleteRecurringTransaction :exec
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
-    status = 'cancelled'
-WHERE id = $1
+    status = 'cancelled',
+    deleted_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) DeleteRecurringTransaction(ctx context.Context, id string) error {
@@ -97,8 +99,8 @@ func (q *Queries) DeleteRecurringTransaction(ctx context.Context, id string) err
 }
 
 const getActiveRecurringTransactionsDue = `-- name: GetActiveRecurringTransactionsDue :many
-SELECT id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
-WHERE status = 'active' AND next_due <= $1
+SELECT id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
+WHERE status = 'active' AND next_due <= $1 AND deleted_at IS NULL
 ORDER BY next_due ASC
 `
 
@@ -115,6 +117,7 @@ func (q *Queries) GetActiveRecurringTransactionsDue(ctx context.Context, nextDue
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.UserID,
 			&i.AccountID,
 			&i.Name,
@@ -143,8 +146,8 @@ func (q *Queries) GetActiveRecurringTransactionsDue(ctx context.Context, nextDue
 }
 
 const getRecurringTransactionByID = `-- name: GetRecurringTransactionByID :one
-SELECT id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
-WHERE id = $1 LIMIT 1
+SELECT id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
+WHERE id = $1 AND deleted_at IS NULL LIMIT 1
 `
 
 func (q *Queries) GetRecurringTransactionByID(ctx context.Context, id string) (RecurringTransaction, error) {
@@ -154,6 +157,7 @@ func (q *Queries) GetRecurringTransactionByID(ctx context.Context, id string) (R
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.UserID,
 		&i.AccountID,
 		&i.Name,
@@ -175,8 +179,8 @@ func (q *Queries) GetRecurringTransactionByID(ctx context.Context, id string) (R
 }
 
 const getRecurringTransactionsByUserID = `-- name: GetRecurringTransactionsByUserID :many
-SELECT id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
-WHERE user_id = $1
+SELECT id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due FROM recurring_transactions
+WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY next_due ASC
 `
 
@@ -193,6 +197,7 @@ func (q *Queries) GetRecurringTransactionsByUserID(ctx context.Context, userID s
 			&i.ID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 			&i.UserID,
 			&i.AccountID,
 			&i.Name,
@@ -222,7 +227,7 @@ func (q *Queries) GetRecurringTransactionsByUserID(ctx context.Context, userID s
 
 const updateRecurringTransaction = `-- name: UpdateRecurringTransaction :one
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
     name = CASE WHEN $1::text IS NULL THEN name ELSE $1 END,
     type = CASE WHEN $2::text IS NULL THEN type ELSE $2 END,
@@ -235,8 +240,8 @@ SET
     day_of_week = CASE WHEN $9::int IS NULL THEN day_of_week ELSE $9 END,
     day_of_month = CASE WHEN $10::int IS NULL THEN day_of_month ELSE $10 END,
     month_of_year = CASE WHEN $11::int IS NULL THEN month_of_year ELSE $11 END
-WHERE id = $12
-RETURNING id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
+WHERE id = $12 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
 `
 
 type UpdateRecurringTransactionParams struct {
@@ -274,6 +279,7 @@ func (q *Queries) UpdateRecurringTransaction(ctx context.Context, arg UpdateRecu
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.UserID,
 		&i.AccountID,
 		&i.Name,
@@ -296,12 +302,12 @@ func (q *Queries) UpdateRecurringTransaction(ctx context.Context, arg UpdateRecu
 
 const updateRecurringTransactionExecution = `-- name: UpdateRecurringTransactionExecution :one
 UPDATE recurring_transactions
-SET 
+SET
     updated_at = NOW(),
     last_executed = $1,
     next_due = $2
-WHERE id = $3
-RETURNING id, created_at, updated_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
+WHERE id = $3 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
 `
 
 type UpdateRecurringTransactionExecutionParams struct {
@@ -317,6 +323,7 @@ func (q *Queries) UpdateRecurringTransactionExecution(ctx context.Context, arg U
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 		&i.UserID,
 		&i.AccountID,
 		&i.Name,

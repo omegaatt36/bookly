@@ -10,6 +10,6 @@ CREATE TABLE identities (
     CONSTRAINT unique_provider_identifier UNIQUE (provider, identifier)
 );
 
--- Add indexes for performance
+-- Identities Table Indexes
 CREATE INDEX idx_identities_user_id ON identities(user_id);
-CREATE INDEX idx_identities_provider_identifier ON identities(provider, identifier);
+CREATE INDEX idx_identities_last_used_at ON identities (last_used_at);

@@ -51,10 +51,20 @@ func (r *Repository) GetAllUsers() ([]*domain.User, error) {
 func (r *Repository) GetUserByID(id string) (*domain.User, error) {
 	user, err := r.querier.GetUserByID(r.ctx, id)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	return convertToDomainUser(user), nil
+	return &domain.User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt.Time,
+		UpdatedAt: user.UpdatedAt.Time,
+		Disabled:  user.Disabled,
+		Name:      user.Name,
+		Nickname:  user.Nickname.String,
+	}, nil
 }
 
 // UpdateUser implements the domain.UserRepository interface
@@ -91,7 +101,10 @@ func (r *Repository) UpdateUser(req domain.UpdateUserRequest) error {
 }
 
 // DeactivateUserByID implements the domain.UserRepository interface
+// This method now performs a soft delete by setting the deleted_at timestamp.
 func (r *Repository) DeactivateUserByID(id string) error {
+	// The DeactivateUserByID query in SQL now also sets deleted_at.
+	// We keep the method name for backward compatibility in the service layer.
 	if err := r.querier.DeactivateUserByID(r.ctx, id); err != nil {
 		return fmt.Errorf("failed to deactivate user: %w", err)
 	}
@@ -107,6 +120,14 @@ func (r *Repository) AddIdentity(userID string, provider domain.Identity) error 
 		Credential: provider.Credential,
 	}); err != nil {
 		return fmt.Errorf("failed to add identity: %w", err)
+	}
+	return nil
+}
+
+// DeleteUser implements the domain.UserRepository interface for soft delete
+func (r *Repository) DeleteUser(id string) error {
+	if err := r.querier.DeleteUser(r.ctx, id); err != nil {
+		return fmt.Errorf("failed to soft delete user: %w", err)
 	}
 	return nil
 }

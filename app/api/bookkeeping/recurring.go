@@ -13,8 +13,6 @@ import (
 	"github.com/omegaatt36/bookly/domain"
 )
 
-// No need to define contextKey here as we're using the shared api.ContextKeyUserID
-
 // RecurringTransactionResponse is the response for a recurring transaction
 type RecurringTransactionResponse struct {
 	ID           string          `json:"id"`
@@ -46,17 +44,6 @@ type ReminderResponse struct {
 	ReadAt                 *time.Time `json:"read_at,omitempty"`
 }
 
-// RegisterRecurringRoutes registers routes for recurring transactions
-func (x *Controller) RegisterRecurringRoutes(router *http.ServeMux) {
-	router.HandleFunc("POST /recurring", x.CreateRecurringTransaction())
-	router.HandleFunc("GET /recurring", x.GetRecurringTransactions())
-	router.HandleFunc("GET /recurring/{id}", x.GetRecurringTransaction())
-	router.HandleFunc("PUT /recurring/{id}", x.UpdateRecurringTransaction())
-	router.HandleFunc("DELETE /recurring/{id}", x.DeleteRecurringTransaction())
-	router.HandleFunc("GET /recurring/reminders", x.GetReminders())
-	router.HandleFunc("POST /recurring/reminders/{id}/read", x.MarkReminderAsRead())
-}
-
 // CreateRecurringTransaction creates a new recurring transaction
 func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +64,11 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
-			// Get user ID from context (set by auth middleware)
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			// Validate input
 			if req.Name == "" || req.AccountID == "" {
 				return nil, app.ParamError(errors.New("name and account_id are required"))
 			}
@@ -92,16 +77,16 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 				return nil, app.ParamError(errors.New("amount must be greater than zero"))
 			}
 
-			// Convert LedgerType
 			ledgerType, err := domain.ParseLedgerType(req.Type)
 			if err != nil {
 				return nil, app.ParamError(err)
 			}
 
-			// Convert RecurrenceType
-			recurType := domain.RecurrenceType(req.RecurType)
+			recurType, err := domain.ParseRecurrenceType(req.RecurType)
+			if err != nil {
+				return nil, app.ParamError(err)
+			}
 
-			// Create request
 			serviceReq := domain.CreateRecurringTransactionRequest{
 				UserID:      userID,
 				AccountID:   req.AccountID,
@@ -134,7 +119,6 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 func (x *Controller) GetRecurringTransactions() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]RecurringTransactionResponse, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -162,7 +146,6 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 		var id string
 
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*RecurringTransactionResponse, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -174,7 +157,6 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 				return nil, err
 			}
 
-			// Check ownership
 			if transaction.UserID != userID {
 				return nil, app.NotFoundError()
 			}
@@ -205,13 +187,11 @@ func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r 
 
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			// Check ownership
 			existingTransaction, err := x.service.GetRecurringTransaction(r.Context(), req.id)
 			if err != nil {
 				slog.Error("Failed to get recurring transaction", "id", req.id, "error", err)
@@ -222,7 +202,6 @@ func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r 
 				return nil, app.NotFoundError()
 			}
 
-			// Convert types
 			var transactionType *domain.LedgerType
 			if req.Type != nil {
 				t, err := domain.ParseLedgerType(*req.Type)
@@ -234,13 +213,19 @@ func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r 
 
 			var recurType *domain.RecurrenceType
 			if req.RecurType != nil {
-				rt := domain.RecurrenceType(*req.RecurType)
+				rt, err := domain.ParseRecurrenceType(*req.RecurType)
+				if err != nil {
+					return nil, app.ParamError(err)
+				}
 				recurType = &rt
 			}
 
 			var status *domain.RecurrenceStatus
 			if req.Status != nil {
-				s := domain.RecurrenceStatus(*req.Status)
+				s, err := domain.ParseRecurrenceStatus(*req.Status)
+				if err != nil {
+					return nil, app.ParamError(err)
+				}
 				status = &s
 			}
 
@@ -276,13 +261,11 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			// Check ownership
 			existingTransaction, err := x.service.GetRecurringTransaction(r.Context(), id)
 			if err != nil {
 				slog.Error("Failed to get recurring transaction", "id", id, "error", err)
@@ -298,7 +281,7 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 				return nil, err
 			}
 
-			return &engine.Empty{}, nil
+			return nil, nil
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
 }
@@ -307,7 +290,6 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]ReminderResponse, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -334,27 +316,23 @@ func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Re
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id string
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*ReminderResponse, error) {
-			// Get user ID from context
 			userID := ctx.GetUserID()
 			if userID == "" {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			// Get the reminder to verify ownership
 			reminder, err := x.service.GetReminderByID(r.Context(), id)
 			if err != nil {
 				slog.Error("Failed to get reminder", "id", id, "error", err)
 				return nil, err
 			}
 
-			// Get the recurring transaction to verify ownership
 			transaction, err := x.service.GetRecurringTransaction(r.Context(), reminder.RecurringTransactionID)
 			if err != nil {
 				slog.Error("Failed to get transaction for reminder", "id", reminder.RecurringTransactionID, "error", err)
 				return nil, err
 			}
 
-			// Verify ownership
 			if transaction.UserID != userID {
 				return nil, app.Forbidden(errors.New("access denied: reminder does not belong to user"))
 			}
@@ -372,7 +350,7 @@ func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// Helper functions
+// DTO
 func mapToRecurringTransactionResponse(t *domain.RecurringTransaction) RecurringTransactionResponse {
 	return RecurringTransactionResponse{
 		ID:           t.ID,
@@ -395,6 +373,7 @@ func mapToRecurringTransactionResponse(t *domain.RecurringTransaction) Recurring
 	}
 }
 
+// DTO
 func mapToReminderResponse(r *domain.Reminder) ReminderResponse {
 	return ReminderResponse{
 		ID:                     r.ID,

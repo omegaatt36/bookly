@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
@@ -32,6 +33,9 @@ func (r *Repository) CreateAccount(req domain.CreateAccountRequest) error {
 func (r *Repository) GetAccountByID(id string) (*domain.Account, error) {
 	account, err := r.querier.GetAccountByID(r.ctx, id)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, domain.ErrNotFound
+		}
 		return nil, fmt.Errorf("failed to get account: %w", err)
 	}
 
@@ -43,10 +47,16 @@ func (r *Repository) GetAccountByID(id string) (*domain.Account, error) {
 		updatedAt = account.UpdatedAt.Time
 	}
 
+	var deletedAt *time.Time
+	if account.DeletedAt.Valid {
+		deletedAt = &account.DeletedAt.Time
+	}
+
 	return &domain.Account{
 		ID:        account.ID,
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
+		DeletedAt: deletedAt,
 		UserID:    account.UserID,
 		Name:      account.Name,
 		Status:    domain.AccountStatus(account.Status),
@@ -98,7 +108,10 @@ func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 }
 
 // DeactivateAccountByID implements the domain.AccountRepository interface
+// This method now performs a soft delete by setting the deleted_at timestamp.
 func (r *Repository) DeactivateAccountByID(id string) error {
+	// The DeactivateAccountByID query in SQL now also sets deleted_at.
+	// We keep the method name for backward compatibility in the service layer.
 	params := sqlcgen.DeactivateAccountByIDParams{
 		Status: domain.AccountStatusClosed.String(),
 		ID:     id,
@@ -107,6 +120,16 @@ func (r *Repository) DeactivateAccountByID(id string) error {
 	err := r.querier.DeactivateAccountByID(r.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to deactivate account: %w", err)
+	}
+	return nil
+}
+
+// DeleteAccount implements the domain.AccountRepository interface
+// This method performs a soft delete by setting the deleted_at timestamp.
+func (r *Repository) DeleteAccount(id string) error {
+	err := r.querier.DeleteAccount(r.ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to soft delete account: %w", err)
 	}
 	return nil
 }
@@ -128,6 +151,11 @@ func (r *Repository) GetAllAccounts() ([]*domain.Account, error) {
 			updatedAt = account.UpdatedAt.Time
 		}
 
+		var deletedAt *time.Time
+		if account.DeletedAt.Valid {
+			deletedAt = &account.DeletedAt.Time
+		}
+
 		domainAccounts[i] = &domain.Account{
 			ID:        account.ID,
 			CreatedAt: createdAt,
@@ -137,6 +165,7 @@ func (r *Repository) GetAllAccounts() ([]*domain.Account, error) {
 			Status:    domain.AccountStatus(account.Status),
 			Currency:  account.Currency,
 			Balance:   account.Balance,
+			DeletedAt: deletedAt,
 		}
 	}
 
