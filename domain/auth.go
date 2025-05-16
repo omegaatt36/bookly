@@ -2,7 +2,7 @@ package domain
 
 // GenerateTokenRequest defines the request to generate a token
 type GenerateTokenRequest struct {
-	UserID string
+	UserID int32
 }
 
 // ValidateTokenRequest defines the request to validate a token
@@ -13,7 +13,7 @@ type ValidateTokenRequest struct {
 // TokenValidationResponse defines the response for token validation
 type TokenValidationResponse struct {
 	Valid  bool
-	UserID string
+	UserID int32
 }
 
 // Authenticator represents an authentication service

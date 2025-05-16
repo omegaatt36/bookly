@@ -22,7 +22,7 @@ func (r *Repository) CreateAccount(req domain.CreateAccountRequest) error {
 		Balance:  decimal.Zero,
 	}
 
-	err := r.querier.CreateAccount(r.ctx, params)
+	_, err := r.querier.CreateAccount(r.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to create account: %w", err)
 	}
@@ -30,7 +30,7 @@ func (r *Repository) CreateAccount(req domain.CreateAccountRequest) error {
 }
 
 // GetAccountByID implements the domain.AccountRepository interface
-func (r *Repository) GetAccountByID(id string) (*domain.Account, error) {
+func (r *Repository) GetAccountByID(id int32) (*domain.Account, error) {
 	account, err := r.querier.GetAccountByID(r.ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -72,9 +72,9 @@ func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 	}
 
 	if req.UserID != nil {
-		params.UserID = pgtype.UUID{}
-		if err := params.UserID.Scan(*req.UserID); err != nil {
-			return fmt.Errorf("failed to scan user ID: %w", err)
+		params.UserID = pgtype.Int4{
+			Int32: *req.UserID,
+			Valid: true,
 		}
 	}
 
@@ -99,7 +99,7 @@ func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 		}
 	}
 
-	err := r.querier.UpdateAccount(r.ctx, params)
+	_, err := r.querier.UpdateAccount(r.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to update account: %w", err)
 	}
@@ -109,15 +109,13 @@ func (r *Repository) UpdateAccount(req domain.UpdateAccountRequest) error {
 
 // DeactivateAccountByID implements the domain.AccountRepository interface
 // This method now performs a soft delete by setting the deleted_at timestamp.
-func (r *Repository) DeactivateAccountByID(id string) error {
-	// The DeactivateAccountByID query in SQL now also sets deleted_at.
-	// We keep the method name for backward compatibility in the service layer.
+func (r *Repository) DeactivateAccountByID(id int32) error {
 	params := sqlcgen.DeactivateAccountByIDParams{
 		Status: domain.AccountStatusClosed.String(),
 		ID:     id,
 	}
 
-	err := r.querier.DeactivateAccountByID(r.ctx, params)
+	_, err := r.querier.DeactivateAccountByID(r.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to deactivate account: %w", err)
 	}
@@ -126,8 +124,8 @@ func (r *Repository) DeactivateAccountByID(id string) error {
 
 // DeleteAccount implements the domain.AccountRepository interface
 // This method performs a soft delete by setting the deleted_at timestamp.
-func (r *Repository) DeleteAccount(id string) error {
-	err := r.querier.DeleteAccount(r.ctx, id)
+func (r *Repository) DeleteAccount(id int32) error {
+	_, err := r.querier.DeleteAccount(r.ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete account: %w", err)
 	}
@@ -173,7 +171,7 @@ func (r *Repository) GetAllAccounts() ([]*domain.Account, error) {
 }
 
 // GetAccountsByUserID implements the domain.AccountRepository interface
-func (r *Repository) GetAccountsByUserID(userID string) ([]*domain.Account, error) {
+func (r *Repository) GetAccountsByUserID(userID int32) ([]*domain.Account, error) {
 	accounts, err := r.querier.GetAccountsByUserID(r.ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get accounts by user: %w", err)

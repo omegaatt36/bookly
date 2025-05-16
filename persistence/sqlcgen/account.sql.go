@@ -12,7 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const createAccount = `-- name: CreateAccount :exec
+const createAccount = `-- name: CreateAccount :one
 INSERT INTO accounts (
     user_id,
     name,
@@ -21,57 +21,95 @@ INSERT INTO accounts (
     balance
 ) VALUES (
     $1, $2, $3, $4, $5
-)
+) RETURNING id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance
 `
 
 type CreateAccountParams struct {
-	UserID   string
+	UserID   int32
 	Name     string
 	Currency string
 	Status   string
 	Balance  decimal.Decimal
 }
 
-func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) error {
-	_, err := q.db.Exec(ctx, createAccount,
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
+	row := q.db.QueryRow(ctx, createAccount,
 		arg.UserID,
 		arg.Name,
 		arg.Currency,
 		arg.Status,
 		arg.Balance,
 	)
-	return err
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.Name,
+		&i.Status,
+		&i.Currency,
+		&i.Balance,
+	)
+	return i, err
 }
 
-const deactivateAccountByID = `-- name: DeactivateAccountByID :exec
+const deactivateAccountByID = `-- name: DeactivateAccountByID :one
 UPDATE accounts
 SET
     status = $1,
     updated_at = NOW()
 WHERE id = $2 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance
 `
 
 type DeactivateAccountByIDParams struct {
 	Status string
-	ID     string
+	ID     int32
 }
 
-func (q *Queries) DeactivateAccountByID(ctx context.Context, arg DeactivateAccountByIDParams) error {
-	_, err := q.db.Exec(ctx, deactivateAccountByID, arg.Status, arg.ID)
-	return err
+func (q *Queries) DeactivateAccountByID(ctx context.Context, arg DeactivateAccountByIDParams) (Account, error) {
+	row := q.db.QueryRow(ctx, deactivateAccountByID, arg.Status, arg.ID)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.Name,
+		&i.Status,
+		&i.Currency,
+		&i.Balance,
+	)
+	return i, err
 }
 
-const deleteAccount = `-- name: DeleteAccount :exec
+const deleteAccount = `-- name: DeleteAccount :one
 UPDATE accounts
 SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance
 `
 
-func (q *Queries) DeleteAccount(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteAccount, id)
-	return err
+func (q *Queries) DeleteAccount(ctx context.Context, id int32) (Account, error) {
+	row := q.db.QueryRow(ctx, deleteAccount, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.Name,
+		&i.Status,
+		&i.Currency,
+		&i.Balance,
+	)
+	return i, err
 }
 
 const getAccountByID = `-- name: GetAccountByID :one
@@ -80,7 +118,7 @@ WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetAccountByID(ctx context.Context, id string) (Account, error) {
+func (q *Queries) GetAccountByID(ctx context.Context, id int32) (Account, error) {
 	row := q.db.QueryRow(ctx, getAccountByID, id)
 	var i Account
 	err := row.Scan(
@@ -103,7 +141,7 @@ WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY created_at
 `
 
-func (q *Queries) GetAccountsByUserID(ctx context.Context, userID string) ([]Account, error) {
+func (q *Queries) GetAccountsByUserID(ctx context.Context, userID int32) ([]Account, error) {
 	rows, err := q.db.Query(ctx, getAccountsByUserID, userID)
 	if err != nil {
 		return nil, err
@@ -169,50 +207,76 @@ func (q *Queries) GetAllAccounts(ctx context.Context) ([]Account, error) {
 	return items, nil
 }
 
-const increaseAccountBalance = `-- name: IncreaseAccountBalance :exec
+const increaseAccountBalance = `-- name: IncreaseAccountBalance :one
 UPDATE accounts
 SET
     balance = balance + $1,
     updated_at = NOW()
 WHERE id = $2 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance
 `
 
 type IncreaseAccountBalanceParams struct {
 	Balance decimal.Decimal
-	ID      string
+	ID      int32
 }
 
-func (q *Queries) IncreaseAccountBalance(ctx context.Context, arg IncreaseAccountBalanceParams) error {
-	_, err := q.db.Exec(ctx, increaseAccountBalance, arg.Balance, arg.ID)
-	return err
+func (q *Queries) IncreaseAccountBalance(ctx context.Context, arg IncreaseAccountBalanceParams) (Account, error) {
+	row := q.db.QueryRow(ctx, increaseAccountBalance, arg.Balance, arg.ID)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.Name,
+		&i.Status,
+		&i.Currency,
+		&i.Balance,
+	)
+	return i, err
 }
 
-const updateAccount = `-- name: UpdateAccount :exec
+const updateAccount = `-- name: UpdateAccount :one
 UPDATE accounts
 SET
-    user_id = CASE WHEN $1::uuid IS NULL THEN user_id ELSE $1 END,
+    user_id = CASE WHEN $1::int IS NULL THEN user_id ELSE $1 END,
     name = CASE WHEN $2::text IS NULL THEN name ELSE $2 END,
     currency = CASE WHEN $3::text IS NULL THEN currency ELSE $3 END,
     status = CASE WHEN $4::text IS NULL THEN status ELSE $4 END,
     updated_at = NOW()
 WHERE id = $5 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, name, status, currency, balance
 `
 
 type UpdateAccountParams struct {
-	UserID   pgtype.UUID
+	UserID   pgtype.Int4
 	Name     pgtype.Text
 	Currency pgtype.Text
 	Status   pgtype.Text
-	ID       string
+	ID       int32
 }
 
-func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
-	_, err := q.db.Exec(ctx, updateAccount,
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error) {
+	row := q.db.QueryRow(ctx, updateAccount,
 		arg.UserID,
 		arg.Name,
 		arg.Currency,
 		arg.Status,
 		arg.ID,
 	)
-	return err
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.Name,
+		&i.Status,
+		&i.Currency,
+		&i.Balance,
+	)
+	return i, err
 }

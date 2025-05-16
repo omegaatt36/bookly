@@ -2,6 +2,7 @@ package bookkeeping_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,8 +17,8 @@ import (
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
-	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
+	"github.com/omegaatt36/bookly/persistence/sqlc"
 )
 
 type testLedgerSuite struct {
@@ -27,7 +28,7 @@ type testLedgerSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
-	userID   string
+	userID   int32
 }
 
 func (s *testLedgerSuite) SetupTest() {
@@ -56,7 +57,7 @@ func (s *testLedgerSuite) SetupTest() {
 	registerWithAuth("DELETE /ledgers/{id}", http.HandlerFunc(controller.VoidLedger()))
 	registerWithAuth("POST /ledgers/{id}/adjust", http.HandlerFunc(controller.AdjustLedger()))
 
-	s.NoError(migration.NewMigrator(db).Upgrade())
+	s.NoError(sqlc.MigrateForTest(context.Background(), db))
 }
 
 func (s *testLedgerSuite) TearDownTest() {
@@ -80,7 +81,7 @@ func (s *testLedgerSuite) TestCreateLedger() {
 		"note": "Test Ledger"
 	}`)
 
-	req := httptest.NewRequest(http.MethodPost, "/accounts/"+accountID+"/ledgers", bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/accounts/%d/ledgers", accountID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -128,7 +129,7 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 	})
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodGet, "/accounts/"+accountID+"/ledgers", nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/accounts/%d/ledgers", accountID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -138,8 +139,8 @@ func (s *testLedgerSuite) TestGetAllLedgers() {
 	type getAllLedgersResponse struct {
 		Code int `json:"code"`
 		Data []struct {
-			ID        string          `json:"id"`
-			AccountID string          `json:"account_id"`
+			ID        int32           `json:"id"`
+			AccountID int32           `json:"account_id"`
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
 			Note      string          `json:"note"`
@@ -171,7 +172,7 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 	})
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodGet, "/ledgers/"+ledgerID, nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/ledgers/%d", ledgerID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -181,8 +182,8 @@ func (s *testLedgerSuite) TestGetLedgerByID() {
 	type getLedgerByIDResponse struct {
 		Code int `json:"code"`
 		Data struct {
-			ID        string          `json:"id"`
-			AccountID string          `json:"account_id"`
+			ID        int32           `json:"id"`
+			AccountID int32           `json:"account_id"`
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
 			Note      string          `json:"note"`
@@ -218,7 +219,7 @@ func (s *testLedgerSuite) TestUpdateLedger() {
 		"note": "Updated Expense"
 	}`)
 
-	req := httptest.NewRequest(http.MethodPatch, "/ledgers/"+ledgerID, bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/ledgers/%d", ledgerID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -258,7 +259,7 @@ func (s *testLedgerSuite) TestVoidLedger() {
 	})
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodDelete, "/ledgers/"+ledgerID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/ledgers/%d", ledgerID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -299,14 +300,14 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.NoError(err)
 
 	reqBody := []byte(fmt.Sprintf(`{
-		"account_id": "%s",
+		"account_id": %d,
 		"date": "2023-05-02T00:00:00Z",
 		"type": "expense",
 		"amount": "170.00",
 		"note": "Adjusted Expense"
 	}`, accountID))
 
-	req := httptest.NewRequest(http.MethodPost, "/ledgers/"+originalLedgerID+"/adjust", bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/ledgers/%d/adjust", originalLedgerID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -347,7 +348,7 @@ func (s *testLedgerSuite) TestAdjustLedger() {
 	s.Equal(decimal.NewFromFloat(320.00).String(), account.Balance.String())
 }
 
-func (s *testLedgerSuite) createSeedUser() (string, error) {
+func (s *testLedgerSuite) createSeedUser() (int32, error) {
 	userID, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name: seedUser.Name,
 	})
@@ -358,7 +359,7 @@ func (s *testLedgerSuite) createSeedUser() (string, error) {
 	return userID, nil
 }
 
-func (s *testLedgerSuite) createSeedAccount() (accountID string, err error) {
+func (s *testLedgerSuite) createSeedAccount() (accountID int32, err error) {
 	userID, err := s.createSeedUser()
 	s.NoError(err)
 

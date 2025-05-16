@@ -23,8 +23,8 @@ INSERT INTO recurring_transactions (
 `
 
 type CreateRecurringTransactionParams struct {
-	UserID      string
-	AccountID   string
+	UserID      int32
+	AccountID   int32
 	Name        string
 	Type        string
 	Amount      decimal.Decimal
@@ -84,18 +84,42 @@ func (q *Queries) CreateRecurringTransaction(ctx context.Context, arg CreateRecu
 	return i, err
 }
 
-const deleteRecurringTransaction = `-- name: DeleteRecurringTransaction :exec
+const deleteRecurringTransaction = `-- name: DeleteRecurringTransaction :one
 UPDATE recurring_transactions
 SET
     updated_at = NOW(),
     status = 'cancelled',
     deleted_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, user_id, account_id, name, type, amount, note, start_date, end_date, recur_type, status, frequency, day_of_week, day_of_month, month_of_year, last_executed, next_due
 `
 
-func (q *Queries) DeleteRecurringTransaction(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteRecurringTransaction, id)
-	return err
+func (q *Queries) DeleteRecurringTransaction(ctx context.Context, id int32) (RecurringTransaction, error) {
+	row := q.db.QueryRow(ctx, deleteRecurringTransaction, id)
+	var i RecurringTransaction
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.UserID,
+		&i.AccountID,
+		&i.Name,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.StartDate,
+		&i.EndDate,
+		&i.RecurType,
+		&i.Status,
+		&i.Frequency,
+		&i.DayOfWeek,
+		&i.DayOfMonth,
+		&i.MonthOfYear,
+		&i.LastExecuted,
+		&i.NextDue,
+	)
+	return i, err
 }
 
 const getActiveRecurringTransactionsDue = `-- name: GetActiveRecurringTransactionsDue :many
@@ -150,7 +174,7 @@ SELECT id, created_at, updated_at, deleted_at, user_id, account_id, name, type, 
 WHERE id = $1 AND deleted_at IS NULL LIMIT 1
 `
 
-func (q *Queries) GetRecurringTransactionByID(ctx context.Context, id string) (RecurringTransaction, error) {
+func (q *Queries) GetRecurringTransactionByID(ctx context.Context, id int32) (RecurringTransaction, error) {
 	row := q.db.QueryRow(ctx, getRecurringTransactionByID, id)
 	var i RecurringTransaction
 	err := row.Scan(
@@ -184,7 +208,7 @@ WHERE user_id = $1 AND deleted_at IS NULL
 ORDER BY next_due ASC
 `
 
-func (q *Queries) GetRecurringTransactionsByUserID(ctx context.Context, userID string) ([]RecurringTransaction, error) {
+func (q *Queries) GetRecurringTransactionsByUserID(ctx context.Context, userID int32) ([]RecurringTransaction, error) {
 	rows, err := q.db.Query(ctx, getRecurringTransactionsByUserID, userID)
 	if err != nil {
 		return nil, err
@@ -256,7 +280,7 @@ type UpdateRecurringTransactionParams struct {
 	DayOfWeek   pgtype.Int4
 	DayOfMonth  pgtype.Int4
 	MonthOfYear pgtype.Int4
-	ID          string
+	ID          int32
 }
 
 func (q *Queries) UpdateRecurringTransaction(ctx context.Context, arg UpdateRecurringTransactionParams) (RecurringTransaction, error) {
@@ -313,7 +337,7 @@ RETURNING id, created_at, updated_at, deleted_at, user_id, account_id, name, typ
 type UpdateRecurringTransactionExecutionParams struct {
 	LastExecuted pgtype.Timestamptz
 	NextDue      pgtype.Timestamptz
-	ID           string
+	ID           int32
 }
 
 func (q *Queries) UpdateRecurringTransactionExecution(ctx context.Context, arg UpdateRecurringTransactionExecutionParams) (RecurringTransaction, error) {

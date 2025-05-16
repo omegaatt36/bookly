@@ -2,7 +2,9 @@ package user_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,8 +15,8 @@ import (
 	"github.com/omegaatt36/bookly/app/api/user"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
-	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
+	"github.com/omegaatt36/bookly/persistence/sqlc"
 )
 
 type testUserSuite struct {
@@ -24,7 +26,7 @@ type testUserSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
-	userID   string
+	userID   int32
 }
 
 func (s *testUserSuite) SetupTest() {
@@ -51,7 +53,7 @@ func (s *testUserSuite) SetupTest() {
 	registerWithAuth("PATCH /users/{id}", http.HandlerFunc(controller.UpdateUser()))
 	registerWithAuth("DELETE /users/{id}", http.HandlerFunc(controller.DeactivateUserByID()))
 
-	s.NoError(migration.NewMigrator(db).Upgrade())
+	s.NoError(sqlc.MigrateForTest(context.Background(), db))
 }
 
 func (s *testUserSuite) TearDownTest() {
@@ -96,7 +98,7 @@ func (s *testUserSuite) TestGetAllUsers() {
 	type getAllUsersResponse struct {
 		Code int `json:"code"`
 		Data []struct {
-			ID       string `json:"id"`
+			ID       int32  `json:"id"`
 			Name     string `json:"name"`
 			Nickname string `json:"nickname"`
 			Disabled bool   `json:"disabled"`
@@ -133,7 +135,7 @@ func (s *testUserSuite) TestGetUserByID() {
 	type getUserByIDResponse struct {
 		Code int `json:"code"`
 		Data struct {
-			ID       string `json:"id"`
+			ID       int32  `json:"id"`
 			Name     string `json:"name"`
 			Nickname string `json:"nickname"`
 			Disabled bool   `json:"disabled"`
@@ -146,7 +148,7 @@ func (s *testUserSuite) TestGetUserByID() {
 
 	s.userID = userID
 
-	req := httptest.NewRequest(http.MethodGet, "/users/"+userID, nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users/%d", userID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -173,7 +175,7 @@ func (s *testUserSuite) TestUpdateUser() {
 	s.userID = userID
 
 	reqBody := []byte(`{"name": "Updated User"}`)
-	req := httptest.NewRequest(http.MethodPatch, "/users/"+userID, bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/users/%d", userID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -200,7 +202,7 @@ func (s *testUserSuite) TestDeactivateUserByID() {
 
 	s.userID = userID
 
-	req := httptest.NewRequest(http.MethodDelete, "/users/"+userID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/users/%d", userID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)

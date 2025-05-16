@@ -11,8 +11,8 @@ import (
 )
 
 type ledger struct {
-	ID           string     `json:"id"`
-	AccountID    string     `json:"account_id"`
+	ID           int32      `json:"id"`
+	AccountID    int32      `json:"account_id"`
 	Date         time.Time  `json:"date"`
 	Type         string     `json:"type"`
 	Currency     string     `json:"currency"`
@@ -20,16 +20,16 @@ type ledger struct {
 	Note         string     `json:"note"`
 	Adjustable   bool       `json:"adjustable"`
 	IsAdjustment bool       `json:"is_adjustment"`
-	AdjustedFrom *string    `json:"adjusted_from"`
+	AdjustedFrom *int32     `json:"adjusted_from"`
 	IsVoided     bool       `json:"is_voided"`
 	VoidedAt     *time.Time `json:"voided_at"`
 }
 
 func (s *Server) pageLedger(w http.ResponseWriter, r *http.Request) {
-	ledgerID := r.PathValue("ledger_id")
+	ledgerID := parseInt32(r.PathValue("ledger_id"))
 
 	var ledger ledger
-	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, &ledger); err != nil {
+	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%d", ledgerID), nil, &ledger); err != nil {
 		slog.Error("failed to get ledgers", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -51,9 +51,9 @@ func (s *Server) pageCreateLedger(w http.ResponseWriter, r *http.Request) {
 	accountID := r.PathValue("account_id")
 
 	result := struct {
-		ID string `json:"id"`
+		ID int32 `json:"id"`
 	}{
-		ID: accountID,
+		ID: parseInt32(accountID),
 	}
 
 	if err := s.templates.ExecuteTemplate(w, "create_ledger.html", result); err != nil {
@@ -63,10 +63,10 @@ func (s *Server) pageCreateLedger(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pageLedgerDetails(w http.ResponseWriter, r *http.Request) {
-	ledgerID := r.PathValue("ledger_id")
+	ledgerID := parseInt32(r.PathValue("ledger_id"))
 
 	var ledger ledger
-	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, &ledger); err != nil {
+	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/ledgers/%d", ledgerID), nil, &ledger); err != nil {
 		slog.Error("failed to get ledger details", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -86,10 +86,10 @@ func (s *Server) pageLedgerDetails(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pageLedgersByAccount(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
+	accountID := parseInt32(r.PathValue("account_id"))
 
 	var ledgers []ledger
-	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s/ledgers", accountID), nil, &ledgers); err != nil {
+	if err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d/ledgers", accountID), nil, &ledgers); err != nil {
 		slog.Error("failed to get ledgers", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -103,7 +103,7 @@ func (s *Server) pageLedgersByAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := struct {
-		AccountID string
+		AccountID int32
 		Ledgers   []ledger
 	}{
 		AccountID: accountID,
@@ -135,7 +135,8 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 	payload.Amount = r.FormValue("amount")
 	payload.Note = r.FormValue("note")
 
-	if err := s.sendRequest(r, "POST", "/v1/accounts/"+r.PathValue("account_id")+"/ledgers", payload, nil); err != nil {
+	accountID := parseInt32(r.PathValue("account_id"))
+	if err := s.sendRequest(r, "POST", fmt.Sprintf("/v1/accounts/%d/ledgers", accountID), payload, nil); err != nil {
 		slog.Error("failed to create ledger", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -160,7 +161,7 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 		Note   string `json:"note,omitempty"`
 	}
 
-	ledgerID := r.PathValue("ledger_id")
+	ledgerID := parseInt32(r.PathValue("ledger_id"))
 
 	date := r.FormValue("date")
 	t, err := time.Parse("2006-01-02", date)
@@ -174,7 +175,7 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 	payload.Amount = r.FormValue("amount")
 	payload.Note = r.FormValue("note")
 
-	if err := s.sendRequest(r, "PATCH", fmt.Sprintf("/v1/ledgers/%s", ledgerID), payload, nil); err != nil {
+	if err := s.sendRequest(r, "PATCH", fmt.Sprintf("/v1/ledgers/%d", ledgerID), payload, nil); err != nil {
 		slog.Error("failed to update ledger", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -192,9 +193,9 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) voidLedger(w http.ResponseWriter, r *http.Request) {
-	ledgerID := r.PathValue("ledger_id")
+	ledgerID := parseInt32(r.PathValue("ledger_id"))
 
-	if err := s.sendRequest(r, "DELETE", fmt.Sprintf("/v1/ledgers/%s", ledgerID), nil, nil); err != nil {
+	if err := s.sendRequest(r, "DELETE", fmt.Sprintf("/v1/ledgers/%d", ledgerID), nil, nil); err != nil {
 		slog.Error("failed to delete ledger", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError

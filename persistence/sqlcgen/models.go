@@ -10,11 +10,11 @@ import (
 )
 
 type Account struct {
-	ID        string
+	ID        int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	DeletedAt pgtype.Timestamptz
-	UserID    string
+	UserID    int32
 	Name      string
 	Status    string
 	Currency  string
@@ -23,7 +23,7 @@ type Account struct {
 
 type Identity struct {
 	ID         int32
-	UserID     string
+	UserID     int32
 	Provider   string
 	Identifier string
 	Credential string
@@ -31,28 +31,28 @@ type Identity struct {
 }
 
 type Ledger struct {
-	ID           string
+	ID           int32
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	DeletedAt    pgtype.Timestamptz
-	AccountID    string
+	AccountID    int32
 	Date         pgtype.Timestamptz
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
 	IsAdjustment bool
-	AdjustedFrom pgtype.UUID
+	AdjustedFrom pgtype.Int4
 	IsVoided     bool
 	VoidedAt     pgtype.Timestamptz
 }
 
 type RecurringTransaction struct {
-	ID           string
+	ID           int32
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	DeletedAt    pgtype.Timestamptz
-	UserID       string
-	AccountID    string
+	UserID       int32
+	AccountID    int32
 	Name         string
 	Type         string
 	Amount       decimal.Decimal
@@ -70,18 +70,18 @@ type RecurringTransaction struct {
 }
 
 type Reminder struct {
-	ID                     string
+	ID                     int32
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
 	DeletedAt              pgtype.Timestamptz
-	RecurringTransactionID string
+	RecurringTransactionID int32
 	ReminderDate           pgtype.Timestamptz
 	IsRead                 bool
 	ReadAt                 pgtype.Timestamptz
 }
 
 type User struct {
-	ID        string
+	ID        int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	DeletedAt pgtype.Timestamptz

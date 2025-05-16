@@ -14,26 +14,28 @@ import (
 )
 
 // CreateLedger implements the domain.LedgerRepository interface
-func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (string, error) {
-	var ledgerID string
+func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (int32, error) {
+	var ledgerID int32
 	err := r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Create the ledger entry
 		var err error
-		ledgerID, err = repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
+		ledger, err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
 			AccountID:    req.AccountID,
 			Date:         pgtype.Timestamptz{Time: req.Date, Valid: true},
 			Type:         string(req.Type),
 			Amount:       req.Amount,
 			Note:         pgtype.Text{String: req.Note, Valid: true},
 			IsAdjustment: false, // isAdjustment
-			AdjustedFrom: pgtype.UUID{},
+			AdjustedFrom: pgtype.Int4{},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create ledger: %w", err)
 		}
 
+		ledgerID = ledger.ID
+
 		// Update account balance
-		err = repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+		_, err = repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
 			Balance: req.Amount,
 			ID:      req.AccountID,
 		})
@@ -48,7 +50,7 @@ func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (string, error
 }
 
 // GetLedgerByID implements the domain.LedgerRepository interface
-func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
+func (r *Repository) GetLedgerByID(id int32) (*domain.Ledger, error) {
 	ledger, err := r.querier.GetLedgerByID(r.ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -73,14 +75,9 @@ func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
 		Amount:       ledger.Amount,
 		Note:         ledger.Note.String,
 		IsAdjustment: ledger.IsAdjustment,
-		AdjustedFrom: func() *string {
+		AdjustedFrom: func() *int32 {
 			if ledger.AdjustedFrom.Valid {
-				val, err := ledger.AdjustedFrom.Value()
-				if err == nil && val != nil {
-					if str, ok := val.(string); ok {
-						return &str
-					}
-				}
+				return &ledger.AdjustedFrom.Int32
 			}
 			return nil
 		}(),
@@ -90,7 +87,7 @@ func (r *Repository) GetLedgerByID(id string) (*domain.Ledger, error) {
 }
 
 // GetLedgersByAccountID implements the domain.LedgerRepository interface
-func (r *Repository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, error) {
+func (r *Repository) GetLedgersByAccountID(accountID int32) ([]*domain.Ledger, error) {
 	ledgers, err := r.querier.GetLedgersByAccountID(r.ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ledgers for account: %w", err)
@@ -114,14 +111,9 @@ func (r *Repository) GetLedgersByAccountID(accountID string) ([]*domain.Ledger, 
 			Amount:       ledger.Amount,
 			Note:         ledger.Note.String,
 			IsAdjustment: ledger.IsAdjustment,
-			AdjustedFrom: func() *string {
+			AdjustedFrom: func() *int32 {
 				if ledger.AdjustedFrom.Valid {
-					val, err := ledger.AdjustedFrom.Value()
-					if err == nil && val != nil {
-						if str, ok := val.(string); ok {
-							return &str
-						}
-					}
+					return &ledger.AdjustedFrom.Int32
 				}
 				return nil
 			}(),
@@ -182,7 +174,7 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 		}
 
 		// Update the ledger
-		if err := repo.querier.UpdateLedger(repo.ctx, updateParams); err != nil {
+		if _, err := repo.querier.UpdateLedger(repo.ctx, updateParams); err != nil {
 			return fmt.Errorf("failed to update ledger: %w", err)
 		}
 
@@ -197,7 +189,7 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 			// Calculate balance adjustment
 			adjustment := req.Amount.Sub(oldAmount)
 			if !adjustment.IsZero() {
-				if err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+				if _, err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
 					Balance: adjustment,
 					ID:      ledger.AccountID,
 				}); err != nil {
@@ -212,7 +204,7 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 
 // VoidLedger implements the domain.LedgerRepository interface
 // This method now also performs a soft delete by setting the deleted_at timestamp.
-func (r *Repository) VoidLedger(id string) error {
+func (r *Repository) VoidLedger(id int32) error {
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Get the ledger to find the amount and account ID
 		// The GetLedgerByID query already filters out soft-deleted records.
@@ -222,13 +214,13 @@ func (r *Repository) VoidLedger(id string) error {
 		}
 
 		// Void the ledger (SQL query now also sets deleted_at)
-		if err := repo.querier.VoidLedger(repo.ctx, id); err != nil {
+		if _, err := repo.querier.VoidLedger(repo.ctx, id); err != nil {
 			return fmt.Errorf("failed to void ledger: %w", err)
 		}
 
 		// Reverse the amount in the account balance
 		reverseAmount := ledger.Amount.Neg()
-		if err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+		if _, err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
 			Balance: reverseAmount,
 			ID:      ledger.AccountID,
 		}); err != nil {
@@ -240,7 +232,7 @@ func (r *Repository) VoidLedger(id string) error {
 }
 
 // DeleteLedger implements the domain.LedgerRepository interface for soft delete
-func (r *Repository) DeleteLedger(id string) error {
+func (r *Repository) DeleteLedger(id int32) error {
 	// We need to get the ledger first to reverse the balance impact before soft deleting.
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Get the ledger to find the amount and account ID
@@ -251,13 +243,13 @@ func (r *Repository) DeleteLedger(id string) error {
 		}
 
 		// Soft delete the ledger
-		if err := repo.querier.DeleteLedger(repo.ctx, id); err != nil {
+		if _, err := repo.querier.DeleteLedger(repo.ctx, id); err != nil {
 			return fmt.Errorf("failed to soft delete ledger: %w", err)
 		}
 
 		// Reverse the amount in the account balance
 		reverseAmount := ledger.Amount.Neg()
-		if err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+		if _, err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
 			Balance: reverseAmount,
 			ID:      ledger.AccountID,
 		}); err != nil {
@@ -269,14 +261,8 @@ func (r *Repository) DeleteLedger(id string) error {
 }
 
 // AdjustLedger adjusts a ledger by its original ID.
-func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLedgerRequest) error {
+func (r *Repository) AdjustLedger(originalID int32, adjustment domain.CreateLedgerRequest) error {
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
-		// Parse UUID from originalID
-		var adjustedFrom pgtype.UUID
-		if err := adjustedFrom.Scan(originalID); err != nil {
-			return fmt.Errorf("failed to parse original ID: %w", err)
-		}
-
 		// Create a new ledger entry marked as an adjustment
 		_, err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
 			AccountID:    adjustment.AccountID,
@@ -285,14 +271,14 @@ func (r *Repository) AdjustLedger(originalID string, adjustment domain.CreateLed
 			Amount:       adjustment.Amount,
 			Note:         pgtype.Text{String: adjustment.Note, Valid: true},
 			IsAdjustment: true,
-			AdjustedFrom: adjustedFrom,
+			AdjustedFrom: pgtype.Int4{Int32: originalID, Valid: true},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create adjustment ledger: %w", err)
 		}
 
 		// Update account balance
-		if err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
+		if _, err := repo.querier.IncreaseAccountBalance(repo.ctx, sqlcgen.IncreaseAccountBalanceParams{
 			Balance: adjustment.Amount,
 			ID:      adjustment.AccountID,
 		}); err != nil {

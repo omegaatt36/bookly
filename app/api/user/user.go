@@ -11,7 +11,7 @@ import (
 )
 
 type jsonUser struct {
-	ID        string `json:"id"`
+	ID        int32  `json:"id"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 	Name      string `json:"name"`
@@ -62,7 +62,7 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
 			// Admin validation would go here in a real system
 			// For now, check if the user is authenticated
-			if ctx.GetUserID() == "" {
+			if ctx.GetUserID() == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 			users, err := x.service.GetAllUsers()
@@ -83,10 +83,10 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 // GetUserByID retrieves a user by their ID.
 func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonUser, error) {
 			authenticatedUserID := ctx.GetUserID()
-			if authenticatedUserID == "" {
+			if authenticatedUserID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -112,7 +112,7 @@ func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) 
 func (x *Controller) UpdateUser() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id       string
+			id       int32
 			Name     *string `json:"name"`
 			Nickname *string `json:"nickname"`
 		}
@@ -120,7 +120,7 @@ func (x *Controller) UpdateUser() func(w http.ResponseWriter, r *http.Request) {
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			authenticatedUserID := ctx.GetUserID()
-			if authenticatedUserID == "" {
+			if authenticatedUserID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -142,11 +142,11 @@ func (x *Controller) UpdateUser() func(w http.ResponseWriter, r *http.Request) {
 // DeactivateUserByID handles the deactivation of a user by their ID.
 func (x *Controller) DeactivateUserByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			authenticatedUserID := ctx.GetUserID()
-			if authenticatedUserID == "" {
+			if authenticatedUserID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 

@@ -2,6 +2,7 @@ package user_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,8 +14,8 @@ import (
 	"github.com/omegaatt36/bookly/app/api/user"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
-	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
+	"github.com/omegaatt36/bookly/persistence/sqlc"
 	"github.com/omegaatt36/bookly/service/auth"
 )
 
@@ -27,7 +28,7 @@ type testAuthSuite struct {
 	finalize func()
 
 	authenticator domain.Authenticator
-	userID        string
+	userID        int32
 }
 
 func (s *testAuthSuite) SetupTest() {
@@ -43,7 +44,7 @@ func (s *testAuthSuite) SetupTest() {
 	s.router.HandleFunc("POST /auth/register", controller.RegisterUser())
 	s.router.HandleFunc("POST /auth/login", controller.LoginUser())
 
-	s.NoError(migration.NewMigrator(db).Upgrade())
+	s.NoError(sqlc.MigrateForTest(context.Background(), db))
 }
 
 func (s *testAuthSuite) TearDownTest() {

@@ -23,20 +23,20 @@ INSERT INTO ledgers (
     adjusted_from
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
-) RETURNING id
+) RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
 type CreateLedgerParams struct {
-	AccountID    string
+	AccountID    int32
 	Date         pgtype.Timestamptz
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
 	IsAdjustment bool
-	AdjustedFrom pgtype.UUID
+	AdjustedFrom pgtype.Int4
 }
 
-func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (string, error) {
+func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (Ledger, error) {
 	row := q.db.QueryRow(ctx, createLedger,
 		arg.AccountID,
 		arg.Date,
@@ -46,22 +46,53 @@ func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (str
 		arg.IsAdjustment,
 		arg.AdjustedFrom,
 	)
-	var id string
-	err := row.Scan(&id)
-	return id, err
+	var i Ledger
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AccountID,
+		&i.Date,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.IsAdjustment,
+		&i.AdjustedFrom,
+		&i.IsVoided,
+		&i.VoidedAt,
+	)
+	return i, err
 }
 
-const deleteLedger = `-- name: DeleteLedger :exec
+const deleteLedger = `-- name: DeleteLedger :one
 UPDATE ledgers
 SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
-func (q *Queries) DeleteLedger(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteLedger, id)
-	return err
+func (q *Queries) DeleteLedger(ctx context.Context, id int32) (Ledger, error) {
+	row := q.db.QueryRow(ctx, deleteLedger, id)
+	var i Ledger
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AccountID,
+		&i.Date,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.IsAdjustment,
+		&i.AdjustedFrom,
+		&i.IsVoided,
+		&i.VoidedAt,
+	)
+	return i, err
 }
 
 const getLedgerAmount = `-- name: GetLedgerAmount :one
@@ -70,7 +101,7 @@ WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetLedgerAmount(ctx context.Context, id string) (decimal.Decimal, error) {
+func (q *Queries) GetLedgerAmount(ctx context.Context, id int32) (decimal.Decimal, error) {
 	row := q.db.QueryRow(ctx, getLedgerAmount, id)
 	var amount decimal.Decimal
 	err := row.Scan(&amount)
@@ -88,23 +119,23 @@ LIMIT 1
 `
 
 type GetLedgerByIDRow struct {
-	ID           string
+	ID           int32
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	DeletedAt    pgtype.Timestamptz
-	AccountID    string
+	AccountID    int32
 	Date         pgtype.Timestamptz
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
 	IsAdjustment bool
-	AdjustedFrom pgtype.UUID
+	AdjustedFrom pgtype.Int4
 	IsVoided     bool
 	VoidedAt     pgtype.Timestamptz
 	Currency     string
 }
 
-func (q *Queries) GetLedgerByID(ctx context.Context, id string) (GetLedgerByIDRow, error) {
+func (q *Queries) GetLedgerByID(ctx context.Context, id int32) (GetLedgerByIDRow, error) {
 	row := q.db.QueryRow(ctx, getLedgerByID, id)
 	var i GetLedgerByIDRow
 	err := row.Scan(
@@ -137,23 +168,23 @@ ORDER BY l.date DESC, l.updated_at DESC
 `
 
 type GetLedgersByAccountIDRow struct {
-	ID           string
+	ID           int32
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	DeletedAt    pgtype.Timestamptz
-	AccountID    string
+	AccountID    int32
 	Date         pgtype.Timestamptz
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
 	IsAdjustment bool
-	AdjustedFrom pgtype.UUID
+	AdjustedFrom pgtype.Int4
 	IsVoided     bool
 	VoidedAt     pgtype.Timestamptz
 	Currency     string
 }
 
-func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID string) ([]GetLedgersByAccountIDRow, error) {
+func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID int32) ([]GetLedgersByAccountIDRow, error) {
 	rows, err := q.db.Query(ctx, getLedgersByAccountID, accountID)
 	if err != nil {
 		return nil, err
@@ -188,7 +219,7 @@ func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID string) (
 	return items, nil
 }
 
-const updateLedger = `-- name: UpdateLedger :exec
+const updateLedger = `-- name: UpdateLedger :one
 UPDATE ledgers
 SET
     date = CASE WHEN $1::timestamptz IS NULL THEN date ELSE $1 END,
@@ -197,6 +228,7 @@ SET
     note = CASE WHEN $4::text IS NULL THEN note ELSE $4 END,
     updated_at = NOW()
 WHERE id = $5 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
 type UpdateLedgerParams struct {
@@ -204,30 +236,63 @@ type UpdateLedgerParams struct {
 	Type   pgtype.Text
 	Amount pgtype.Numeric
 	Note   pgtype.Text
-	ID     string
+	ID     int32
 }
 
-func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) error {
-	_, err := q.db.Exec(ctx, updateLedger,
+func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) (Ledger, error) {
+	row := q.db.QueryRow(ctx, updateLedger,
 		arg.Date,
 		arg.Type,
 		arg.Amount,
 		arg.Note,
 		arg.ID,
 	)
-	return err
+	var i Ledger
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AccountID,
+		&i.Date,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.IsAdjustment,
+		&i.AdjustedFrom,
+		&i.IsVoided,
+		&i.VoidedAt,
+	)
+	return i, err
 }
 
-const voidLedger = `-- name: VoidLedger :exec
+const voidLedger = `-- name: VoidLedger :one
 UPDATE ledgers
 SET
     is_voided = true,
     voided_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
-func (q *Queries) VoidLedger(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, voidLedger, id)
-	return err
+func (q *Queries) VoidLedger(ctx context.Context, id int32) (Ledger, error) {
+	row := q.db.QueryRow(ctx, voidLedger, id)
+	var i Ledger
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AccountID,
+		&i.Date,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.IsAdjustment,
+		&i.AdjustedFrom,
+		&i.IsVoided,
+		&i.VoidedAt,
+	)
+	return i, err
 }

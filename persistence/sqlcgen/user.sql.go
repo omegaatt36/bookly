@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addIdentity = `-- name: AddIdentity :exec
+const addIdentity = `-- name: AddIdentity :one
 INSERT INTO identities (
     user_id,
     provider,
@@ -21,23 +21,33 @@ INSERT INTO identities (
 ) VALUES (
     $1, $2, $3, $4, NOW()
 )
+RETURNING id, user_id, provider, identifier, credential, last_used_at
 `
 
 type AddIdentityParams struct {
-	UserID     string
+	UserID     int32
 	Provider   string
 	Identifier string
 	Credential string
 }
 
-func (q *Queries) AddIdentity(ctx context.Context, arg AddIdentityParams) error {
-	_, err := q.db.Exec(ctx, addIdentity,
+func (q *Queries) AddIdentity(ctx context.Context, arg AddIdentityParams) (Identity, error) {
+	row := q.db.QueryRow(ctx, addIdentity,
 		arg.UserID,
 		arg.Provider,
 		arg.Identifier,
 		arg.Credential,
 	)
-	return err
+	var i Identity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.Identifier,
+		&i.Credential,
+		&i.LastUsedAt,
+	)
+	return i, err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -47,7 +57,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2
 )
-RETURNING id
+RETURNING id, created_at, updated_at, deleted_at, disabled, name, nickname
 `
 
 type CreateUserParams struct {
@@ -55,37 +65,67 @@ type CreateUserParams struct {
 	Nickname pgtype.Text
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (string, error) {
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser, arg.Name, arg.Nickname)
-	var id string
-	err := row.Scan(&id)
-	return id, err
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Disabled,
+		&i.Name,
+		&i.Nickname,
+	)
+	return i, err
 }
 
-const deactivateUserByID = `-- name: DeactivateUserByID :exec
+const deactivateUserByID = `-- name: DeactivateUserByID :one
 UPDATE users
 SET
     disabled = true,
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, disabled, name, nickname
 `
 
-func (q *Queries) DeactivateUserByID(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deactivateUserByID, id)
-	return err
+func (q *Queries) DeactivateUserByID(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRow(ctx, deactivateUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Disabled,
+		&i.Name,
+		&i.Nickname,
+	)
+	return i, err
 }
 
-const deleteUser = `-- name: DeleteUser :exec
+const deleteUser = `-- name: DeleteUser :one
 UPDATE users
 SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, disabled, name, nickname
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteUser, id)
-	return err
+func (q *Queries) DeleteUser(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRow(ctx, deleteUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Disabled,
+		&i.Name,
+		&i.Nickname,
+	)
+	return i, err
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
@@ -128,7 +168,7 @@ WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
@@ -169,14 +209,14 @@ type GetUserByIdentityParams struct {
 }
 
 type GetUserByIdentityRow struct {
-	UserID             string
+	UserID             int32
 	UserCreatedAt      pgtype.Timestamptz
 	UserUpdatedAt      pgtype.Timestamptz
 	UserDisabled       bool
 	UserName           string
 	UserNickname       pgtype.Text
 	IdentityID         int32
-	IdentityUserID     string
+	IdentityUserID     int32
 	IdentityProvider   string
 	IdentityIdentifier string
 	IdentityCredential string
@@ -203,7 +243,7 @@ func (q *Queries) GetUserByIdentity(ctx context.Context, arg GetUserByIdentityPa
 	return i, err
 }
 
-const updateUser = `-- name: UpdateUser :exec
+const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET
     name = CASE WHEN $1::text IS NULL THEN name ELSE $1 END,
@@ -211,21 +251,32 @@ SET
     disabled = CASE WHEN $3::boolean IS NULL THEN disabled ELSE $3 END,
     updated_at = NOW()
 WHERE id = $4 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, disabled, name, nickname
 `
 
 type UpdateUserParams struct {
 	Name     pgtype.Text
 	Nickname pgtype.Text
 	Disabled pgtype.Bool
-	ID       string
+	ID       int32
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser,
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
 		arg.Name,
 		arg.Nickname,
 		arg.Disabled,
 		arg.ID,
 	)
-	return err
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Disabled,
+		&i.Name,
+		&i.Nickname,
+	)
+	return i, err
 }

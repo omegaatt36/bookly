@@ -2,6 +2,7 @@ package bookkeeping_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,8 +17,8 @@ import (
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
-	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository" // Assuming SQLCRepository is here
+	"github.com/omegaatt36/bookly/persistence/sqlc"
 )
 
 type testRecurringSuite struct {
@@ -25,25 +26,24 @@ type testRecurringSuite struct {
 
 	router *http.ServeMux
 
-	// Assuming SQLCRepository implements all necessary interfaces (Account, Ledger, RecurringTransaction, Reminder)
 	repo      *repository.SQLCRepository
 	finalize  func()
-	userID    string
-	accountID string
+	userID    int32
+	accountID int32
 }
 
 func (s *testRecurringSuite) SetupTest() {
 	s.finalize = database.TestingInitialize(database.PostgresOpt)
 	db := database.GetDB()
-	s.repo = repository.NewSQLCRepository(db) // Assuming SQLCRepository implements all necessary interfaces
+	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 
 	// Pass all repositories to the controller
 	controller := bookkeeping.NewController(bookkeeping.NewControllerRequest{
 		AccountRepository:              s.repo,
 		LedgerRepository:               s.repo,
-		RecurringTransactionRepository: s.repo, // Use s.repo for recurring
-		ReminderRepository:             s.repo, // Use s.repo for reminders
+		RecurringTransactionRepository: s.repo,
+		ReminderRepository:             s.repo,
 	})
 
 	// Authentication middleware
@@ -70,7 +70,7 @@ func (s *testRecurringSuite) SetupTest() {
 	registerWithAuth("GET /recurring/reminders", http.HandlerFunc(controller.GetReminders()))
 	registerWithAuth("POST /recurring/reminders/{id}/read", http.HandlerFunc(controller.MarkReminderAsRead()))
 
-	s.NoError(migration.NewMigrator(db).Upgrade())
+	s.NoError(sqlc.MigrateForTest(context.Background(), db))
 
 	// Create a seed user and account for tests
 	userID, err := s.createSeedUser()
@@ -86,21 +86,21 @@ func (s *testRecurringSuite) TearDownTest() {
 	s.finalize()
 	s.router = nil
 	s.repo = nil
-	s.userID = ""
-	s.accountID = ""
+	s.userID = 0
+	s.accountID = 0
 }
 
 func TestRecurringSuite(t *testing.T) {
 	suite.Run(t, new(testRecurringSuite))
 }
 
-func (s *testRecurringSuite) createSeedUser() (string, error) {
+func (s *testRecurringSuite) createSeedUser() (int32, error) {
 	return s.repo.CreateUser(domain.CreateUserRequest{
 		Name: "Recurring Test User",
 	})
 }
 
-func (s *testRecurringSuite) createSeedAccount(userID string) (string, error) {
+func (s *testRecurringSuite) createSeedAccount(userID int32) (int32, error) {
 	s.NoError(s.repo.CreateAccount(domain.CreateAccountRequest{
 		UserID:   userID,
 		Name:     "Recurring Test Account",
@@ -109,29 +109,29 @@ func (s *testRecurringSuite) createSeedAccount(userID string) (string, error) {
 
 	accounts, err := s.repo.GetAccountsByUserID(userID)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	if len(accounts) == 0 {
-		return "", fmt.Errorf("failed to create seed account")
+		return 0, fmt.Errorf("failed to create seed account")
 	}
 	return accounts[0].ID, nil
 }
 
-func (s *testRecurringSuite) createSeedRecurringTransaction(accountID string, recurType domain.RecurrenceType, amount decimal.Decimal) (*domain.RecurringTransaction, error) {
+func (s *testRecurringSuite) createSeedRecurringTransaction(accountID int32,
+	recurType domain.RecurrenceType, amount decimal.Decimal) (*domain.RecurringTransaction, error) {
 	// Set start date in the past to ensure NextDue calculation
 	startDate := time.Now().Add(-24 * time.Hour).Truncate(24 * time.Hour)
 
 	return s.repo.CreateRecurringTransaction(s.T().Context(), domain.CreateRecurringTransactionRequest{
-		UserID:    s.userID,
-		AccountID: accountID,
-		Name:      "Test Recurring Transaction",
-		Type:      domain.LedgerTypeIncome,
-		Amount:    amount,
-		Note:      "Recurring Note",
-		StartDate: startDate,
-		RecurType: recurType,
-		Frequency: 1,
-		// Adding optional fields for specific tests
+		UserID:      s.userID,
+		AccountID:   accountID,
+		Name:        "Test Recurring Transaction",
+		Type:        domain.LedgerTypeIncome,
+		Amount:      amount,
+		Note:        "Recurring Note",
+		StartDate:   startDate,
+		RecurType:   recurType,
+		Frequency:   1,
 		DayOfWeek:   nil,
 		DayOfMonth:  nil,
 		MonthOfYear: nil,
@@ -168,7 +168,7 @@ func (s *testRecurringSuite) TestCreateRecurringTransaction() {
 	// Ensure the date is in RFC3339 format and includes optional fields if needed
 	now := time.Now()
 	reqBody := fmt.Appendf(nil, `{
-		"account_id": "%s",
+		"account_id": %d,
 		"name": "Monthly Income",
 		"type": "income",
 		"amount": "1000.00",
@@ -227,7 +227,7 @@ func (s *testRecurringSuite) TestGetRecurringTransaction() {
 	s.NoError(err)
 	s.NotNil(transaction)
 
-	req := httptest.NewRequest(http.MethodGet, "/recurring/"+transaction.ID, nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/recurring/%d", transaction.ID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -255,7 +255,7 @@ func (s *testRecurringSuite) TestUpdateRecurringTransaction() {
 		"status": "paused"
 	}`)
 
-	req := httptest.NewRequest(http.MethodPut, "/recurring/"+transaction.ID, bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/recurring/%d", transaction.ID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -278,7 +278,7 @@ func (s *testRecurringSuite) TestDeleteRecurringTransaction() {
 	s.NoError(err)
 	s.NotNil(transaction)
 
-	req := httptest.NewRequest(http.MethodDelete, "/recurring/"+transaction.ID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/recurring/%d", transaction.ID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -288,8 +288,8 @@ func (s *testRecurringSuite) TestDeleteRecurringTransaction() {
 	// Use the correct response struct for an empty data response
 	var resp emptyResponse
 	s.NoError(json.NewDecoder(w.Body).Decode(&resp))
-	s.Equal(0, resp.Code) // Verify the code field
-	s.Nil(resp.Data)      // Expect data to be null or absent for empty response
+	s.Equal(0, resp.Code)
+	s.Nil(resp.Data)
 
 	// Verify the transaction is deleted (or status is updated to cancelled based on implementation)
 	// Assuming delete truly removes it for now or GetRecurringTransactionByID returns error for "deleted" items
@@ -367,7 +367,7 @@ func (s *testRecurringSuite) TestMarkReminderAsRead() {
 	s.NotNil(reminder)
 	s.False(reminder.IsRead)
 
-	req := httptest.NewRequest(http.MethodPost, "/recurring/reminders/"+reminder.ID+"/read", nil)
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/recurring/reminders/%d/read", reminder.ID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)

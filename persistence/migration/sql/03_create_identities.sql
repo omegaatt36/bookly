@@ -1,7 +1,7 @@
 -- Create identities table
 CREATE TABLE identities (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
+    user_id INT NOT NULL REFERENCES users(id),
     provider VARCHAR(20) NOT NULL,
     identifier VARCHAR(255) NOT NULL,
     credential VARCHAR(255) NOT NULL,

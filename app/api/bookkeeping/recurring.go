@@ -15,7 +15,7 @@ import (
 
 // RecurringTransactionResponse is the response for a recurring transaction
 type RecurringTransactionResponse struct {
-	ID           string          `json:"id"`
+	ID           int32           `json:"id"`
 	CreatedAt    time.Time       `json:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
 	Name         string          `json:"name"`
@@ -36,9 +36,9 @@ type RecurringTransactionResponse struct {
 
 // ReminderResponse is the response for a reminder
 type ReminderResponse struct {
-	ID                     string     `json:"id"`
+	ID                     int32      `json:"id"`
 	CreatedAt              time.Time  `json:"created_at"`
-	RecurringTransactionID string     `json:"recurring_transaction_id"`
+	RecurringTransactionID int32      `json:"recurring_transaction_id"`
 	ReminderDate           time.Time  `json:"reminder_date"`
 	IsRead                 bool       `json:"is_read"`
 	ReadAt                 *time.Time `json:"read_at,omitempty"`
@@ -48,7 +48,7 @@ type ReminderResponse struct {
 func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			AccountID   string          `json:"account_id"`
+			AccountID   int32           `json:"account_id"`
 			Name        string          `json:"name"`
 			Type        string          `json:"type"`
 			Amount      decimal.Decimal `json:"amount"`
@@ -65,11 +65,11 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			if req.Name == "" || req.AccountID == "" {
+			if req.Name == "" || req.AccountID == 0 {
 				return nil, app.ParamError(errors.New("name and account_id are required"))
 			}
 
@@ -120,7 +120,7 @@ func (x *Controller) GetRecurringTransactions() func(w http.ResponseWriter, r *h
 	return func(w http.ResponseWriter, r *http.Request) {
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]RecurringTransactionResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -143,11 +143,11 @@ func (x *Controller) GetRecurringTransactions() func(w http.ResponseWriter, r *h
 // GetRecurringTransaction gets a recurring transaction by ID
 func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*RecurringTransactionResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -171,7 +171,7 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id          string
+			id          int32
 			Name        *string          `json:"name,omitempty"`
 			Type        *string          `json:"type,omitempty"`
 			Amount      *decimal.Decimal `json:"amount,omitempty"`
@@ -188,7 +188,7 @@ func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r 
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -259,10 +259,10 @@ func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r 
 // DeleteRecurringTransaction deletes a recurring transaction
 func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -291,7 +291,7 @@ func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request)
 	return func(w http.ResponseWriter, r *http.Request) {
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]ReminderResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -314,10 +314,10 @@ func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request)
 // MarkReminderAsRead marks a reminder as read
 func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*ReminderResponse, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 

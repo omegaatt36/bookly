@@ -14,32 +14,31 @@ const (
 	ContextKeyUserID ContextKey = "userID"
 )
 
-func getUserIDFromContext(ctx context.Context) string {
-	if userID, ok := ctx.Value(ContextKeyUserID).(string); ok {
+func getUserIDFromContext(ctx context.Context) int32 {
+	if userID, ok := ctx.Value(ContextKeyUserID).(int32); ok {
 		return userID
 	}
 
-	return ""
+	return 0
 }
 
 // WithUserID adds the UserID to the context
-func WithUserID(ctx context.Context, userID string) context.Context {
+func WithUserID(ctx context.Context, userID int32) context.Context {
 	return context.WithValue(ctx, ContextKeyUserID, userID)
 }
 
 // Context represents a context.
 type Context struct {
 	Request *http.Request
-	userID  string
-	// add other context fields as needed
+	userID  int32
 }
 
 // GetUserID returns the user ID from the context
-func (c *Context) GetUserID() string {
+func (c *Context) GetUserID() int32 {
 	return c.userID
 }
 
 // SetUserID sets the user ID in the context
-func (c *Context) SetUserID(userID string) {
+func (c *Context) SetUserID(userID int32) {
 	c.userID = userID
 }

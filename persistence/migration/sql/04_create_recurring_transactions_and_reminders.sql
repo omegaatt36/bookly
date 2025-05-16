@@ -3,12 +3,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Recurring Transactions Table
 CREATE TABLE recurring_transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE,
-    user_id UUID NOT NULL REFERENCES users(id),
-    account_id UUID NOT NULL REFERENCES accounts(id),
+    user_id INT NOT NULL REFERENCES users(id),
+    account_id INT NOT NULL REFERENCES accounts(id),
     name VARCHAR(255) NOT NULL,
     type VARCHAR(20) NOT NULL,
     amount DECIMAL(20, 2) NOT NULL,
@@ -27,11 +27,11 @@ CREATE TABLE recurring_transactions (
 
 -- Reminders Table
 CREATE TABLE reminders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE,
-    recurring_transaction_id UUID NOT NULL REFERENCES recurring_transactions(id),
+    recurring_transaction_id INT NOT NULL REFERENCES recurring_transactions(id),
     reminder_date TIMESTAMP WITH TIME ZONE NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMP WITH TIME ZONE

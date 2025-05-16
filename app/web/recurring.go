@@ -12,7 +12,7 @@ import (
 )
 
 type recurringTransaction struct {
-	ID           string     `json:"id"`
+	ID           int32      `json:"id"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 	Name         string     `json:"name"`
@@ -32,9 +32,9 @@ type recurringTransaction struct {
 }
 
 type reminder struct {
-	ID                     string     `json:"id"`
+	ID                     int32      `json:"id"`
 	CreatedAt              time.Time  `json:"created_at"`
-	RecurringTransactionID string     `json:"recurring_transaction_id"`
+	RecurringTransactionID int32      `json:"recurring_transaction_id"`
 	ReminderDate           time.Time  `json:"reminder_date"`
 	IsRead                 bool       `json:"is_read"`
 	ReadAt                 *time.Time `json:"read_at,omitempty"`
@@ -79,10 +79,10 @@ func (s *Server) pageRecurringList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pageRecurringDetails(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("recurring_id")
+	id := parseInt32(r.PathValue("recurring_id"))
 
 	var recurring recurringTransaction
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/recurring/%s", id), nil, &recurring)
+	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/recurring/%d", id), nil, &recurring)
 	if err != nil {
 		slog.Error("failed to get recurring transaction", slog.String("error", err.Error()))
 
@@ -165,21 +165,23 @@ func (s *Server) pageReminders(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) createRecurring(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		AccountID   string  `json:"account_id"`
-		Name        string  `json:"name"`
-		Type        string  `json:"type"`
-		Amount      string  `json:"amount"`
-		Note        string  `json:"note"`
-		StartDate   string  `json:"start_date"`
-		EndDate     *string `json:"end_date,omitempty"`
-		RecurType   string  `json:"recur_type"`
-		Frequency   int     `json:"frequency"`
-		DayOfWeek   *int    `json:"day_of_week,omitempty"`
-		DayOfMonth  *int    `json:"day_of_month,omitempty"`
-		MonthOfYear *int    `json:"month_of_year,omitempty"`
+		AccountID   int32    `json:"account_id"`
+		Name        string   `json:"name"`
+		Type        string   `json:"type"`
+		Amount      string   `json:"amount"`
+		Note        string   `json:"note"`
+		StartDate   string   `json:"start_date"`
+		EndDate     *string  `json:"end_date,omitempty"`
+		RecurType   string   `json:"recur_type"`
+		Frequency   int      `json:"frequency"`
+		DayOfWeek   *int     `json:"day_of_week,omitempty"`
+		DayOfMonth  *int     `json:"day_of_month,omitempty"`
+		MonthOfYear *int     `json:"month_of_year,omitempty"`
 	}
 
-	payload.AccountID = r.FormValue("account_id")
+	accountIDStr := r.FormValue("account_id")
+	accountID, _ := strconv.ParseInt(accountIDStr, 10, 32)
+	payload.AccountID = int32(accountID)
 	payload.Name = r.FormValue("name")
 	payload.Type = r.FormValue("type")
 	payload.Amount = r.FormValue("amount")
@@ -256,7 +258,7 @@ func (s *Server) createRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) updateRecurring(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("recurring_id")
+	id := parseInt32(r.PathValue("recurring_id"))
 
 	var payload struct {
 		Name        *string  `json:"name,omitempty"`
@@ -338,7 +340,7 @@ func (s *Server) updateRecurring(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.sendRequest(r, "PUT", fmt.Sprintf("/v1/recurring/%s", id), payload, nil); err != nil {
+	if err := s.sendRequest(r, "PUT", fmt.Sprintf("/v1/recurring/%d", id), payload, nil); err != nil {
 		slog.Error("failed to update recurring transaction", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -357,9 +359,9 @@ func (s *Server) updateRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteRecurring(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("recurring_id")
+	id := parseInt32(r.PathValue("recurring_id"))
 
-	if err := s.sendRequest(r, "DELETE", fmt.Sprintf("/v1/recurring/%s", id), nil, nil); err != nil {
+	if err := s.sendRequest(r, "DELETE", fmt.Sprintf("/v1/recurring/%d", id), nil, nil); err != nil {
 		slog.Error("failed to delete recurring transaction", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError
@@ -378,9 +380,9 @@ func (s *Server) deleteRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) markReminderAsRead(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("reminder_id")
+	id := parseInt32(r.PathValue("reminder_id"))
 
-	if err := s.sendRequest(r, "POST", fmt.Sprintf("/v1/recurring/reminders/%s/read", id), nil, nil); err != nil {
+	if err := s.sendRequest(r, "POST", fmt.Sprintf("/v1/recurring/reminders/%d/read", id), nil, nil); err != nil {
 		slog.Error("failed to mark reminder as read", slog.String("error", err.Error()))
 
 		var sendRequestError *sendRequestError

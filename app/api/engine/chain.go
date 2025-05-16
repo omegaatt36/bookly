@@ -108,7 +108,7 @@ func (h *Handler[Req, Resp]) Call(req Req) *Handler[Req, Resp] {
 	// Get the userID from the request context
 	// This userID was set by the authenticated middleware
 	userID := getUserIDFromContext(h.r.Context())
-	if userID != "" {
+	if userID != 0 {
 		ctx.SetUserID(userID)
 	}
 

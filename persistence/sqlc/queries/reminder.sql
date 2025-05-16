@@ -5,12 +5,13 @@ INSERT INTO reminders (
     $1, $2
 ) RETURNING *;
 
--- name: DeleteReminder :exec
+-- name: DeleteReminder :one
 UPDATE reminders
 SET
     deleted_at = NOW(),
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING *;
 
 -- name: GetRemindersByRecurringTransactionID :many
 SELECT * FROM reminders

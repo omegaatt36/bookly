@@ -48,10 +48,11 @@ SET
 WHERE id = sqlc.arg('id') AND deleted_at IS NULL
 RETURNING *;
 
--- name: DeleteRecurringTransaction :exec
+-- name: DeleteRecurringTransaction :one
 UPDATE recurring_transactions
 SET
     updated_at = NOW(),
     status = 'cancelled',
     deleted_at = NOW()
-WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL
+RETURNING *;

@@ -13,8 +13,8 @@ import (
 )
 
 type jsonLedger struct {
-	ID           string          `json:"id"`
-	AccountID    string          `json:"account_id"`
+	ID           int32           `json:"id"`
+	AccountID    int32           `json:"account_id"`
 	Date         time.Time       `json:"date"`
 	Type         string          `json:"type"`
 	Currency     string          `json:"currency"`
@@ -22,7 +22,7 @@ type jsonLedger struct {
 	Note         string          `json:"note"`
 	Adjustable   bool            `json:"adjustable"`
 	IsAdjustment bool            `json:"is_adjustment"`
-	AdjustedFrom *string         `json:"adjusted_from"`
+	AdjustedFrom *int32          `json:"adjusted_from"`
 	IsVoided     bool            `json:"is_voided"`
 	VoidedAt     *time.Time      `json:"voided_at"`
 }
@@ -46,7 +46,7 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			accountID string
+			accountID int32
 			Date      time.Time       `json:"date"`
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
@@ -56,7 +56,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -98,10 +98,10 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 // GetLedgersByAccount retrieves all ledger entries for a given account
 func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var accountID string
+		var accountID int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -132,10 +132,10 @@ func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.R
 // GetLedgerByID retrieves a specific ledger entry by its ID
 func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -165,7 +165,7 @@ func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request
 func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id     string
+			id     int32
 			Date   *time.Time       `json:"date"`
 			Type   *string          `json:"type"`
 			Amount *decimal.Decimal `json:"amount"`
@@ -175,7 +175,7 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -217,10 +217,10 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 // VoidLedger handles the voiding of a ledger entry
 func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -248,8 +248,8 @@ func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
 func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id        string
-			AccountID string          `json:"account_id"`
+			id        int32
+			AccountID int32           `json:"account_id"`
 			Date      time.Time       `json:"date"`
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
@@ -259,7 +259,7 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 

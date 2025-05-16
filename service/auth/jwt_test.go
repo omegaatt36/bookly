@@ -45,7 +45,7 @@ func (s *testAuthSuite) TestHashPassword() {
 
 func (s *testAuthSuite) TestGenerateAndValidateToken() {
 	authenticator := auth.NewJWTAuthorizator(s.salt, s.secretKey)
-	userID := "test-user-id"
+	var userID int32 = 9999
 	token, err := authenticator.GenerateToken(domain.GenerateTokenRequest{UserID: userID})
 
 	s.NoError(err)
@@ -69,7 +69,7 @@ func (s *testAuthSuite) TestTokenExpiration() {
 		return time.Now().Add(-time.Hour)
 	}))
 
-	userID := "test-user-id"
+	var userID int32 = 9999
 
 	token, err := pastAuthenticator.GenerateToken(domain.GenerateTokenRequest{UserID: userID})
 	s.NoError(err)
