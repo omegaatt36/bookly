@@ -65,7 +65,7 @@ func (r *Repository) CreateRecurringTransaction(ctx context.Context, req domain.
 }
 
 // GetRecurringTransactionByID gets a recurring transaction by ID
-func (r *Repository) GetRecurringTransactionByID(ctx context.Context, id string) (*domain.RecurringTransaction, error) {
+func (r *Repository) GetRecurringTransactionByID(ctx context.Context, id int32) (*domain.RecurringTransaction, error) {
 	result, err := r.querier.GetRecurringTransactionByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (r *Repository) GetRecurringTransactionByID(ctx context.Context, id string)
 }
 
 // GetRecurringTransactionsByUserID gets all recurring transactions for a user
-func (r *Repository) GetRecurringTransactionsByUserID(ctx context.Context, userID string) ([]*domain.RecurringTransaction, error) {
+func (r *Repository) GetRecurringTransactionsByUserID(ctx context.Context, userID int32) ([]*domain.RecurringTransaction, error) {
 	results, err := r.querier.GetRecurringTransactionsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (r *Repository) UpdateRecurringTransaction(ctx context.Context, req domain.
 }
 
 // UpdateRecurringTransactionExecution updates the last executed and next due dates
-func (r *Repository) UpdateRecurringTransactionExecution(ctx context.Context, id string, lastExecuted, nextDue time.Time) (*domain.RecurringTransaction, error) {
+func (r *Repository) UpdateRecurringTransactionExecution(ctx context.Context, id int32, lastExecuted, nextDue time.Time) (*domain.RecurringTransaction, error) {
 	params := sqlcgen.UpdateRecurringTransactionExecutionParams{
 		ID:           id,
 		LastExecuted: pgtype.Timestamptz{Time: lastExecuted, Valid: true},
@@ -220,9 +220,9 @@ func (r *Repository) UpdateRecurringTransactionExecution(ctx context.Context, id
 
 // DeleteRecurringTransaction implements the domain.RecurringTransactionRepository interface
 // This method performs a soft delete by setting the deleted_at timestamp and status to cancelled.
-func (r *Repository) DeleteRecurringTransaction(ctx context.Context, id string) error {
+func (r *Repository) DeleteRecurringTransaction(ctx context.Context, id int32) error {
 	// The SQL query now sets deleted_at and status = 'cancelled'.
-	err := r.querier.DeleteRecurringTransaction(ctx, id)
+	_, err := r.querier.DeleteRecurringTransaction(ctx, id)
 	if err != nil {
 		// It's good practice to wrap errors for context
 		return fmt.Errorf("failed to soft delete recurring transaction: %w", err)

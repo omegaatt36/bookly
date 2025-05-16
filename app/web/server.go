@@ -10,9 +10,21 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
+
+// parseInt32 converts a string to int32 safely, returning 0 if conversion fails
+func parseInt32(s string) int32 {
+	val, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		slog.Debug("failed to parse string to int32", slog.String("value", s), slog.String("error", err.Error()))
+		return 0
+	}
+
+	return int32(val)
+}
 
 //go:embed templates/*.html
 var templatesFS embed.FS

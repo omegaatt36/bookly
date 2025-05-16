@@ -19,7 +19,7 @@ func condConvert(payload string, val any) error {
 	switch typKind {
 	case reflect.String:
 		rTyp.Set(reflect.ValueOf(payload).Convert(rTyp.Type()))
-	case reflect.Uint, reflect.Int:
+	case reflect.Uint, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		i, err := strconv.Atoi(payload)
 		if err != nil {
 			return app.ParamError(fmt.Errorf("parse int('%v') failed: %v", payload, err))

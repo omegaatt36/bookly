@@ -11,7 +11,7 @@ import (
 )
 
 type jsonAccount struct {
-	ID        string `json:"id"`
+	ID        int32  `json:"id"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 	Name      string `json:"name"`
@@ -42,7 +42,7 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -68,7 +68,7 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 	return func(w http.ResponseWriter, r *http.Request) {
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -90,10 +90,10 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 // GetAccountByID handles the retrieval of an account by its ID for the current authenticated user
 func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -119,7 +119,7 @@ func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Reques
 func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id     string
+			id     int32
 			Name   *string `json:"name"`
 			Status *string `json:"status"`
 		}
@@ -127,7 +127,7 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 		var req request
 		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -161,10 +161,10 @@ func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request
 // DeactivateAccountByID handles the deactivation of an account by its ID
 func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var id string
+		var id int32
 		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
-			if userID == "" {
+			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -185,7 +185,7 @@ func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http
 // GetUserAccounts handles the retrieval of all accounts for a specific user
 func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var userID string
+		var userID int32
 		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
 			accounts, err := x.service.GetAccountsByUserID(userID)
 			if err != nil {
@@ -206,7 +206,7 @@ func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Reque
 func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			UserID   string `json:"-"`
+			userID   int32
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 		}
@@ -216,7 +216,7 @@ func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Req
 			// Admin validation would go here
 			// For now we'll just use the authenticated user's ID
 			authenticatedUserID := ctx.GetUserID()
-			if authenticatedUserID == "" {
+			if authenticatedUserID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
@@ -229,15 +229,15 @@ func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Req
 			}
 
 			// In a real admin scenario, we'd use req.UserID, but for now validate that it matches authenticated user
-			if req.UserID != authenticatedUserID {
+			if req.userID != authenticatedUserID {
 				return nil, app.Forbidden(errors.New("can only create accounts for yourself"))
 			}
 
 			return nil, x.service.CreateAccount(domain.CreateAccountRequest{
-				UserID:   req.UserID,
+				UserID:   req.userID,
 				Name:     req.Name,
 				Currency: req.Currency,
 			})
-		}).Param("user_id", &req.UserID).BindJSON(&req).Call(req).ResponseJSON()
+		}).Param("user_id", &req.userID).BindJSON(&req).Call(req).ResponseJSON()
 	}
 }

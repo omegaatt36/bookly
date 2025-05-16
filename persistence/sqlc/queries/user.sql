@@ -5,7 +5,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2
 )
-RETURNING id;
+RETURNING *;
 
 -- name: GetAllUsers :many
 SELECT * FROM users
@@ -17,30 +17,33 @@ SELECT * FROM users
 WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1;
 
--- name: UpdateUser :exec
+-- name: UpdateUser :one
 UPDATE users
 SET
     name = CASE WHEN sqlc.narg('name')::text IS NULL THEN name ELSE sqlc.narg('name') END,
     nickname = CASE WHEN sqlc.narg('nickname')::text IS NULL THEN nickname ELSE sqlc.narg('nickname') END,
     disabled = CASE WHEN sqlc.narg('disabled')::boolean IS NULL THEN disabled ELSE sqlc.narg('disabled') END,
     updated_at = NOW()
-WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL
+RETURNING *;
 
--- name: DeactivateUserByID :exec
+-- name: DeactivateUserByID :one
 UPDATE users
 SET
     disabled = true,
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING *;
 
--- name: DeleteUser :exec
+-- name: DeleteUser :one
 UPDATE users
 SET
     deleted_at = NOW(),
     updated_at = NOW()
-WHERE id = $1 AND deleted_at IS NULL;
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING *;
 
--- name: AddIdentity :exec
+-- name: AddIdentity :one
 INSERT INTO identities (
     user_id,
     provider,
@@ -49,7 +52,8 @@ INSERT INTO identities (
     last_used_at
 ) VALUES (
     $1, $2, $3, $4, NOW()
-);
+)
+RETURNING *;
 
 -- name: GetUserByIdentity :one
 SELECT

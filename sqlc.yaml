@@ -11,9 +11,9 @@ sql:
         emit_interface: true
         emit_empty_slices: true
         overrides:
-          - db_type: "uuid"
-            go_type: "string"
           - db_type: "decimal"
             go_type: "github.com/shopspring/decimal.Decimal"
           - db_type: "pg_catalog.numeric"
             go_type: "github.com/shopspring/decimal.Decimal"
+          # - db_type: "serial"
+          #   go_type: "int"

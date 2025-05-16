@@ -1,10 +1,10 @@
 -- Create accounts table
 CREATE TABLE accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE,
-    user_id UUID NOT NULL,
+    user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     status VARCHAR(20) NOT NULL,
     currency VARCHAR(3) NOT NULL,
@@ -18,17 +18,17 @@ CREATE INDEX idx_accounts_status ON accounts (status);
 
 -- Create ledgers table
 CREATE TABLE ledgers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP WITH TIME ZONE,
-    account_id UUID NOT NULL REFERENCES accounts(id),
+    account_id INT NOT NULL REFERENCES accounts(id),
     date TIMESTAMP WITH TIME ZONE NOT NULL,
     type VARCHAR(20) NOT NULL,
     amount DECIMAL(20, 2) NOT NULL,
     note TEXT,
     is_adjustment BOOLEAN NOT NULL DEFAULT FALSE,
-    adjusted_from UUID REFERENCES ledgers(id),
+    adjusted_from INT REFERENCES ledgers(id),
     is_voided BOOLEAN NOT NULL DEFAULT FALSE,
     voided_at TIMESTAMP WITH TIME ZONE
 );

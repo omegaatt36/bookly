@@ -10,7 +10,7 @@ import (
 )
 
 type account struct {
-	ID       string `json:"id"`
+	ID       int32  `json:"id"`
 	Name     string `json:"name"`
 	Status   string `json:"status"`
 	Currency string `json:"currency"`
@@ -25,10 +25,10 @@ func (s *Server) pageCreateAccount(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
-	accountID := r.PathValue("account_id")
+	accountID := parseInt32(r.PathValue("account_id"))
 
 	var acc account
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%s", accountID), nil, &acc)
+	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d", accountID), nil, &acc)
 	if err != nil {
 		slog.Error("failed to get accounts", slog.String("error", err.Error()))
 
@@ -53,9 +53,18 @@ func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getAccountList(r *http.Request) ([]account, error) {
 	var accounts []account
 	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	if err != nil {
+		return nil, err
+	}
+
+	return accounts, nil
+}
+
+func (s *Server) pageAccounts(w http.ResponseWriter, r *http.Request) {
+	accounts, err := s.getAccountList(r)
 	if err != nil {
 		slog.Error("failed to get accounts", slog.String("error", err.Error()), slog.String("request", r.URL.String()))
 
@@ -75,16 +84,41 @@ func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
 		Accounts: accounts,
 	}
 
-	// 使用完整的頁面模板，而不是片段模板
 	if err := s.templates.ExecuteTemplate(w, "accounts_page.html", result); err != nil {
-		slog.Error("failed to render accounts_page.html", slog.String("error", err.Error()))
+		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
+	}
+}
+
+func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
+	accounts, err := s.getAccountList(r)
+	if err != nil {
+		slog.Error("failed to get accounts", slog.String("error", err.Error()), slog.String("request", r.URL.String()))
+
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		}
+
+		http.Error(w, "Failed to get accounts", http.StatusInternalServerError)
+		return
+	}
+
+	result := struct {
+		Accounts []account
+	}{
+		Accounts: accounts,
+	}
+
+	if err := s.templates.ExecuteTemplate(w, "account_list.html", result); err != nil {
+		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
 
 func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		UserID   string `json:"user_id"`
+		UserID   int32  `json:"user_id"`
 		Name     string `json:"name"`
 		Currency string `json:"currency"`
 	}

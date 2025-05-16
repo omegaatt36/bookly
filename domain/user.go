@@ -4,7 +4,7 @@ import "time"
 
 // User represents a user
 type User struct {
-	ID         string
+	ID         int32
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Disabled   bool
@@ -21,7 +21,7 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest defines the request to update a user
 type UpdateUserRequest struct {
-	ID       string
+	ID       int32
 	Name     *string
 	Nickname *string
 	Disabled *bool
@@ -29,14 +29,14 @@ type UpdateUserRequest struct {
 
 // UserRepository represents a user repository interface
 type UserRepository interface {
-	CreateUser(CreateUserRequest) (userID string, err error)
+	CreateUser(CreateUserRequest) (userID int32, err error)
 	GetAllUsers() ([]*User, error)
-	GetUserByID(string) (*User, error)
+	GetUserByID(int32) (*User, error)
 	UpdateUser(UpdateUserRequest) error
-	DeactivateUserByID(string) error
-	DeleteUser(id string) error
+	DeactivateUserByID(int32) error
+	DeleteUser(id int32) error
 	GetUserByIdentity(provider IdentityProvider, identifier string) (*User, *Identity, error)
-	AddIdentity(userID string, provider Identity) error
+	AddIdentity(userID int32, provider Identity) error
 }
 
 // IdentityProvider represents an identity provider

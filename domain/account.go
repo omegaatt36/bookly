@@ -14,10 +14,10 @@ type AccountStatus string
 
 // Account represents a ledger account
 type Account struct {
-	ID        string
+	ID        int32
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	UserID    string
+	UserID    int32
 	Name      string
 	Status    AccountStatus
 	Currency  string
@@ -27,15 +27,15 @@ type Account struct {
 
 // CreateAccountRequest defines the request to create a ledger account
 type CreateAccountRequest struct {
-	UserID   string
+	UserID   int32
 	Name     string
 	Currency string
 }
 
 // UpdateAccountRequest defines the request to update a ledger account
 type UpdateAccountRequest struct {
-	ID       string
-	UserID   *string
+	ID       int32
+	UserID   *int32
 	Name     *string
 	Currency *string
 	Status   *AccountStatus
@@ -44,10 +44,10 @@ type UpdateAccountRequest struct {
 // AccountRepository represents a ledger account repository interface
 type AccountRepository interface {
 	CreateAccount(CreateAccountRequest) error
-	GetAccountByID(string) (*Account, error)
+	GetAccountByID(int32) (*Account, error)
 	UpdateAccount(UpdateAccountRequest) error
-	DeactivateAccountByID(string) error
-	DeleteAccount(string) error
+	DeactivateAccountByID(int32) error
+	DeleteAccount(int32) error
 	GetAllAccounts() ([]*Account, error)
-	GetAccountsByUserID(string) ([]*Account, error)
+	GetAccountsByUserID(int32) ([]*Account, error)
 }

@@ -35,12 +35,12 @@ func (s *Service) CreateRecurringTransaction(ctx context.Context, request domain
 }
 
 // GetRecurringTransaction gets a recurring transaction by ID
-func (s *Service) GetRecurringTransaction(ctx context.Context, id string) (*domain.RecurringTransaction, error) {
+func (s *Service) GetRecurringTransaction(ctx context.Context, id int32) (*domain.RecurringTransaction, error) {
 	return s.recurringTransactionRepo.GetRecurringTransactionByID(ctx, id)
 }
 
 // GetRecurringTransactionsByUserID gets all recurring transactions for a user
-func (s *Service) GetRecurringTransactionsByUserID(ctx context.Context, userID string) ([]*domain.RecurringTransaction, error) {
+func (s *Service) GetRecurringTransactionsByUserID(ctx context.Context, userID int32) ([]*domain.RecurringTransaction, error) {
 	return s.recurringTransactionRepo.GetRecurringTransactionsByUserID(ctx, userID)
 }
 
@@ -50,7 +50,7 @@ func (s *Service) UpdateRecurringTransaction(ctx context.Context, request domain
 }
 
 // DeleteRecurringTransaction deletes a recurring transaction
-func (s *Service) DeleteRecurringTransaction(ctx context.Context, id string) error {
+func (s *Service) DeleteRecurringTransaction(ctx context.Context, id int32) error {
 	if s.recurringTransactionRepo == nil {
 		return ErrRecurringRepositoriesNotSet
 	}
@@ -58,22 +58,22 @@ func (s *Service) DeleteRecurringTransaction(ctx context.Context, id string) err
 }
 
 // GetReminders gets reminders for a recurring transaction
-func (s *Service) GetReminders(ctx context.Context, recurringTransactionID string) ([]*domain.Reminder, error) {
+func (s *Service) GetReminders(ctx context.Context, recurringTransactionID int32) ([]*domain.Reminder, error) {
 	return s.reminderRepo.GetRemindersByRecurringTransactionID(ctx, recurringTransactionID)
 }
 
 // GetActiveRemindersByUserID gets all active reminders for a user
-func (s *Service) GetActiveRemindersByUserID(ctx context.Context, userID string) ([]*domain.Reminder, error) {
+func (s *Service) GetActiveRemindersByUserID(ctx context.Context, userID int32) ([]*domain.Reminder, error) {
 	return s.reminderRepo.GetActiveRemindersByUserID(ctx, userID, time.Now())
 }
 
 // GetReminderByID gets a reminder by ID
-func (s *Service) GetReminderByID(ctx context.Context, id string) (*domain.Reminder, error) {
+func (s *Service) GetReminderByID(ctx context.Context, id int32) (*domain.Reminder, error) {
 	return s.reminderRepo.GetReminderByID(ctx, id)
 }
 
 // MarkReminderAsRead marks a reminder as read
-func (s *Service) MarkReminderAsRead(ctx context.Context, id string) (*domain.Reminder, error) {
+func (s *Service) MarkReminderAsRead(ctx context.Context, id int32) (*domain.Reminder, error) {
 	return s.reminderRepo.MarkReminderAsRead(ctx, id)
 }
 
@@ -158,14 +158,14 @@ func (s *Service) ProcessDueTransactions(ctx context.Context) error {
 }
 
 // GetUpcomingReminders gets upcoming reminders for a user within the next week
-func (s *Service) GetUpcomingReminders(ctx context.Context, userID string) ([]*domain.Reminder, error) {
+func (s *Service) GetUpcomingReminders(ctx context.Context, userID int32) ([]*domain.Reminder, error) {
 
 	now := time.Now()
 	oneWeekLater := now.AddDate(0, 0, 7)
 
 	// Use repository that supports date range
 	if repo, ok := s.reminderRepo.(interface {
-		GetUpcomingReminders(ctx context.Context, userID string, start, end time.Time) ([]*domain.Reminder, error)
+		GetUpcomingReminders(ctx context.Context, userID int32, start, end time.Time) ([]*domain.Reminder, error)
 	}); ok {
 		return repo.GetUpcomingReminders(ctx, userID, now, oneWeekLater)
 	}

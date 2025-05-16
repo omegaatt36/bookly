@@ -7,19 +7,22 @@ SELECT * FROM identities
 WHERE provider = $1 AND identifier = $2
 LIMIT 1;
 
--- name: UpdateIdentityCredential :exec
+-- name: UpdateIdentityCredential :one
 UPDATE identities
 SET
     credential = $3,
     last_used_at = NOW()
-WHERE provider = $1 AND identifier = $2;
+WHERE provider = $1 AND identifier = $2
+RETURNING *;
 
--- name: UpdateIdentityLastUsed :exec
+-- name: UpdateIdentityLastUsed :one
 UPDATE identities
 SET
     last_used_at = NOW()
-WHERE provider = $1 AND identifier = $2;
+WHERE provider = $1 AND identifier = $2
+RETURNING *;
 
--- name: DeleteIdentity :exec
+-- name: DeleteIdentity :one
 DELETE FROM identities
-WHERE provider = $1 AND identifier = $2;
+WHERE provider = $1 AND identifier = $2
+RETURNING *;

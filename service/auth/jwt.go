@@ -107,14 +107,14 @@ func (authenticator *JWTAuthenticator) ValidateToken(req domain.ValidateTokenReq
 		return domain.TokenValidationResponse{Valid: false}, errors.New("invalid token")
 	}
 
-	userID, ok := claims["user_id"].(string)
+	userID, ok := claims["user_id"].(float64)
 	if !ok {
 		return domain.TokenValidationResponse{Valid: false}, errors.New("user_id not found in token")
 	}
 
 	return domain.TokenValidationResponse{
 		Valid:  true,
-		UserID: userID,
+		UserID: int32(userID),
 	}, nil
 }
 

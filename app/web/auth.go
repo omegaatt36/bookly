@@ -58,17 +58,17 @@ func (s *Server) clearTokenAndRedirect(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) getUserIDFromToken(tokenString string) (string, error) {
+func (s *Server) getUserIDFromToken(tokenString string) (int32, error) {
 	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if userID, ok := claims["user_id"].(string); ok {
-			return userID, nil
+		if userIDFloat, ok := claims["user_id"].(float64); ok {
+			return int32(userIDFloat), nil
 		}
 	}
 
-	return "", errors.New("user_id not found in token claims")
+	return 0, errors.New("user_id not found in token claims")
 }

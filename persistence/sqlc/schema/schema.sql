@@ -1,9 +1,7 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Accounts Table
 CREATE TABLE accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP
     WITH
         TIME ZONE NOT NULL DEFAULT NOW (),
@@ -13,7 +11,7 @@ CREATE TABLE accounts (
         deleted_at TIMESTAMP
     WITH
         TIME ZONE,
-        user_id UUID NOT NULL,
+        user_id INT NOT NULL,
         name VARCHAR(255) NOT NULL,
         status VARCHAR(20) NOT NULL,
         currency VARCHAR(3) NOT NULL,
@@ -29,7 +27,7 @@ CREATE INDEX idx_accounts_status ON accounts (status);
 
 -- Ledgers Table
 CREATE TABLE ledgers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP
     WITH
         TIME ZONE NOT NULL DEFAULT NOW (),
@@ -39,7 +37,7 @@ CREATE TABLE ledgers (
         deleted_at TIMESTAMP
     WITH
         TIME ZONE,
-        account_id UUID NOT NULL REFERENCES accounts (id),
+        account_id INT NOT NULL REFERENCES accounts (id),
         date TIMESTAMP
     WITH
         TIME ZONE NOT NULL,
@@ -47,7 +45,7 @@ CREATE TABLE ledgers (
         amount DECIMAL(20, 2) NOT NULL,
         note TEXT,
         is_adjustment BOOLEAN NOT NULL DEFAULT FALSE,
-        adjusted_from UUID REFERENCES ledgers (id),
+        adjusted_from INT REFERENCES ledgers (id),
         is_voided BOOLEAN NOT NULL DEFAULT FALSE,
         voided_at TIMESTAMP
     WITH
@@ -65,7 +63,7 @@ CREATE INDEX idx_ledgers_adjusted_from ON ledgers (adjusted_from);
 
 -- Users Table
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP
     WITH
         TIME ZONE NOT NULL DEFAULT NOW (),
@@ -88,7 +86,7 @@ CREATE INDEX idx_users_disabled ON users (disabled);
 -- Identities Table
 CREATE TABLE identities (
     id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users (id),
+    user_id INT NOT NULL REFERENCES users (id),
     provider VARCHAR(20) NOT NULL,
     identifier VARCHAR(255) NOT NULL,
     credential VARCHAR(255) NOT NULL,
@@ -106,7 +104,7 @@ CREATE INDEX idx_identities_last_used_at ON identities (last_used_at);
 
 -- Recurring Transactions Table
 CREATE TABLE recurring_transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP
     WITH
         TIME ZONE NOT NULL DEFAULT NOW (),
@@ -116,8 +114,8 @@ CREATE TABLE recurring_transactions (
         deleted_at TIMESTAMP
     WITH
         TIME ZONE,
-        user_id UUID NOT NULL REFERENCES users (id),
-        account_id UUID NOT NULL REFERENCES accounts (id),
+        user_id INT NOT NULL REFERENCES users (id),
+        account_id INT NOT NULL REFERENCES accounts (id),
         name VARCHAR(255) NOT NULL,
         type VARCHAR(20) NOT NULL,
         amount DECIMAL(20, 2) NOT NULL,
@@ -144,7 +142,7 @@ CREATE TABLE recurring_transactions (
 
 -- Reminders Table
 CREATE TABLE reminders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+    id SERIAL PRIMARY KEY,
     created_at TIMESTAMP
     WITH
         TIME ZONE NOT NULL DEFAULT NOW (),
@@ -154,7 +152,7 @@ CREATE TABLE reminders (
         deleted_at TIMESTAMP
     WITH
         TIME ZONE,
-        recurring_transaction_id UUID NOT NULL REFERENCES recurring_transactions (id),
+        recurring_transaction_id INT NOT NULL REFERENCES recurring_transactions (id),
         reminder_date TIMESTAMP
     WITH
         TIME ZONE NOT NULL,

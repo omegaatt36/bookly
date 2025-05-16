@@ -2,6 +2,7 @@ package bookkeeping_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,8 +15,8 @@ import (
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
 	"github.com/omegaatt36/bookly/persistence/database"
-	"github.com/omegaatt36/bookly/persistence/migration"
 	"github.com/omegaatt36/bookly/persistence/repository"
+	"github.com/omegaatt36/bookly/persistence/sqlc"
 )
 
 var seedUser = domain.User{
@@ -34,7 +35,7 @@ type testAccountSuite struct {
 
 	repo     *repository.SQLCRepository
 	finalize func()
-	userID   string
+	userID   int32
 }
 
 func (s *testAccountSuite) SetupTest() {
@@ -65,7 +66,7 @@ func (s *testAccountSuite) SetupTest() {
 	registerWithAuth("GET /users/{user_id}/accounts", http.HandlerFunc(controller.GetUserAccounts()))
 	registerWithAuth("POST /users/{user_id}/accounts", http.HandlerFunc(controller.CreateUserAccount()))
 
-	s.NoError(migration.NewMigrator(db).Upgrade())
+	s.NoError(sqlc.MigrateForTest(context.Background(), db))
 }
 
 func (s *testAccountSuite) TearDownTest() {
@@ -82,7 +83,7 @@ func (s *testAccountSuite) TestCreateAccount() {
 	userID, err := s.createSeedUser()
 	s.NoError(err)
 
-	reqBody := []byte(fmt.Sprintf(`{"user_id": "%s", "name": "Test Account", "currency": "NTD"}`, userID))
+	reqBody := []byte(fmt.Sprintf(`{"user_id": %d, "name": "Test Account", "currency": "NTD"}`, userID))
 	req := httptest.NewRequest(http.MethodPost, "/accounts", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
@@ -123,7 +124,7 @@ func (s *testAccountSuite) TestGetAllAccounts() {
 	type getAllAccountsResponse struct {
 		Code int `json:"code"`
 		Data []struct {
-			ID       string `json:"id"`
+			ID       int32  `json:"id"`
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 			Status   string `json:"status"`
@@ -143,7 +144,7 @@ func (s *testAccountSuite) TestGetAccountByID() {
 	accountID, err := s.createSeedAccount()
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodGet, "/accounts/"+accountID, nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/accounts/%d", accountID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -153,7 +154,7 @@ func (s *testAccountSuite) TestGetAccountByID() {
 	type getAccountByIDResponse struct {
 		Code int `json:"code"`
 		Data struct {
-			ID       string `json:"id"`
+			ID       int32  `json:"id"`
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 			Status   string `json:"status"`
@@ -174,7 +175,7 @@ func (s *testAccountSuite) TestUpdateAccount() {
 	s.NoError(err)
 
 	reqBody := []byte(`{"name": "Updated Account"}`)
-	req := httptest.NewRequest(http.MethodPatch, "/accounts/"+accountID, bytes.NewBuffer(reqBody))
+	req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/accounts/%d", accountID), bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -199,7 +200,7 @@ func (s *testAccountSuite) TestDeactivateAccountByID() {
 	accountID, err := s.createSeedAccount()
 	s.NoError(err)
 
-	req := httptest.NewRequest(http.MethodDelete, "/accounts/"+accountID, nil)
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/accounts/%d", accountID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -228,7 +229,7 @@ func (s *testAccountSuite) TestGetAccountsByUserID() {
 	s.NoError(err)
 	s.NotNil(acc)
 
-	req := httptest.NewRequest(http.MethodGet, "/users/"+acc.UserID+"/accounts", nil)
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users/%d/accounts", acc.UserID), nil)
 	w := httptest.NewRecorder()
 
 	s.router.ServeHTTP(w, req)
@@ -238,7 +239,7 @@ func (s *testAccountSuite) TestGetAccountsByUserID() {
 	type getAccountsByUserIDResponse struct {
 		Code int `json:"code"`
 		Data []struct {
-			ID       string `json:"id"`
+			ID       int32  `json:"id"`
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 			Status   string `json:"status"`
@@ -254,7 +255,7 @@ func (s *testAccountSuite) TestGetAccountsByUserID() {
 	s.Equal(domain.AccountStatusActive.String(), resp.Data[0].Status)
 }
 
-func (s *testAccountSuite) createSeedUser() (string, error) {
+func (s *testAccountSuite) createSeedUser() (int32, error) {
 	userID, err := s.repo.CreateUser(domain.CreateUserRequest{
 		Name: seedUser.Name,
 	})
@@ -265,7 +266,7 @@ func (s *testAccountSuite) createSeedUser() (string, error) {
 	return userID, nil
 }
 
-func (s *testAccountSuite) createSeedAccount() (accountID string, err error) {
+func (s *testAccountSuite) createSeedAccount() (accountID int32, err error) {
 	userID, err := s.createSeedUser()
 	s.NoError(err)
 

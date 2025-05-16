@@ -12,7 +12,8 @@ func (s *Server) registerRoutes() {
 	router.HandleFunc("GET /", s.page404)
 
 	router.HandleFunc("GET /page/accounts/create", authenticatedHandler(s.pageCreateAccount))
-	router.HandleFunc("GET /page/accounts", authenticatedHandler(s.pageAccountList))
+	router.HandleFunc("GET /page/accounts", authenticatedHandler(s.pageAccounts))
+	router.HandleFunc("GET /page/accounts/list", authenticatedHandler(s.pageAccountList))
 	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.pageAccount))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers/create", authenticatedHandler(s.pageCreateLedger))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers", authenticatedHandler(s.pageLedgersByAccount))

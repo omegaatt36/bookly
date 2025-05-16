@@ -16,7 +16,7 @@ func (s *Service) CreateUser(req domain.CreateUserRequest) error {
 }
 
 // GetUserByID retrieves a user by its ID.
-func (s *Service) GetUserByID(id string) (*domain.User, error) {
+func (s *Service) GetUserByID(id int32) (*domain.User, error) {
 	return s.userRepo.GetUserByID(id)
 }
 
@@ -31,6 +31,6 @@ func (s *Service) UpdateUser(req domain.UpdateUserRequest) error {
 }
 
 // DeactivateUserByID deactivates an user by setting its status to disabled.
-func (s *Service) DeactivateUserByID(id string) error {
+func (s *Service) DeactivateUserByID(id int32) error {
 	return s.userRepo.DeactivateUserByID(id)
 }

@@ -46,7 +46,7 @@
         </div>
 
         <div id="overlay" class="overlay"></div>
-        
+
         <div class="container mx-auto mt-8 px-4">
             <div class="flex flex-col md:flex-row -mx-4">
                 <div class="w-full md:w-1/2 px-4 mb-8 md:mb-0">
@@ -55,7 +55,7 @@
                         <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="btn btn-primary duration-200">New Account</button>
                     </div>
                     <div id="create-account-modal"></div>
-                    <div id="account-list">
+                    <div id="account-list" hx-trigger="load, reloadAccounts from:body" hx-get="/page/accounts/list">
                         <table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
                             <thead class="bg-bg-tertiary">
                                 <tr>

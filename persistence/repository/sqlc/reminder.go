@@ -13,7 +13,7 @@ import (
 )
 
 // CreateReminder creates a new reminder for a recurring transaction
-func (r *Repository) CreateReminder(ctx context.Context, recurringTransactionID string, reminderDate time.Time) (*domain.Reminder, error) {
+func (r *Repository) CreateReminder(ctx context.Context, recurringTransactionID int32, reminderDate time.Time) (*domain.Reminder, error) {
 	params := sqlcgen.CreateReminderParams{
 		RecurringTransactionID: recurringTransactionID,
 		ReminderDate:           pgtype.Timestamptz{Time: reminderDate, Valid: true},
@@ -28,7 +28,7 @@ func (r *Repository) CreateReminder(ctx context.Context, recurringTransactionID 
 }
 
 // GetRemindersByRecurringTransactionID gets all reminders for a recurring transaction
-func (r *Repository) GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID string) ([]*domain.Reminder, error) {
+func (r *Repository) GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID int32) ([]*domain.Reminder, error) {
 	results, err := r.querier.GetRemindersByRecurringTransactionID(ctx, recurringTransactionID)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *Repository) GetRemindersByRecurringTransactionID(ctx context.Context, r
 }
 
 // GetActiveRemindersByUserID gets all active (unread) reminders for a user
-func (r *Repository) GetActiveRemindersByUserID(ctx context.Context, userID string, before time.Time) ([]*domain.Reminder, error) {
+func (r *Repository) GetActiveRemindersByUserID(ctx context.Context, userID int32, before time.Time) ([]*domain.Reminder, error) {
 	results, err := r.querier.GetActiveRemindersByUserID(ctx, sqlcgen.GetActiveRemindersByUserIDParams{
 		UserID:       userID,
 		ReminderDate: pgtype.Timestamptz{Time: before, Valid: true},
@@ -61,7 +61,7 @@ func (r *Repository) GetActiveRemindersByUserID(ctx context.Context, userID stri
 }
 
 // GetReminderByID gets a reminder by its ID
-func (r *Repository) GetReminderByID(ctx context.Context, id string) (*domain.Reminder, error) {
+func (r *Repository) GetReminderByID(ctx context.Context, id int32) (*domain.Reminder, error) {
 	result, err := r.querier.GetReminderByID(ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -74,7 +74,7 @@ func (r *Repository) GetReminderByID(ctx context.Context, id string) (*domain.Re
 }
 
 // MarkReminderAsRead marks a reminder as read
-func (r *Repository) MarkReminderAsRead(ctx context.Context, id string) (*domain.Reminder, error) {
+func (r *Repository) MarkReminderAsRead(ctx context.Context, id int32) (*domain.Reminder, error) {
 	result, err := r.querier.MarkReminderAsRead(ctx, id)
 	if err != nil {
 		return nil, err
@@ -84,15 +84,15 @@ func (r *Repository) MarkReminderAsRead(ctx context.Context, id string) (*domain
 }
 
 // DeleteReminder implements the domain.ReminderRepository interface for soft delete
-func (r *Repository) DeleteReminder(ctx context.Context, id string) error {
-	if err := r.querier.DeleteReminder(ctx, id); err != nil {
+func (r *Repository) DeleteReminder(ctx context.Context, id int32) error {
+	if _, err := r.querier.DeleteReminder(ctx, id); err != nil {
 		return fmt.Errorf("failed to soft delete reminder: %w", err)
 	}
 	return nil
 }
 
 // GetUpcomingReminders gets upcoming reminders for a user within a date range
-func (r *Repository) GetUpcomingReminders(ctx context.Context, userID string, start, end time.Time) ([]*domain.Reminder, error) {
+func (r *Repository) GetUpcomingReminders(ctx context.Context, userID int32, start, end time.Time) ([]*domain.Reminder, error) {
 	results, err := r.querier.GetUpcomingReminders(ctx, sqlcgen.GetUpcomingRemindersParams{
 		UserID:         userID,
 		ReminderDate:   pgtype.Timestamptz{Time: start, Valid: true},

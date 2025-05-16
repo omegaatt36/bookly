@@ -12,48 +12,48 @@ import (
 )
 
 type Querier interface {
-	AddIdentity(ctx context.Context, arg AddIdentityParams) error
-	CreateAccount(ctx context.Context, arg CreateAccountParams) error
-	CreateLedger(ctx context.Context, arg CreateLedgerParams) (string, error)
+	AddIdentity(ctx context.Context, arg AddIdentityParams) (Identity, error)
+	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
+	CreateLedger(ctx context.Context, arg CreateLedgerParams) (Ledger, error)
 	CreateRecurringTransaction(ctx context.Context, arg CreateRecurringTransactionParams) (RecurringTransaction, error)
 	CreateReminder(ctx context.Context, arg CreateReminderParams) (Reminder, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (string, error)
-	DeactivateAccountByID(ctx context.Context, arg DeactivateAccountByIDParams) error
-	DeactivateUserByID(ctx context.Context, id string) error
-	DeleteAccount(ctx context.Context, id string) error
-	DeleteIdentity(ctx context.Context, arg DeleteIdentityParams) error
-	DeleteLedger(ctx context.Context, id string) error
-	DeleteRecurringTransaction(ctx context.Context, id string) error
-	DeleteReminder(ctx context.Context, id string) error
-	DeleteUser(ctx context.Context, id string) error
-	GetAccountByID(ctx context.Context, id string) (Account, error)
-	GetAccountsByUserID(ctx context.Context, userID string) ([]Account, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeactivateAccountByID(ctx context.Context, arg DeactivateAccountByIDParams) (Account, error)
+	DeactivateUserByID(ctx context.Context, id int32) (User, error)
+	DeleteAccount(ctx context.Context, id int32) (Account, error)
+	DeleteIdentity(ctx context.Context, arg DeleteIdentityParams) (Identity, error)
+	DeleteLedger(ctx context.Context, id int32) (Ledger, error)
+	DeleteRecurringTransaction(ctx context.Context, id int32) (RecurringTransaction, error)
+	DeleteReminder(ctx context.Context, id int32) (Reminder, error)
+	DeleteUser(ctx context.Context, id int32) (User, error)
+	GetAccountByID(ctx context.Context, id int32) (Account, error)
+	GetAccountsByUserID(ctx context.Context, userID int32) ([]Account, error)
 	GetActiveRecurringTransactionsDue(ctx context.Context, nextDue pgtype.Timestamptz) ([]RecurringTransaction, error)
 	GetActiveRemindersByUserID(ctx context.Context, arg GetActiveRemindersByUserIDParams) ([]Reminder, error)
 	GetAllAccounts(ctx context.Context) ([]Account, error)
 	GetAllUsers(ctx context.Context) ([]User, error)
-	GetIdentitiesByUserID(ctx context.Context, userID string) ([]Identity, error)
+	GetIdentitiesByUserID(ctx context.Context, userID int32) ([]Identity, error)
 	GetIdentityByProviderAndIdentifier(ctx context.Context, arg GetIdentityByProviderAndIdentifierParams) (Identity, error)
-	GetLedgerAmount(ctx context.Context, id string) (decimal.Decimal, error)
-	GetLedgerByID(ctx context.Context, id string) (GetLedgerByIDRow, error)
-	GetLedgersByAccountID(ctx context.Context, accountID string) ([]GetLedgersByAccountIDRow, error)
-	GetRecurringTransactionByID(ctx context.Context, id string) (RecurringTransaction, error)
-	GetRecurringTransactionsByUserID(ctx context.Context, userID string) ([]RecurringTransaction, error)
-	GetReminderByID(ctx context.Context, id string) (Reminder, error)
-	GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID string) ([]Reminder, error)
+	GetLedgerAmount(ctx context.Context, id int32) (decimal.Decimal, error)
+	GetLedgerByID(ctx context.Context, id int32) (GetLedgerByIDRow, error)
+	GetLedgersByAccountID(ctx context.Context, accountID int32) ([]GetLedgersByAccountIDRow, error)
+	GetRecurringTransactionByID(ctx context.Context, id int32) (RecurringTransaction, error)
+	GetRecurringTransactionsByUserID(ctx context.Context, userID int32) ([]RecurringTransaction, error)
+	GetReminderByID(ctx context.Context, id int32) (Reminder, error)
+	GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID int32) ([]Reminder, error)
 	GetUpcomingReminders(ctx context.Context, arg GetUpcomingRemindersParams) ([]GetUpcomingRemindersRow, error)
-	GetUserByID(ctx context.Context, id string) (User, error)
+	GetUserByID(ctx context.Context, id int32) (User, error)
 	GetUserByIdentity(ctx context.Context, arg GetUserByIdentityParams) (GetUserByIdentityRow, error)
-	IncreaseAccountBalance(ctx context.Context, arg IncreaseAccountBalanceParams) error
-	MarkReminderAsRead(ctx context.Context, id string) (Reminder, error)
-	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
-	UpdateIdentityCredential(ctx context.Context, arg UpdateIdentityCredentialParams) error
-	UpdateIdentityLastUsed(ctx context.Context, arg UpdateIdentityLastUsedParams) error
-	UpdateLedger(ctx context.Context, arg UpdateLedgerParams) error
+	IncreaseAccountBalance(ctx context.Context, arg IncreaseAccountBalanceParams) (Account, error)
+	MarkReminderAsRead(ctx context.Context, id int32) (Reminder, error)
+	UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error)
+	UpdateIdentityCredential(ctx context.Context, arg UpdateIdentityCredentialParams) (Identity, error)
+	UpdateIdentityLastUsed(ctx context.Context, arg UpdateIdentityLastUsedParams) (Identity, error)
+	UpdateLedger(ctx context.Context, arg UpdateLedgerParams) (Ledger, error)
 	UpdateRecurringTransaction(ctx context.Context, arg UpdateRecurringTransactionParams) (RecurringTransaction, error)
 	UpdateRecurringTransactionExecution(ctx context.Context, arg UpdateRecurringTransactionExecutionParams) (RecurringTransaction, error)
-	UpdateUser(ctx context.Context, arg UpdateUserParams) error
-	VoidLedger(ctx context.Context, id string) error
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	VoidLedger(ctx context.Context, id int32) (Ledger, error)
 }
 
 var _ Querier = (*Queries)(nil)

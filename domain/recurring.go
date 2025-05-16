@@ -19,11 +19,11 @@ type RecurrenceStatus string
 
 // RecurringTransaction represents a recurring transaction configuration
 type RecurringTransaction struct {
-	ID           string
+	ID           int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	UserID       string
-	AccountID    string
+	UserID       int32
+	AccountID    int32
 	Name         string
 	Type         LedgerType
 	Amount       decimal.Decimal
@@ -42,10 +42,10 @@ type RecurringTransaction struct {
 
 // Reminder represents a reminder for a recurring transaction
 type Reminder struct {
-	ID                     string
+	ID                     int32
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
-	RecurringTransactionID string
+	RecurringTransactionID int32
 	ReminderDate           time.Time
 	IsRead                 bool
 	ReadAt                 *time.Time
@@ -53,8 +53,8 @@ type Reminder struct {
 
 // CreateRecurringTransactionRequest defines the request to create a recurring transaction
 type CreateRecurringTransactionRequest struct {
-	UserID      string
-	AccountID   string
+	UserID      int32
+	AccountID   int32
 	Name        string
 	Type        LedgerType
 	Amount      decimal.Decimal
@@ -70,7 +70,7 @@ type CreateRecurringTransactionRequest struct {
 
 // UpdateRecurringTransactionRequest defines the request to update a recurring transaction
 type UpdateRecurringTransactionRequest struct {
-	ID          string
+	ID          int32
 	Name        *string
 	Type        *LedgerType
 	Amount      *decimal.Decimal
@@ -87,20 +87,20 @@ type UpdateRecurringTransactionRequest struct {
 // RecurringTransactionRepository represents a recurring transaction repository
 type RecurringTransactionRepository interface {
 	CreateRecurringTransaction(ctx context.Context, req CreateRecurringTransactionRequest) (*RecurringTransaction, error)
-	GetRecurringTransactionByID(ctx context.Context, id string) (*RecurringTransaction, error)
-	GetRecurringTransactionsByUserID(ctx context.Context, userID string) ([]*RecurringTransaction, error)
+	GetRecurringTransactionByID(ctx context.Context, id int32) (*RecurringTransaction, error)
+	GetRecurringTransactionsByUserID(ctx context.Context, userID int32) ([]*RecurringTransaction, error)
 	GetActiveRecurringTransactionsDue(ctx context.Context, before time.Time) ([]*RecurringTransaction, error)
 	UpdateRecurringTransaction(ctx context.Context, req UpdateRecurringTransactionRequest) (*RecurringTransaction, error)
-	UpdateRecurringTransactionExecution(ctx context.Context, id string, lastExecuted, nextDue time.Time) (*RecurringTransaction, error)
-	DeleteRecurringTransaction(ctx context.Context, id string) error
+	UpdateRecurringTransactionExecution(ctx context.Context, id int32, lastExecuted, nextDue time.Time) (*RecurringTransaction, error)
+	DeleteRecurringTransaction(ctx context.Context, id int32) error
 }
 
 // ReminderRepository represents a reminder repository
 type ReminderRepository interface {
-	CreateReminder(ctx context.Context, recurringTransactionID string, reminderDate time.Time) (*Reminder, error)
-	GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID string) ([]*Reminder, error)
-	GetActiveRemindersByUserID(ctx context.Context, userID string, before time.Time) ([]*Reminder, error)
-	GetReminderByID(ctx context.Context, id string) (*Reminder, error)
-	MarkReminderAsRead(ctx context.Context, id string) (*Reminder, error)
-	DeleteReminder(ctx context.Context, id string) error
+	CreateReminder(ctx context.Context, recurringTransactionID int32, reminderDate time.Time) (*Reminder, error)
+	GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID int32) ([]*Reminder, error)
+	GetActiveRemindersByUserID(ctx context.Context, userID int32, before time.Time) ([]*Reminder, error)
+	GetReminderByID(ctx context.Context, id int32) (*Reminder, error)
+	MarkReminderAsRead(ctx context.Context, id int32) (*Reminder, error)
+	DeleteReminder(ctx context.Context, id int32) error
 }

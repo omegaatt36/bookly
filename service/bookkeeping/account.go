@@ -8,7 +8,7 @@ func (s *Service) CreateAccount(req domain.CreateAccountRequest) error {
 }
 
 // GetAccountByID retrieves an account by its ID.
-func (s *Service) GetAccountByID(id string) (*domain.Account, error) {
+func (s *Service) GetAccountByID(id int32) (*domain.Account, error) {
 	return s.accountRepo.GetAccountByID(id)
 }
 
@@ -18,7 +18,7 @@ func (s *Service) UpdateAccount(req domain.UpdateAccountRequest) error {
 }
 
 // DeactivateAccountByID deactivates an account by its ID.
-func (s *Service) DeactivateAccountByID(id string) error {
+func (s *Service) DeactivateAccountByID(id int32) error {
 	return s.accountRepo.DeactivateAccountByID(id)
 }
 
@@ -28,6 +28,6 @@ func (s *Service) GetAllAccounts() ([]*domain.Account, error) {
 }
 
 // GetAccountsByUserID retrieves all accounts by userID.
-func (s *Service) GetAccountsByUserID(userID string) ([]*domain.Account, error) {
+func (s *Service) GetAccountsByUserID(userID int32) ([]*domain.Account, error) {
 	return s.accountRepo.GetAccountsByUserID(userID)
 }

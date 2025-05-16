@@ -21,7 +21,7 @@ INSERT INTO reminders (
 `
 
 type CreateReminderParams struct {
-	RecurringTransactionID string
+	RecurringTransactionID int32
 	ReminderDate           pgtype.Timestamptz
 }
 
@@ -41,17 +41,29 @@ func (q *Queries) CreateReminder(ctx context.Context, arg CreateReminderParams) 
 	return i, err
 }
 
-const deleteReminder = `-- name: DeleteReminder :exec
+const deleteReminder = `-- name: DeleteReminder :one
 UPDATE reminders
 SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at
 `
 
-func (q *Queries) DeleteReminder(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteReminder, id)
-	return err
+func (q *Queries) DeleteReminder(ctx context.Context, id int32) (Reminder, error) {
+	row := q.db.QueryRow(ctx, deleteReminder, id)
+	var i Reminder
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.RecurringTransactionID,
+		&i.ReminderDate,
+		&i.IsRead,
+		&i.ReadAt,
+	)
+	return i, err
 }
 
 const getActiveRemindersByUserID = `-- name: GetActiveRemindersByUserID :many
@@ -63,7 +75,7 @@ ORDER BY r.reminder_date ASC
 `
 
 type GetActiveRemindersByUserIDParams struct {
-	UserID       string
+	UserID       int32
 	ReminderDate pgtype.Timestamptz
 }
 
@@ -101,7 +113,7 @@ SELECT id, created_at, updated_at, deleted_at, recurring_transaction_id, reminde
 WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) GetReminderByID(ctx context.Context, id string) (Reminder, error) {
+func (q *Queries) GetReminderByID(ctx context.Context, id int32) (Reminder, error) {
 	row := q.db.QueryRow(ctx, getReminderByID, id)
 	var i Reminder
 	err := row.Scan(
@@ -123,7 +135,7 @@ WHERE recurring_transaction_id = $1 AND deleted_at IS NULL
 ORDER BY reminder_date ASC
 `
 
-func (q *Queries) GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID string) ([]Reminder, error) {
+func (q *Queries) GetRemindersByRecurringTransactionID(ctx context.Context, recurringTransactionID int32) ([]Reminder, error) {
 	rows, err := q.db.Query(ctx, getRemindersByRecurringTransactionID, recurringTransactionID)
 	if err != nil {
 		return nil, err
@@ -165,17 +177,17 @@ ORDER BY r.reminder_date ASC
 `
 
 type GetUpcomingRemindersParams struct {
-	UserID         string
+	UserID         int32
 	ReminderDate   pgtype.Timestamptz
 	ReminderDate_2 pgtype.Timestamptz
 }
 
 type GetUpcomingRemindersRow struct {
-	ID                     string
+	ID                     int32
 	CreatedAt              pgtype.Timestamptz
 	UpdatedAt              pgtype.Timestamptz
 	DeletedAt              pgtype.Timestamptz
-	RecurringTransactionID string
+	RecurringTransactionID int32
 	ReminderDate           pgtype.Timestamptz
 	IsRead                 bool
 	ReadAt                 pgtype.Timestamptz
@@ -226,7 +238,7 @@ WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, created_at, updated_at, deleted_at, recurring_transaction_id, reminder_date, is_read, read_at
 `
 
-func (q *Queries) MarkReminderAsRead(ctx context.Context, id string) (Reminder, error) {
+func (q *Queries) MarkReminderAsRead(ctx context.Context, id int32) (Reminder, error) {
 	row := q.db.QueryRow(ctx, markReminderAsRead, id)
 	var i Reminder
 	err := row.Scan(

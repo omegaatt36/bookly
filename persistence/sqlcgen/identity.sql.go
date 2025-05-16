@@ -9,9 +9,10 @@ import (
 	"context"
 )
 
-const deleteIdentity = `-- name: DeleteIdentity :exec
+const deleteIdentity = `-- name: DeleteIdentity :one
 DELETE FROM identities
 WHERE provider = $1 AND identifier = $2
+RETURNING id, user_id, provider, identifier, credential, last_used_at
 `
 
 type DeleteIdentityParams struct {
@@ -19,9 +20,18 @@ type DeleteIdentityParams struct {
 	Identifier string
 }
 
-func (q *Queries) DeleteIdentity(ctx context.Context, arg DeleteIdentityParams) error {
-	_, err := q.db.Exec(ctx, deleteIdentity, arg.Provider, arg.Identifier)
-	return err
+func (q *Queries) DeleteIdentity(ctx context.Context, arg DeleteIdentityParams) (Identity, error) {
+	row := q.db.QueryRow(ctx, deleteIdentity, arg.Provider, arg.Identifier)
+	var i Identity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.Identifier,
+		&i.Credential,
+		&i.LastUsedAt,
+	)
+	return i, err
 }
 
 const getIdentitiesByUserID = `-- name: GetIdentitiesByUserID :many
@@ -29,7 +39,7 @@ SELECT id, user_id, provider, identifier, credential, last_used_at FROM identiti
 WHERE user_id = $1
 `
 
-func (q *Queries) GetIdentitiesByUserID(ctx context.Context, userID string) ([]Identity, error) {
+func (q *Queries) GetIdentitiesByUserID(ctx context.Context, userID int32) ([]Identity, error) {
 	rows, err := q.db.Query(ctx, getIdentitiesByUserID, userID)
 	if err != nil {
 		return nil, err
@@ -81,12 +91,13 @@ func (q *Queries) GetIdentityByProviderAndIdentifier(ctx context.Context, arg Ge
 	return i, err
 }
 
-const updateIdentityCredential = `-- name: UpdateIdentityCredential :exec
+const updateIdentityCredential = `-- name: UpdateIdentityCredential :one
 UPDATE identities
 SET
     credential = $3,
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2
+RETURNING id, user_id, provider, identifier, credential, last_used_at
 `
 
 type UpdateIdentityCredentialParams struct {
@@ -95,16 +106,26 @@ type UpdateIdentityCredentialParams struct {
 	Credential string
 }
 
-func (q *Queries) UpdateIdentityCredential(ctx context.Context, arg UpdateIdentityCredentialParams) error {
-	_, err := q.db.Exec(ctx, updateIdentityCredential, arg.Provider, arg.Identifier, arg.Credential)
-	return err
+func (q *Queries) UpdateIdentityCredential(ctx context.Context, arg UpdateIdentityCredentialParams) (Identity, error) {
+	row := q.db.QueryRow(ctx, updateIdentityCredential, arg.Provider, arg.Identifier, arg.Credential)
+	var i Identity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.Identifier,
+		&i.Credential,
+		&i.LastUsedAt,
+	)
+	return i, err
 }
 
-const updateIdentityLastUsed = `-- name: UpdateIdentityLastUsed :exec
+const updateIdentityLastUsed = `-- name: UpdateIdentityLastUsed :one
 UPDATE identities
 SET
     last_used_at = NOW()
 WHERE provider = $1 AND identifier = $2
+RETURNING id, user_id, provider, identifier, credential, last_used_at
 `
 
 type UpdateIdentityLastUsedParams struct {
@@ -112,7 +133,16 @@ type UpdateIdentityLastUsedParams struct {
 	Identifier string
 }
 
-func (q *Queries) UpdateIdentityLastUsed(ctx context.Context, arg UpdateIdentityLastUsedParams) error {
-	_, err := q.db.Exec(ctx, updateIdentityLastUsed, arg.Provider, arg.Identifier)
-	return err
+func (q *Queries) UpdateIdentityLastUsed(ctx context.Context, arg UpdateIdentityLastUsedParams) (Identity, error) {
+	row := q.db.QueryRow(ctx, updateIdentityLastUsed, arg.Provider, arg.Identifier)
+	var i Identity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.Identifier,
+		&i.Credential,
+		&i.LastUsedAt,
+	)
+	return i, err
 }

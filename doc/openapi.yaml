@@ -73,8 +73,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the account to retrieve or manage
     get:
       servers:
@@ -161,8 +161,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the user
     get:
       servers:
@@ -223,8 +223,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the account
     post:
       servers:
@@ -285,8 +285,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the ledger entry
     get:
       servers:
@@ -372,8 +372,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the ledger entry to adjust
     post:
       servers:
@@ -462,8 +462,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the recurring transaction
     get:
       servers:
@@ -564,9 +564,9 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
-        description: The ID of the reminder to mark as read
+          type: integer
+          format: int32
+        description: The ID of the reminder
     post:
       servers:
         - url: /v1
@@ -708,8 +708,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
         description: The ID of the user
     get:
       servers:
@@ -998,8 +998,8 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: Unique identifier for the account
         created_at:
           type: string
@@ -1082,12 +1082,12 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: Unique identifier for the ledger entry
         account_id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: The ID of the associated account
         date:
           type: string
@@ -1113,8 +1113,8 @@ components:
           type: boolean
           description: Indicates if this entry is an adjustment to another entry
         adjusted_from:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           nullable: true
           description: The ID of the original entry this is adjusting, if applicable
         is_voided:
@@ -1191,10 +1191,10 @@ components:
       type: object
       properties:
         account_id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: The ID of the account for the adjustment entry (can be different from original)
-          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          example: 123
         date:
           type: string
           format: date-time
@@ -1224,8 +1224,8 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: Unique identifier for the recurring transaction
         created_at:
           type: string
@@ -1307,10 +1307,10 @@ components:
       type: object
       properties:
         account_id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: The ID of the associated account
-          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          example: 123
         name:
           type: string
           description: Name of the recurring transaction
@@ -1446,16 +1446,16 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: Unique identifier for the reminder
         created_at:
           type: string
           format: date-time
           description: Timestamp when the reminder was created
         recurring_transaction_id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: The ID of the associated recurring transaction
         reminder_date:
           type: string
@@ -1542,8 +1542,8 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int32
           description: Unique identifier for the user
         created_at:
           type: string

@@ -17,24 +17,24 @@ type LedgerType string
 
 // Ledger represents a ledger
 type Ledger struct {
-	ID           string
+	ID           int32
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	AccountID    string
+	AccountID    int32
 	Date         time.Time
 	Type         LedgerType
 	Currency     string
 	Amount       decimal.Decimal
 	Note         string
 	IsAdjustment bool
-	AdjustedFrom *string
+	AdjustedFrom *int32
 	IsVoided     bool
 	VoidedAt     *time.Time
 }
 
 // CreateLedgerRequest defines the request to create a ledger
 type CreateLedgerRequest struct {
-	AccountID string
+	AccountID int32
 	Date      time.Time
 	Type      LedgerType
 	Amount    decimal.Decimal
@@ -43,7 +43,7 @@ type CreateLedgerRequest struct {
 
 // UpdateLedgerRequest defines the request to update a ledger
 type UpdateLedgerRequest struct {
-	ID     string
+	ID     int32
 	Date   *time.Time
 	Type   *LedgerType
 	Amount *decimal.Decimal
@@ -52,11 +52,11 @@ type UpdateLedgerRequest struct {
 
 // LedgerRepository represents a ledger repository
 type LedgerRepository interface {
-	CreateLedger(CreateLedgerRequest) (string, error)
-	GetLedgerByID(string) (*Ledger, error)
-	GetLedgersByAccountID(string) ([]*Ledger, error)
+	CreateLedger(CreateLedgerRequest) (int32, error)
+	GetLedgerByID(int32) (*Ledger, error)
+	GetLedgersByAccountID(int32) ([]*Ledger, error)
 	UpdateLedger(UpdateLedgerRequest) error
-	VoidLedger(id string) error
-	AdjustLedger(originalID string, adjustment CreateLedgerRequest) error
-	DeleteLedger(id string) error
+	VoidLedger(id int32) error
+	AdjustLedger(originalID int32, adjustment CreateLedgerRequest) error
+	DeleteLedger(id int32) error
 }
