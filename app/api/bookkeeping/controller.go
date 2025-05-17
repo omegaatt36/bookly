@@ -16,6 +16,7 @@ type NewControllerRequest struct {
 	LedgerRepository               domain.LedgerRepository
 	RecurringTransactionRepository domain.RecurringTransactionRepository
 	ReminderRepository             domain.ReminderRepository
+	BankAccountRepository          domain.BankAccountRepository
 }
 
 // NewController creates a new controller
@@ -26,6 +27,7 @@ func NewController(req NewControllerRequest) *Controller {
 			LedgerRepo:               req.LedgerRepository,
 			RecurringTransactionRepo: req.RecurringTransactionRepository,
 			ReminderRepo:             req.ReminderRepository,
+			BankAccountRepo:          req.BankAccountRepository,
 		}),
 	}
 }

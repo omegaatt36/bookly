@@ -17,6 +17,7 @@ func (s *Server) registerRoutes() {
 	router.HandleFunc("GET /page/accounts/{account_id}", authenticatedHandler(s.pageAccount))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers/create", authenticatedHandler(s.pageCreateLedger))
 	router.HandleFunc("GET /page/accounts/{account_id}/ledgers", authenticatedHandler(s.pageLedgersByAccount))
+	router.HandleFunc("GET /page/accounts/{account_id}/bank-account", authenticatedHandler(s.pageBankAccount))
 	router.HandleFunc("GET /page/ledgers/{ledger_id}/details", authenticatedHandler(s.pageLedgerDetails))
 	router.HandleFunc("GET /page/ledgers/{ledger_id}", authenticatedHandler(s.pageLedger))
 	router.HandleFunc("GET /page/recurring", authenticatedHandler(s.pageRecurringList))
@@ -30,6 +31,11 @@ func (s *Server) registerRoutes() {
 
 	// Accounts
 	router.HandleFunc("POST /accounts", authenticatedHandler(s.createAccount))
+	
+	// Bank Accounts
+	router.HandleFunc("POST /accounts/{account_id}/bank-account", authenticatedHandler(s.createBankAccount))
+	router.HandleFunc("PATCH /bank-accounts/{id}", authenticatedHandler(s.updateBankAccount))
+	router.HandleFunc("DELETE /bank-accounts/{id}", authenticatedHandler(s.deleteBankAccount))
 
 	// Ledgers
 	router.HandleFunc("POST /accounts/{account_id}/ledgers", authenticatedHandler(s.createLedger))

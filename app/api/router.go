@@ -31,6 +31,7 @@ func (s *Server) registerRouters() {
 			LedgerRepository:               repo,
 			RecurringTransactionRepository: repo,
 			ReminderRepository:             repo,
+			BankAccountRepository:          repo,
 		})
 
 		// Register account routes
@@ -57,6 +58,13 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("DELETE /recurring/{id}", bookkeepingX.DeleteRecurringTransaction())
 		v1Router.HandleFunc("GET /recurring/reminders", bookkeepingX.GetReminders())
 		v1Router.HandleFunc("POST /recurring/reminders/{id}/read", bookkeepingX.MarkReminderAsRead())
+		
+		// Register bank account routes
+		v1Router.HandleFunc("POST /accounts/{account_id}/bank-account", bookkeepingX.CreateBankAccount())
+		v1Router.HandleFunc("GET /accounts/{account_id}/bank-account", bookkeepingX.GetBankAccountByAccountID())
+		v1Router.HandleFunc("GET /bank-accounts/{id}", bookkeepingX.GetBankAccountByID())
+		v1Router.HandleFunc("PATCH /bank-accounts/{id}", bookkeepingX.UpdateBankAccount())
+		v1Router.HandleFunc("DELETE /bank-accounts/{id}", bookkeepingX.DeleteBankAccount())
 	}
 	{
 		userOptions := make([]user.Option, 0)
