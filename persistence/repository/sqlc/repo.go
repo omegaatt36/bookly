@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	_ domain.AccountRepository = (*Repository)(nil)
-	_ domain.LedgerRepository  = (*Repository)(nil)
-	_ domain.UserRepository    = (*Repository)(nil)
+	_ domain.AccountRepository     = (*Repository)(nil)
+	_ domain.LedgerRepository      = (*Repository)(nil)
+	_ domain.UserRepository        = (*Repository)(nil)
+	_ domain.BankAccountRepository = (*Repository)(nil)
 )
 
 // Repository implements repository interfaces using SQLC-generated code

@@ -1,0 +1,113 @@
+{{ define "bank_account_card.html" }}
+<div class="bg-bg-secondary rounded-lg shadow p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-text-primary">Bank Account</h2>
+    </div>
+
+    {{ if .BankAccount }}
+    <!-- Display Bank Account details if exists -->
+    <div id="view-mode" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4 text-text-secondary">
+        <div>
+            <p class="text-text-secondary">Account Number</p>
+            <p class="font-medium text-text-primary">{{ .BankAccount.AccountNumber }}</p>
+        </div>
+        <div>
+            <p class="text-text-secondary">Bank Name</p>
+            <p class="font-medium text-text-primary">{{ .BankAccount.BankName }}</p>
+        </div>
+        {{ if .BankAccount.BranchName }}
+        <div>
+            <p class="text-text-secondary">Branch Name</p>
+            <p class="font-medium text-text-primary">{{ .BankAccount.BranchName }}</p>
+        </div>
+        {{ end }} 
+        {{ if .BankAccount.SwiftCode }}
+        <div>
+            <p class="text-text-secondary">SWIFT/BIC Code</p>
+            <p class="font-medium text-text-primary">{{ .BankAccount.SwiftCode }}</p>
+        </div>
+        {{ end }}
+    </div>
+    <div class="flex gap-2">
+        <button onclick="showBankAccountForm()" class="btn btn-outline">Edit</button>
+        <form action="/bank-accounts/{{ .BankAccount.ID }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this bank account?');">
+            <input type="hidden" name="_method" value="DELETE" />
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+    </div>
+    {{ else }}
+    <!-- Show button to add bank account if none exists -->
+    <p class="text-text-secondary mb-4">No bank account information has been added yet.</p>
+    <button onclick="showBankAccountForm()" class="btn btn-primary">Add Bank Account</button>
+    {{ end }}
+
+    <!-- Bank Account Form (hidden by default) -->
+    <div id="bank-account-form" class="hidden mt-4">
+        <form action="{{ if .BankAccount }}/bank-accounts/{{ .BankAccount.ID }}{{ else }}/accounts/{{ .Account.ID }}/bank-account{{ end }}" method="POST">
+            {{ if .BankAccount }}
+            <input type="hidden" name="_method" value="PATCH" />
+            {{ end }}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="account_number" class="block mb-1 text-text-secondary">Account Number</label>
+                    <input
+                        type="text"
+                        id="account_number"
+                        name="account_number"
+                        value="{{ if .BankAccount }}{{ .BankAccount.AccountNumber }}{{ end }}"
+                        class="w-full px-3 py-2 border rounded bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                    />
+                </div>
+                <div>
+                    <label for="bank_name" class="block mb-1 text-text-secondary">Bank Name</label>
+                    <input
+                        type="text"
+                        id="bank_name"
+                        name="bank_name"
+                        value="{{ if .BankAccount }}{{ .BankAccount.BankName }}{{ end }}"
+                        class="w-full px-3 py-2 border rounded bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                    />
+                </div>
+                <div>
+                    <label for="branch_name" class="block mb-1 text-text-secondary">Branch Name</label>
+                    <input
+                        type="text"
+                        id="branch_name"
+                        name="branch_name"
+                        value="{{ if .BankAccount }}{{ .BankAccount.BranchName }}{{ end }}"
+                        class="w-full px-3 py-2 border rounded bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </div>
+                <div>
+                    <label for="swift_code" class="block mb-1 text-text-secondary">SWIFT/BIC Code</label>
+                    <input
+                        type="text"
+                        id="swift_code"
+                        name="swift_code"
+                        value="{{ if .BankAccount }}{{ .BankAccount.SwiftCode }}{{ end }}"
+                        class="w-full px-3 py-2 border rounded bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="hideBankAccountForm()" class="btn btn-outline">Cancel</button>
+                <button type="submit" class="btn btn-primary">{{ if .BankAccount }}Update{{ else }}Save{{ end }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showBankAccountForm() {
+        document.getElementById('bank-account-form').classList.remove('hidden');
+        {{ if .BankAccount }}document.getElementById('view-mode').classList.add('hidden');{{ end }}
+    }
+
+    function hideBankAccountForm() {
+        document.getElementById('bank-account-form').classList.add('hidden');
+        {{ if .BankAccount }}document.getElementById('view-mode').classList.remove('hidden');{{ end }}
+    }
+</script>
+{{ end }}

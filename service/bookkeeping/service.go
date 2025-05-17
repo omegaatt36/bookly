@@ -10,6 +10,7 @@ type Service struct {
 	ledgerRepo               domain.LedgerRepository
 	recurringTransactionRepo domain.RecurringTransactionRepository
 	reminderRepo             domain.ReminderRepository
+	bankAccountRepo          domain.BankAccountRepository
 }
 
 // NewServiceRequest represents the request to create a new bookkeeping service
@@ -18,6 +19,7 @@ type NewServiceRequest struct {
 	LedgerRepo               domain.LedgerRepository
 	RecurringTransactionRepo domain.RecurringTransactionRepository
 	ReminderRepo             domain.ReminderRepository
+	BankAccountRepo          domain.BankAccountRepository
 }
 
 // NewService creates a new bookkeeping service
@@ -27,5 +29,6 @@ func NewService(req NewServiceRequest) *Service {
 		ledgerRepo:               req.LedgerRepo,
 		recurringTransactionRepo: req.RecurringTransactionRepo,
 		reminderRepo:             req.ReminderRepo,
+		bankAccountRepo:          req.BankAccountRepo,
 	}
 }

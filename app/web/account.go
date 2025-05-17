@@ -42,10 +42,30 @@ func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get bank account details if exists
+	var bankAcc *bankAccount
+	err = s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d/bank-account", accountID), nil, &bankAcc)
+	if err != nil {
+		// Check if it's a 404 (bank account doesn't exist), which is okay
+		var sendRequestError *sendRequestError
+		if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeNotFound {
+			// This is fine, the account doesn't have a bank account yet
+			bankAcc = nil
+		} else if errors.As(err, &sendRequestError) && sendRequestError.Code == app.CodeUnauthorized {
+			s.clearTokenAndRedirect(w)
+			return
+		} else {
+			slog.Error("failed to get bank account", slog.String("error", err.Error()))
+			// Continue without bank account info
+		}
+	}
+
 	result := struct {
-		Account account
+		Account     account
+		BankAccount *bankAccount
 	}{
-		Account: acc,
+		Account:     acc,
+		BankAccount: bankAcc,
 	}
 
 	if err := s.templates.ExecuteTemplate(w, "account_details.html", result); err != nil {
