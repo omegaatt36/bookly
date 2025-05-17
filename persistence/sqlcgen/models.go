@@ -21,6 +21,18 @@ type Account struct {
 	Balance   decimal.Decimal
 }
 
+type BankAccount struct {
+	ID            int32
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	DeletedAt     pgtype.Timestamptz
+	AccountID     int32
+	AccountNumber string
+	BankName      string
+	BranchName    pgtype.Text
+	SwiftCode     pgtype.Text
+}
+
 type Identity struct {
 	ID         int32
 	UserID     int32
