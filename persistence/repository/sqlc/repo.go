@@ -16,30 +16,40 @@ var (
 	_ domain.LedgerRepository      = (*Repository)(nil)
 	_ domain.UserRepository        = (*Repository)(nil)
 	_ domain.BankAccountRepository = (*Repository)(nil)
+	_ domain.CategoryRepository    = (*Repository)(nil)
+	_ domain.BudgetRepository      = (*Repository)(nil)
 )
 
 // Repository implements repository interfaces using SQLC-generated code
 type Repository struct {
-	db      *pgxpool.Pool
-	querier *sqlcgen.Queries
-	ctx     context.Context
+	db                 *pgxpool.Pool
+	querier            *sqlcgen.Queries
+	ctx                context.Context
+	CategoryRepository domain.CategoryRepository
+	BudgetRepository   domain.BudgetRepository
 }
 
 // NewRepository creates a new SQLC repository
 func NewRepository(db *pgxpool.Pool) *Repository {
+	querier := sqlcgen.New(db)
 	return &Repository{
-		db:      db,
-		querier: sqlcgen.New(db),
-		ctx:     context.Background(),
+		db:                 db,
+		querier:            querier,
+		ctx:                context.Background(),
+		CategoryRepository: NewCategoryRepository(db, querier),
+		BudgetRepository:   NewBudgetRepository(db, querier),
 	}
 }
 
 // WithTx creates a new repository with transaction context
 func (r *Repository) WithTx(tx pgx.Tx) *Repository {
+	txQuerier := r.querier.WithTx(tx)
 	return &Repository{
-		db:      r.db,
-		querier: r.querier.WithTx(tx),
-		ctx:     r.ctx,
+		db:                 r.db,
+		querier:            txQuerier,
+		ctx:                r.ctx,
+		CategoryRepository: NewCategoryRepository(tx, txQuerier),
+		BudgetRepository:   NewBudgetRepository(tx, txQuerier),
 	}
 }
 

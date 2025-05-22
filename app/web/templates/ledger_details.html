@@ -31,7 +31,19 @@
                 </tr>
                 <tr>
                     <td><strong>Note:</strong></td>
-                    <td><textarea name="note" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1">{{ .Note }}</textarea></td>
+                    <td><textarea name="note" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1">{{ .Ledger.Note }}</textarea></td>
+                </tr>
+                <tr>
+                    <td><strong>Category:</strong></td>
+                    <td>
+                        <select name="category_id" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1">
+                            <option value="">-- Select Category --</option>
+                            {{range $.Categories}}
+                                <option value="{{.ID}}" {{if and $.Ledger.CategoryID (eq .ID (deref $.Ledger.CategoryID))}}selected{{end}}>{{.Name}}</option>
+                            {{end}}
+                             <option value="0">-- Unset Category --</option> <!-- To allow unsetting -->
+                        </select>
+                    </td>
                 </tr>
             </table>
             <div class="mt-4 flex justify-end">
@@ -61,7 +73,11 @@
                     </tr>
                     <tr>
                         <td><strong>Note:</strong></td>
-                        <td>{{ .Note }}</td>
+                        <td>{{ .Ledger.Note }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Category:</strong></td>
+                        <td>{{if .Ledger.CategoryName}}{{.Ledger.CategoryName}} (ID: {{deref .Ledger.CategoryID}}){{else}}N/A{{end}}</td>
                     </tr>
                 </table>
                 <div class="mt-4 flex justify-end">

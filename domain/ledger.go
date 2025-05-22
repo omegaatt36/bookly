@@ -30,24 +30,27 @@ type Ledger struct {
 	AdjustedFrom *int32
 	IsVoided     bool
 	VoidedAt     *time.Time
+	CategoryID   *int32 // Added CategoryID
 }
 
 // CreateLedgerRequest defines the request to create a ledger
 type CreateLedgerRequest struct {
-	AccountID int32
-	Date      time.Time
-	Type      LedgerType
-	Amount    decimal.Decimal
-	Note      string
+	AccountID  int32
+	Date       time.Time
+	Type       LedgerType
+	Amount     decimal.Decimal
+	Note       string
+	CategoryID *int32 // Added CategoryID
 }
 
 // UpdateLedgerRequest defines the request to update a ledger
 type UpdateLedgerRequest struct {
-	ID     int32
-	Date   *time.Time
-	Type   *LedgerType
-	Amount *decimal.Decimal
-	Note   *string
+	ID         int32
+	Date       *time.Time
+	Type       *LedgerType
+	Amount     *decimal.Decimal
+	Note       *string
+	CategoryID *int32 // Added CategoryID
 }
 
 // LedgerRepository represents a ledger repository
@@ -59,4 +62,5 @@ type LedgerRepository interface {
 	VoidLedger(id int32) error
 	AdjustLedger(originalID int32, adjustment CreateLedgerRequest) error
 	DeleteLedger(id int32) error
+	GetLedgersByUserIDAndDateRangeAndCategory(ctx context.Context, userID int32, startDate time.Time, endDate time.Time, categoryID int32) ([]*Ledger, error)
 }

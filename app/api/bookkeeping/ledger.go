@@ -25,6 +25,7 @@ type jsonLedger struct {
 	AdjustedFrom *int32          `json:"adjusted_from"`
 	IsVoided     bool            `json:"is_voided"`
 	VoidedAt     *time.Time      `json:"voided_at"`
+	CategoryID   *int32          `json:"category_id,omitempty"` // Added
 }
 
 func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
@@ -40,6 +41,7 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 	l.AdjustedFrom = ledger.AdjustedFrom
 	l.IsVoided = ledger.IsVoided
 	l.VoidedAt = ledger.VoidedAt
+	l.CategoryID = ledger.CategoryID // Added
 }
 
 // CreateLedger handles the creation of a new ledger entry
@@ -47,10 +49,12 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
 			accountID int32
+			accountID int32
 			Date      time.Time       `json:"date"`
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
 			Note      string          `json:"note"`
+			CategoryID *int32         `json:"category_id"` // Added
 		}
 
 		var req request
@@ -82,12 +86,14 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 				return nil, app.ParamError(errors.New("amount is required"))
 			}
 
-			_, err = x.service.CreateLedger(domain.CreateLedgerRequest{
-				AccountID: req.accountID,
-				Date:      req.Date,
-				Type:      ledgerType,
-				Amount:    req.Amount,
-				Note:      req.Note,
+			// x.service.CreateLedger was updated to take context as the first argument
+			_, err = x.service.CreateLedger(ctx, domain.CreateLedgerRequest{
+				AccountID:  req.accountID,
+				Date:       req.Date,
+				Type:       ledgerType,
+				Amount:     req.Amount,
+				Note:       req.Note,
+				CategoryID: req.CategoryID, // Added
 			})
 
 			return nil, err
@@ -170,6 +176,7 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 			Type   *string          `json:"type"`
 			Amount *decimal.Decimal `json:"amount"`
 			Note   *string          `json:"note"`
+			CategoryID *int32         `json:"category_id"` // Added
 		}
 
 		var req request
@@ -202,13 +209,14 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 				}
 				ledgerType = &t
 			}
-
-			return nil, x.service.UpdateLedger(domain.UpdateLedgerRequest{
-				ID:     req.id,
-				Date:   req.Date,
-				Type:   ledgerType,
-				Amount: req.Amount,
-				Note:   req.Note,
+			// x.service.UpdateLedger was updated to take context as the first argument
+			return nil, x.service.UpdateLedger(ctx, domain.UpdateLedgerRequest{
+				ID:         req.id,
+				Date:       req.Date,
+				Type:       ledgerType,
+				Amount:     req.Amount,
+				Note:       req.Note,
+				CategoryID: req.CategoryID, // Added
 			})
 		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}
@@ -254,6 +262,7 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
 			Note      string          `json:"note"`
+			CategoryID *int32         `json:"category_id"` // Added
 		}
 
 		var req request
@@ -298,12 +307,15 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 				return nil, app.ParamError(errors.New("amount is required"))
 			}
 
+			// x.service.AdjustLedger was not updated to take context in previous subtask.
+			// domain.CreateLedgerRequest was updated to include CategoryID.
 			return nil, x.service.AdjustLedger(req.id, domain.CreateLedgerRequest{
-				AccountID: req.AccountID,
-				Date:      req.Date,
-				Type:      ledgerType,
-				Amount:    req.Amount,
-				Note:      req.Note,
+				AccountID:  req.AccountID,
+				Date:       req.Date,
+				Type:       ledgerType,
+				Amount:     req.Amount,
+				Note:       req.Note,
+				CategoryID: req.CategoryID, // Added
 			})
 		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}

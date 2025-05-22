@@ -27,6 +27,7 @@ func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (int32, error)
 			Note:         pgtype.Text{String: req.Note, Valid: true},
 			IsAdjustment: false, // isAdjustment
 			AdjustedFrom: pgtype.Int4{},
+			CategoryID:   sql.NullInt32{Int32: req.CategoryID, Valid: req.CategoryID != 0}, // Assuming req.CategoryID is int32, 0 means no category
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create ledger: %w", err)
@@ -173,6 +174,10 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 			}
 		}
 
+		if req.CategoryID != nil {
+			updateParams.CategoryID = sql.NullInt32{Int32: *req.CategoryID, Valid: req.CategoryID != nil}
+		}
+
 		// Update the ledger
 		if _, err := repo.querier.UpdateLedger(repo.ctx, updateParams); err != nil {
 			return fmt.Errorf("failed to update ledger: %w", err)
@@ -200,6 +205,57 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 
 		return nil
 	})
+}
+
+// GetLedgersByUserIDAndDateRangeAndCategory implements the domain.LedgerRepository interface
+func (r *Repository) GetLedgersByUserIDAndDateRangeAndCategory(ctx context.Context, userID int32, startDate time.Time, endDate time.Time, categoryID int32) ([]*domain.Ledger, error) {
+	dbLedgers, err := r.querier.ListLedgersByUserIDDateRangeCategory(r.ctx, sqlcgen.ListLedgersByUserIDDateRangeCategoryParams{
+		UserID:     userID,
+		Date:       pgtype.Timestamptz{Time: startDate, Valid: true},
+		Date_2:     pgtype.Timestamptz{Time: endDate, Valid: true},
+		CategoryID: sql.NullInt32{Int32: categoryID, Valid: categoryID != 0},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list ledgers by user, date range, and category: %w", err)
+	}
+
+	domainLedgers := make([]*domain.Ledger, len(dbLedgers))
+	for i, dbLedger := range dbLedgers {
+		var voidedAt *time.Time
+		if dbLedger.VoidedAt.Valid {
+			voidedAt = &dbLedger.VoidedAt.Time
+		}
+
+		var catID *int32
+		if dbLedger.CategoryID.Valid {
+			catID = new(int32)
+			*catID = dbLedger.CategoryID.Int32
+		}
+
+		domainLedgers[i] = &domain.Ledger{
+			ID:           dbLedger.ID,
+			CreatedAt:    dbLedger.CreatedAt.Time,
+			UpdatedAt:    dbLedger.UpdatedAt.Time,
+			AccountID:    dbLedger.AccountID,
+			Date:         dbLedger.Date.Time,
+			Type:         domain.LedgerType(dbLedger.Type),
+			Currency:     dbLedger.Currency,
+			Amount:       dbLedger.Amount,
+			Note:         dbLedger.Note.String,
+			IsAdjustment: dbLedger.IsAdjustment,
+			AdjustedFrom: func() *int32 {
+				if dbLedger.AdjustedFrom.Valid {
+					return &dbLedger.AdjustedFrom.Int32
+				}
+				return nil
+			}(),
+			IsVoided:   dbLedger.IsVoided,
+			VoidedAt:   voidedAt,
+			CategoryID: catID,
+		}
+	}
+
+	return domainLedgers, nil
 }
 
 // VoidLedger implements the domain.LedgerRepository interface
@@ -272,6 +328,10 @@ func (r *Repository) AdjustLedger(originalID int32, adjustment domain.CreateLedg
 			Note:         pgtype.Text{String: adjustment.Note, Valid: true},
 			IsAdjustment: true,
 			AdjustedFrom: pgtype.Int4{Int32: originalID, Valid: true},
+			// Assuming adjustment.CategoryID is int32 and 0 means no category.
+			// If adjustment.CategoryID is *int32, it should be:
+			// CategoryID: sql.NullInt32{Int32: *adjustment.CategoryID, Valid: adjustment.CategoryID != nil},
+			CategoryID: sql.NullInt32{Int32: adjustment.CategoryID, Valid: adjustment.CategoryID != 0},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create adjustment ledger: %w", err)

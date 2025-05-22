@@ -1,0 +1,65 @@
+{{define "title"}}Budget Details: {{.Budget.Name}}{{end}}
+
+{{define "content"}}
+<div class="container">
+    <h2>Budget: {{.Budget.Name}}</h2>
+
+    {{template "partials/flash_messages" .}}
+
+    <div class="card mb-3">
+        <div class="card-header">
+            Budget Information
+        </div>
+        <div class="card-body">
+            <p><strong>ID:</strong> {{.Budget.ID}}</p>
+            <p><strong>Name:</strong> {{.Budget.Name}}</p>
+            <p><strong>Period:</strong> {{.Budget.Period}}</p>
+            <p><strong>Start Date:</strong> {{.Budget.StartDate.Format "2006-01-02"}}</p>
+            <p><strong>End Date:</strong> {{.Budget.EndDate.Format "2006-01-02"}}</p>
+            <p><strong>Amount:</strong> {{.Budget.Amount.StringFixed 2}}</p>
+            <p><strong>Category:</strong> {{if .Budget.CategoryName}}{{.Budget.CategoryName}} (ID: {{.Budget.CategoryID}}){{else}}ID: {{.Budget.CategoryID}}{{end}}</p>
+            <p><strong>Created At:</strong> {{.Budget.CreatedAt.Format "2006-01-02 15:04"}}</p>
+            <p><strong>Updated At:</strong> {{.Budget.UpdatedAt.Format "2006-01-02 15:04"}}</p>
+        </div>
+    </div>
+
+    {{if .Usage}}
+    <div class="card mb-3">
+        <div class="card-header">
+            Budget Usage
+        </div>
+        <div class="card-body">
+            <p><strong>Budgeted Amount:</strong> {{.Usage.BudgetAmount.StringFixed 2}}</p>
+            <p><strong>Spent Amount:</strong> {{.Usage.SpentAmount.StringFixed 2}}</p>
+            <p><strong>Remaining Amount:</strong> {{.Usage.RemainingAmount.StringFixed 2}}</p>
+            
+            {{ $percentageSpent := 0.0 }}
+            {{ if not .Usage.BudgetAmount.IsZero }}
+                {{ $spentVal := .Usage.SpentAmount.Div .Usage.BudgetAmount }}
+                {{ $percentageSpent = $spentVal.Mul (decimal.NewFromInt 100) }}
+            {{ end }}
+
+            <div class="progress mb-3">
+                <div class="progress-bar {{if gt $percentageSpent.IntPart 100}}bg-danger{{else if gt $percentageSpent.IntPart 80}}bg-warning{{else}}bg-success{{end}}" 
+                     role="progressbar" 
+                     style="width: {{$percentageSpent.StringFixed 2}}%;" 
+                     aria-valuenow="{{$percentageSpent.StringFixed 2}}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                     {{$percentageSpent.StringFixed 0}}%
+                </div>
+            </div>
+             <p><em>Usage calculated from {{.Usage.StartDate.Format "2006-01-02"}} to {{.Usage.EndDate.Format "2006-01-02"}}.</em></p>
+        </div>
+    </div>
+    {{else}}
+    <div class="alert alert-info">Budget usage data is not available.</div>
+    {{end}}
+
+    <a href="/budgets" class="btn btn-secondary me-2">Back to Budgets</a>
+    <a href="/budgets/{{.Budget.ID}}/edit" class="btn btn-warning">Edit Budget</a>
+
+    <!-- Optional: List ledgers contributing to spent amount -->
+    <!-- This would require fetching and passing ledger data to the template -->
+</div>
+{{end}}

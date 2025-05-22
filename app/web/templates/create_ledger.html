@@ -48,6 +48,19 @@
                     class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
                 ></textarea>
             </div>
+            <div class="mb-4">
+                <label for="category_id" class="block text-sm font-medium text-text-secondary">Category (Optional)</label>
+                <select
+                    name="category_id"
+                    id="category_id"
+                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
+                >
+                    <option value="">-- Select Category --</option>
+                    {{range .Categories}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
             <div class="flex justify-end">
                 <button type="button" class="btn btn-secondary mr-2" onclick="closeCreateLedgerModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Create</button>

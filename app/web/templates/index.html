@@ -19,6 +19,8 @@
                 <div class="nav-links hidden md:flex items-center space-x-4">
                     {{ if .IsAuthenticated }}
                     <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
+                    <a href="/categories" class="btn btn-secondary">Categories</a> <!-- Added Category Link -->
+                    <a href="/budgets" class="btn btn-secondary">Budgets</a>     <!-- Added Budget Link -->
                     <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
                     <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
                     <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
@@ -44,6 +46,8 @@
             <div class="sidebar-menu">
                 <a href="/" class="btn btn-secondary w-full text-left mb-2">Home</a>
                 <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
+                <a href="/categories" class="btn btn-secondary w-full text-left mb-2">Categories</a> <!-- Added Category Link -->
+                <a href="/budgets" class="btn btn-secondary w-full text-left mb-2">Budgets</a>     <!-- Added Budget Link -->
                 <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
                 <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
                 <button hx-post="/logout" hx-target="body" class="btn btn-danger w-full text-left">Logout</button>

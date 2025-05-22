@@ -33,6 +33,29 @@ type BankAccount struct {
 	SwiftCode     pgtype.Text
 }
 
+type Budget struct {
+	ID         int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+	DeletedAt  pgtype.Timestamptz
+	UserID     int32
+	Name       string
+	Period     string
+	StartDate  pgtype.Timestamptz
+	EndDate    pgtype.Timestamptz
+	Amount     decimal.Decimal
+	CategoryID int32
+}
+
+type Category struct {
+	ID        int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+	DeletedAt pgtype.Timestamptz
+	UserID    int32
+	Name      string
+}
+
 type Identity struct {
 	ID         int32
 	UserID     int32
@@ -52,6 +75,7 @@ type Ledger struct {
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
+	CategoryID   pgtype.Int4
 	IsAdjustment bool
 	AdjustedFrom pgtype.Int4
 	IsVoided     bool

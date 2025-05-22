@@ -1,0 +1,52 @@
+{{define "title"}}Budgets{{end}}
+
+{{define "content"}}
+<div class="container">
+    <h2>Budgets</h2>
+    <div class="mb-3">
+        <a href="/budgets/create" class="btn btn-primary">Create New Budget</a>
+    </div>
+
+    {{template "partials/flash_messages" .}}
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Period</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Amount</th>
+                <th>Category ID</th> 
+                <!-- Consider showing Category Name if fetched -->
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Budgets}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td><a href="/budgets/{{.ID}}">{{.Name}}</a></td>
+                <td>{{.Period}}</td>
+                <td>{{.StartDate.Format "2006-01-02"}}</td>
+                <td>{{.EndDate.Format "2006-01-02"}}</td>
+                <td>{{.Amount.StringFixed 2}}</td>
+                <td>{{.CategoryID}}</td>
+                <td>
+                    <a href="/budgets/{{.ID}}/edit" class="btn btn-sm btn-warning me-1">Edit</a>
+                    <form action="/budgets/{{.ID}}/delete" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this budget?');">
+                        <!-- CSRF Token -->
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="8">No budgets found.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
