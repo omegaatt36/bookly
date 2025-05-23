@@ -1,73 +1,89 @@
 {{ define "ledger_details.html" }}
-<div id="ledger-details-modal-content" class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm">
-    <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
-        <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Ledger Details</h3>
-        {{ if .IsVoided }}
-            <div class="bg-error bg-opacity-20 border border-error text-error px-4 py-2 rounded mb-4">
-                This ledger has been voided and cannot be modified.
-            </div>
-        {{ end }}
-        {{ if and (not .IsVoided) .Adjustable }}
-        <form hx-patch="/ledgers/{{ .ID }}" hx-target="#ledger-{{ .ID }}" hx-swap="innerHTML" class="w-full" hx-on::after-request="closeLedgerDetailsModal()">
-            <table class="w-full">
-                <tr>
-                    <td><strong>Date:</strong></td>
-                    <td><input type="date" name="date" value="{{ .Date.Format "2006-01-02" }}" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1"></td>
-                </tr>
-                <tr>
-                    <td><strong>Type:</strong></td>
-                    <td>
-                        <select name="type" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1">
-                            <option value="balance" {{ if eq .Type "balance" }}selected{{ end }}>Balance</option>
-                            <option value="income" {{ if eq .Type "income" }}selected{{ end }}>Income</option>
-                            <option value="expense" {{ if eq .Type "expense" }}selected{{ end }}>Expense</option>
-                            <option value="transfer" {{ if eq .Type "transfer" }}selected{{ end }}>Transfer</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>Amount:</strong></td>
-                    <td><input type="number" name="amount" value="{{ .Amount }}" step="0.01" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1"></td>
-                </tr>
-                <tr>
-                    <td><strong>Note:</strong></td>
-                    <td><textarea name="note" class="w-full bg-bg-tertiary text-text-primary rounded px-2 py-1">{{ .Note }}</textarea></td>
-                </tr>
-            </table>
-            <div class="mt-4 flex justify-end">
-                <button type="button" class="btn btn-secondary mr-2" onclick="closeLedgerDetailsModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary mr-2">Save</button>
-                <button type="button" class="btn btn-danger"
-                    hx-delete="/ledgers/{{ .ID }}"
-                    hx-prompt="Are you sure? Type 'yes' to confirm."
-                    hx-target="#ledger-{{ .ID }}"
-                    hx-swap="outerHTML"
-                    hx-on::after-request="closeLedgerDetailsModal()">Delete</button>
-            </div>
-        </form>
-        {{ else }}
-                <table class="w-full">
-                    <tr>
-                        <td><strong>Date:</strong></td>
-                        <td>{{ .Date.Format "2006-01-02" }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Type:</strong></td>
-                        <td>{{ .Type }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Amount:</strong></td>
-                        <td>{{ .Amount }}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Note:</strong></td>
-                        <td>{{ .Note }}</td>
-                    </tr>
-                </table>
-                <div class="mt-4 flex justify-end">
-                    <button type="button" class="btn btn-secondary" onclick="closeLedgerDetailsModal()">Close</button>
+<div id="ledger-details-modal-content" class="md-dialog-container active">
+    <div class="md-dialog">
+        <div class="md-dialog-title">
+            Ledger Details
+        </div>
+        <div class="md-dialog-content">
+            {{ if .IsVoided }}
+                <div class="flex items-center p-4 mb-4 bg-error bg-opacity-10 rounded-medium">
+                    <span class="material-symbols-outlined mr-2">warning</span>
+                    <span>This ledger has been voided and cannot be modified.</span>
                 </div>
-        {{ end }}
+            {{ end }}
+            {{ if and (not .IsVoided) .Adjustable }}
+            <form hx-patch="/ledgers/{{ .ID }}" hx-target="#ledger-{{ .ID }}" hx-swap="innerHTML" class="w-full" hx-on::after-request="closeLedgerDetailsModal()">
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input type="date" id="date-{{ .ID }}" name="date" value="{{ .Date.Format "2006-01-02" }}" placeholder=" " />
+                    <label for="date-{{ .ID }}">Date</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <select id="type-{{ .ID }}" name="type" class="w-full bg-bg-tertiary text-text-primary">
+                        <option value="balance" {{ if eq .Type "balance" }}selected{{ end }}>Balance</option>
+                        <option value="income" {{ if eq .Type "income" }}selected{{ end }}>Income</option>
+                        <option value="expense" {{ if eq .Type "expense" }}selected{{ end }}>Expense</option>
+                        <option value="transfer" {{ if eq .Type "transfer" }}selected{{ end }}>Transfer</option>
+                    </select>
+                    <label for="type-{{ .ID }}">Type</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input type="number" id="amount-{{ .ID }}" name="amount" value="{{ .Amount }}" step="0.01" placeholder=" " />
+                    <label for="amount-{{ .ID }}">Amount</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <textarea id="note-{{ .ID }}" name="note" placeholder=" " rows="3">{{ .Note }}</textarea>
+                    <label for="note-{{ .ID }}">Note</label>
+                </div>
+                
+                <div class="md-dialog-actions">
+                    <button type="button" class="md-btn md-btn-text" onclick="closeLedgerDetailsModal()">Cancel</button>
+                    <button type="submit" class="md-btn md-btn-text">Save</button>
+                    <button type="button" class="md-btn md-btn-text text-error"
+                        hx-delete="/ledgers/{{ .ID }}"
+                        hx-prompt="Are you sure? Type 'yes' to confirm."
+                        hx-target="#ledger-{{ .ID }}"
+                        hx-swap="outerHTML"
+                        hx-on::after-request="closeLedgerDetailsModal()">
+                        <span class="material-symbols-outlined mr-1">delete</span>
+                        Delete
+                    </button>
+                </div>
+            </form>
+            {{ else }}
+                <div class="md-list">
+                    <div class="md-list-item">
+                        <div class="md-list-item-text">
+                            <div class="md-list-item-primary">Date</div>
+                            <div class="md-list-item-secondary">{{ .Date.Format "2006-01-02" }}</div>
+                        </div>
+                    </div>
+                    <div class="md-list-item">
+                        <div class="md-list-item-text">
+                            <div class="md-list-item-primary">Type</div>
+                            <div class="md-list-item-secondary">{{ .Type }}</div>
+                        </div>
+                    </div>
+                    <div class="md-list-item">
+                        <div class="md-list-item-text">
+                            <div class="md-list-item-primary">Amount</div>
+                            <div class="md-list-item-secondary">{{ .Amount }}</div>
+                        </div>
+                    </div>
+                    <div class="md-list-item">
+                        <div class="md-list-item-text">
+                            <div class="md-list-item-primary">Note</div>
+                            <div class="md-list-item-secondary">{{ .Note }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md-dialog-actions">
+                    <button type="button" class="md-btn md-btn-text" onclick="closeLedgerDetailsModal()">Close</button>
+                </div>
+            {{ end }}
+        </div>
     </div>
 </div>
 <script>

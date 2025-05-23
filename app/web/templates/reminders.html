@@ -7,48 +7,70 @@
         <title>Reminders - Bookly</title>
         <script src="https://unpkg.com/htmx.org@2.0.3"></script>
         <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
         {{ template "base.html" }}
     </head>
     <body class="bg-bg-primary text-text-primary">
-        <nav class="bg-bg-secondary p-4">
-            <div class="container mx-auto flex justify-between items-center">
-                <div class="text-2xl font-bold text-text-highlight">
+        <div class="md-top-app-bar">
+            <div class="container mx-auto flex items-center">
+                <div class="md-top-app-bar-title">
                     <a href="/">Bookly</a>
                 </div>
 
-                <div class="nav-links hidden md:flex items-center space-x-4">
-                    <a href="/page/accounts" class="btn btn-secondary">Accounts</a>
-                    <a href="/page/recurring" class="btn btn-secondary">Recurring</a>
-                    <a href="/page/reminders" class="btn btn-secondary">Reminders</a>
-                    <button hx-post="/logout" hx-target="body" class="btn btn-danger">Logout</button>
+                <div class="md-nav-links hidden md:flex items-center ml-8 space-x-2">
+                    <a href="/page/accounts" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">account_balance</span> Accounts </a>
+                    <a href="/page/recurring" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">loop</span> Recurring </a>
+                    <a href="/page/reminders" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">notifications</span> Reminders </a>
                 </div>
 
-                <div id="hamburger" class="hamburger md:hidden">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                <div class="md-top-app-bar-actions">
+                    <button hx-post="/logout" hx-target="body" class="md-btn md-btn-text md:flex hidden">
+                        <span class="material-symbols-outlined">logout</span>
+                    </button>
+                    <button id="md-menu-button" class="md-menu-button md:hidden">
+                        <div class="md-menu-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
                 </div>
-            </div>
-        </nav>
-
-        <div id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h2 class="text-lg font-bold">Menu</h2>
-                <div id="sidebar-close" class="sidebar-close">&times;</div>
-            </div>
-            <div class="sidebar-menu">
-                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Home</a>
-                <a href="/page/accounts" class="btn btn-secondary w-full text-left mb-2">Accounts</a>
-                <a href="/page/recurring" class="btn btn-secondary w-full text-left mb-2">Recurring</a>
-                <a href="/page/reminders" class="btn btn-secondary w-full text-left mb-2">Reminders</a>
-                <button hx-post="/logout" hx-target="body" class="btn btn-danger w-full text-left">Logout</button>
             </div>
         </div>
 
-        <div id="overlay" class="overlay"></div>
+        <div id="md-nav-drawer" class="md-nav-drawer">
+            <div class="md-nav-drawer-header">
+                <div class="headline-small">Bookly</div>
+            </div>
+            <div class="md-nav-drawer-content">
+                <a href="/" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">home</span>
+                    <span>Home</span>
+                </a>
+                <a href="/page/accounts" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">account_balance</span>
+                    <span>Accounts</span>
+                </a>
+                <a href="/page/recurring" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">loop</span>
+                    <span>Recurring</span>
+                </a>
+                <a href="/page/reminders" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">notifications</span>
+                    <span>Reminders</span>
+                </a>
+                <button hx-post="/logout" hx-target="body" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">logout</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="md-scrim" class="md-scrim"></div>
         <div class="container mx-auto mt-8 px-4">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-text-primary">Reminders</h1>
+                <h1 class="headline-medium">Reminders</h1>
             </div>
 
             <div id="reminders-list" hx-trigger="load, reloadReminders from:body">

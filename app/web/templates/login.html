@@ -1,21 +1,26 @@
 {{ define "login" }}
-<div class="flex items-center justify-center min-h-screen bg-bg-primary">
-    <div class="bg-bg-secondary p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-6 text-center text-text-primary">Login to Bookly</h1>
-        <form hx-post="/login" hx-target="#message">
-            <div class="mb-4">
-                <label for="username" class="block text-text-secondary text-sm font-bold mb-2">Username</label>
-                <input type="text" id="username" name="username" class="shadow appearance-none border rounded w-full py-2 px-3 bg-bg-tertiary text-text-primary leading-tight focus:outline-none focus:shadow-outline" required />
-            </div>
-            <div class="mb-6">
-                <label for="password" class="block text-text-secondary text-sm font-bold mb-2">Password</label>
-                <input type="password" id="password" name="password" class="shadow appearance-none border rounded w-full py-2 px-3 bg-bg-tertiary text-text-primary leading-tight focus:outline-none focus:shadow-outline" required />
-            </div>
-            <div class="flex items-center justify-between">
-                <button class="btn btn-primary w-full" type="submit">Sign In</button>
-            </div>
-        </form>
-        <div id="message" class="mt-4 text-center text-error"></div>
+<div class="flex items-center justify-center min-h-[calc(100vh-64px)] bg-bg-primary">
+    <div class="md-card md-shadow-2 p-8 w-full max-w-md">
+        <div class="md-card-header">
+            <h1 class="headline-medium text-center text-text-primary mb-6">Login to Bookly</h1>
+        </div>
+        <div class="md-card-content">
+            <form hx-post="/login" hx-target="#message">
+                <div class="md-text-field md-text-field-filled mb-6">
+                    <input type="text" id="username" name="username" placeholder=" " required />
+                    <label for="username">Username</label>
+                </div>
+                <div class="md-text-field md-text-field-filled mb-6">
+                    <input type="password" id="password" name="password" placeholder=" " required />
+                    <label for="password">Password</label>
+                </div>
+                <button class="md-btn md-btn-filled w-full" type="submit">
+                    <span class="material-symbols-outlined mr-2">login</span>
+                    Sign In
+                </button>
+            </form>
+            <div id="message" class="mt-4 text-center text-error"></div>
+        </div>
     </div>
 </div>
 {{ end }}
