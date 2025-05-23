@@ -1,16 +1,26 @@
 {{ define "account_details.html" }}
 
-<!-- Ledgers Section -->
-<div class="bg-bg-secondary rounded-lg shadow p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-text-primary">Ledgers</h2>
-        <button hx-get="/page/accounts/{{.Account.ID}}/ledgers/create" hx-target="#create-ledger-modal" hx-swap="innerHTML" class="btn btn-primary">New Ledger</button>
+<div class="flex flex-col md:gap-6">
+    <!-- Ledgers Section -->
+    <div class="md-card md-shadow-1 mb-6">
+        <div class="md-card-header flex justify-between items-center p-4">
+            <h2 class="headline-small">Ledgers</h2>
+            <button 
+                hx-get="/page/accounts/{{.Account.ID}}/ledgers/create" 
+                hx-target="#create-ledger-modal" 
+                hx-swap="innerHTML" 
+                class="md-btn md-btn-filled">
+                <span class="material-symbols-outlined mr-2">add</span>New Ledger
+            </button>
+        </div>
+        <div id="create-ledger-modal"></div>
+        <div id="ledger-list" hx-get="/page/accounts/{{.Account.ID}}/ledgers" hx-trigger="load, reloadLedgers from:body"></div>
     </div>
-    <div id="create-ledger-modal"></div>
-    <div id="ledger-list" hx-get="/page/accounts/{{.Account.ID}}/ledgers" hx-trigger="load, reloadLedgers from:body"></div>
-</div>
 
-<!-- Bank Account Section -->
-{{ template "bank_account_card.html" . }}
+    <!-- Bank Account Section -->
+    <div class="w-full">
+        {{ template "bank_account_card.html" . }}
+    </div>
+</div>
 
 {{ end }}

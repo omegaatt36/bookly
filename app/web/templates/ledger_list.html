@@ -1,20 +1,37 @@
 {{ define "ledger_list.html" }}
-<table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
-    <thead class="bg-bg-tertiary">
-        <tr>
-            <th class="px-4 py-2 text-left text-text-primary">Date</th>
-            <th class="px-4 py-2 text-left sm:table-cell text-text-primary">Type</th>
-            <th class="px-4 py-2 text-left md:table-cell text-text-primary">Amount</th>
-            <th class="px-4 py-2 text-left text-text-primary">Note</th>
-        </tr>
-    </thead>
-    <tbody>
-        <div id="ledger-details-modal"></div>
-        {{ range .Ledgers }}
-        <tr id="ledger-{{ .ID }}" class="hover:bg-tertiary" hx-get="/page/ledgers/{{ .ID }}/details" hx-target="#ledger-details-modal" hx-swap="innerHTML">
-            {{ template "ledger.html" . }}
-        </tr>
-        {{ end }}
-    </tbody>
-</table>
+<div class="overflow-x-auto">
+    <table class="md-table w-full">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            <div id="ledger-details-modal"></div>
+            {{ range .Ledgers }}
+            <tr id="ledger-{{ .ID }}" hx-get="/page/ledgers/{{ .ID }}/details" hx-target="#ledger-details-modal" hx-swap="innerHTML" class="cursor-pointer">
+                {{ template "ledger.html" . }}
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</div>
+
+{{ if not .Ledgers }}
+<div class="flex flex-col items-center justify-center p-8 text-center">
+    <span class="material-symbols-outlined text-4xl text-bg-highlight mb-2">description</span>
+    <p class="body-large mb-4">No ledgers found</p>
+    <button 
+        hx-get="/page/accounts/{{.AccountID}}/ledgers/create" 
+        hx-target="#create-ledger-modal" 
+        hx-swap="innerHTML" 
+        class="md-btn md-btn-filled">
+        <span class="material-symbols-outlined mr-2">add</span>
+        New Ledger
+    </button>
+</div>
+{{ end }}
 {{ end }}

@@ -1,12 +1,21 @@
 {{ define "ledger.html" }}
-<td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Date.Format "01-02" }}</td>
-<td class="px-4 py-2 border-t border-bg-highlight sm:table-cell text-text-secondary">{{ .Type }}</td>
-<td class="px-4 py-2 border-t border-bg-highlight md:table-cell text-text-secondary">
-    <span {{ if .IsVoided }} class="line-through" {{ end}}>{{ dollar .Currency .Amount }}</span>
+<td class="py-3 body-large">{{ .Date.Format "01-02" }}</td>
+<td>
+    <div class="md-chip {{ if eq .Type "balance" }}bg-accent-tertiary text-text-highlight{{ else if eq .Type "income" }}bg-success text-bg-primary{{ else if eq .Type "expense" }}bg-error text-text-highlight{{ else }}bg-bg-tertiary text-text-primary{{ end }}">
+        {{ .Type }}
+    </div>
 </td>
-<td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">
+<td class="font-medium {{ if .IsVoided }}line-through{{ end }}">
+    {{ dollar .Currency .Amount }}
+</td>
+<td>
     {{ if .IsVoided }}
-    <span class="text-error">[Voided]</span>
-    {{ else }} {{ shorten .Note }} {{ end }}
+    <div class="flex items-center">
+        <span class="material-symbols-outlined text-error mr-1" style="font-size: 16px;">warning</span>
+        <span class="text-error">[Voided]</span>
+    </div>
+    {{ else }} 
+    <span class="text-text-secondary">{{ shorten .Note }}</span> 
+    {{ end }}
 </td>
 {{ end }}

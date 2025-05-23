@@ -1,58 +1,67 @@
 {{ define "create_ledger.html" }}
-<div id="create-ledger-modal-content" class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm">
-    <div class="relative top-20 mx-auto p-6 border border-bg-highlight max-w-md w-full shadow-xl rounded-lg bg-bg-secondary">
-        <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Ledger</h3>
-        <form hx-post="/accounts/{{ .ID }}/ledgers" hx-on::after-request="closeCreateLedgerModal()">
-            <div class="mb-4">
-                <label for="date" class="block text-sm font-medium text-text-secondary">Date</label>
-                <input
-                    type="date"
-                    name="date"
-                    id="date"
-                    required
-                    value="{{ now.Format "2006-01-02" }}"
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                />
-            </div>
-            <div class="mb-4">
-                <label for="type" class="block text-sm font-medium text-text-secondary">Type</label>
-                <select
-                    name="type"
-                    id="type"
-                    required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                >
-                    <option value="balance">Balance</option>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                    <option value="transfer">Transfer</option>
-                </select>
-            </div>
-            <div class="mb-4">
-                <label for="amount" class="block text-sm font-medium text-text-secondary">Amount</label>
-                <input
-                    type="number"
-                    step="1"
-                    name="amount"
-                    id="amount"
-                    required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                />
-            </div>
-            <div class="mb-4">
-                <label for="note" class="block text-sm font-medium text-text-secondary">Note</label>
-                <textarea
-                    name="note"
-                    id="note"
-                    rows="3"
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                ></textarea>
-            </div>
-            <div class="flex justify-end">
-                <button type="button" class="btn btn-secondary mr-2" onclick="closeCreateLedgerModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Create</button>
-            </div>
-        </form>
+<div class="md-dialog-container active" id="create-ledger-modal-content">
+    <div class="md-dialog">
+        <div class="md-dialog-title">
+            Create New Ledger
+        </div>
+        <div class="md-dialog-content">
+            <form hx-post="/accounts/{{ .ID }}/ledgers" hx-on::after-request="closeCreateLedgerModal()">
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input
+                        type="date"
+                        name="date"
+                        id="date"
+                        required
+                        value="{{ now.Format "2006-01-02" }}"
+                        placeholder=" "
+                    />
+                    <label for="date">Date</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <select
+                        name="type"
+                        id="type"
+                        required
+                    >
+                        <option value="balance">Balance</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                        <option value="transfer">Transfer</option>
+                    </select>
+                    <label for="type">Type</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input
+                        type="number"
+                        step="1"
+                        name="amount"
+                        id="amount"
+                        required
+                        placeholder=" "
+                    />
+                    <label for="amount">Amount</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <textarea
+                        name="note"
+                        id="note"
+                        rows="3"
+                        placeholder=" "
+                    ></textarea>
+                    <label for="note">Note</label>
+                </div>
+                
+                <div class="md-dialog-actions">
+                    <button type="button" class="md-btn md-btn-text" onclick="closeCreateLedgerModal()">Cancel</button>
+                    <button type="submit" class="md-btn md-btn-filled">
+                        <span class="material-symbols-outlined mr-2">add</span>Create
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 <script>

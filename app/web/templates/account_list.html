@@ -1,22 +1,39 @@
 {{ define "account_list.html" }}
-<table class="w-full bg-bg-secondary shadow-md rounded-lg overflow-hidden">
-    <thead class="bg-bg-tertiary">
-        <tr>
-            <th class="px-4 py-2 text-left text-text-primary">Name</th>
-            <th class="px-4 py-2 text-left hidden sm:table-cell text-text-primary">Status</th>
-            <th class="px-4 py-2 text-left hidden md:table-cell text-text-primary">Currency</th>
-            <th class="px-4 py-2 text-left text-text-primary">Balance</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{ range .Accounts }}
-        <tr hx-get="/page/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="hover:bg-bg-highlight cursor-pointer transition-colors duration-150">
-            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ .Name }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight hidden sm:table-cell text-text-secondary">{{ .Status }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight hidden md:table-cell text-text-secondary">{{ .Currency }}</td>
-            <td class="px-4 py-2 border-t border-bg-highlight text-text-secondary">{{ dollar .Currency .Balance }}</td>
-        </tr>
-        {{ end }}
-    </tbody>
-</table>
+<div class="md-card md-shadow-1">
+    <div class="overflow-x-auto">
+        <table class="md-table w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="hidden sm:table-cell">Status</th>
+                    <th class="hidden md:table-cell">Currency</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .Accounts }}
+                <tr hx-get="/page/accounts/{{ .ID }}" hx-target="#account-details" hx-trigger="click" class="cursor-pointer">
+                    <td class="body-large">{{ .Name }}</td>
+                    <td class="hidden sm:table-cell">
+                        <div class="md-chip">{{ .Status }}</div>
+                    </td>
+                    <td class="hidden md:table-cell">{{ .Currency }}</td>
+                    <td>
+                        <span class="font-medium">{{ dollar .Currency .Balance }}</span>
+                    </td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    {{ if not .Accounts }}
+    <div class="p-8 text-center">
+        <span class="material-symbols-outlined text-4xl text-bg-highlight">account_balance</span>
+        <p class="mt-2 body-large">No accounts found</p>
+        <button hx-get="/page/accounts/create" hx-target="#create-account-modal" hx-swap="innerHTML" class="md-btn md-btn-text mt-4">
+            <span class="material-symbols-outlined mr-2">add</span>Create Account
+        </button>
+    </div>
+    {{ end }}
+</div>
 {{ end }}

@@ -1,33 +1,41 @@
 {{ define "create_account.html" }}
-<div class="fixed inset-0 bg-bg-primary bg-opacity-75 overflow-y-auto h-full w-full backdrop-filter backdrop-blur-sm" id="create-account-modal-content">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-bg-secondary">
-        <h3 class="text-lg font-medium leading-6 text-text-primary mb-4">Create New Account</h3>
-        <form hx-post="/accounts" hx-on::after-request="closeCreateAccountModal()">
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-text-secondary">Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                />
-            </div>
-            <div class="mb-4">
-                <label for="currency" class="block text-sm font-medium text-text-secondary">Currency</label>
-                <input
-                    type="text"
-                    name="currency"
-                    id="currency"
-                    required
-                    class="mt-1 block w-full rounded-md border-bg-highlight shadow-sm focus:border-accent-primary focus:ring focus:ring-accent-primary focus:ring-opacity-50 bg-bg-tertiary text-text-primary"
-                />
-            </div>
-            <div class="flex justify-end">
-                <button type="button" class="btn btn-secondary mr-2" onclick="closeCreateAccountModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Create</button>
-            </div>
-        </form>
+<div class="md-dialog-container active" id="create-account-modal-content">
+    <div class="md-dialog">
+        <div class="md-dialog-title">
+            Create New Account
+        </div>
+        <div class="md-dialog-content">
+            <form hx-post="/accounts" hx-on::after-request="closeCreateAccountModal()">
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        required
+                        placeholder=" "
+                    />
+                    <label for="name">Name</label>
+                </div>
+                
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input
+                        type="text"
+                        name="currency"
+                        id="currency"
+                        required
+                        placeholder=" "
+                    />
+                    <label for="currency">Currency</label>
+                </div>
+            
+                <div class="md-dialog-actions">
+                    <button type="button" class="md-btn md-btn-text" onclick="closeCreateAccountModal()">Cancel</button>
+                    <button type="submit" class="md-btn md-btn-filled">
+                        <span class="material-symbols-outlined mr-2">save</span>Create
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 <script>
