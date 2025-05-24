@@ -18,4 +18,11 @@
     <span class="text-text-secondary">{{ shorten .Note }}</span> 
     {{ end }}
 </td>
+<td>
+    {{ if .Category }}
+    <span class="md-chip bg-bg-tertiary text-text-primary">{{ .Category }}</span>
+    {{ else }}
+    <span class="text-text-secondary">-</span>
+    {{ end }}
+</td>
 {{ end }}

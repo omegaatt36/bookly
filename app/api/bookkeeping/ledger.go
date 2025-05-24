@@ -20,6 +20,7 @@ type jsonLedger struct {
 	Currency     string          `json:"currency"`
 	Amount       decimal.Decimal `json:"amount"`
 	Note         string          `json:"note"`
+	Category     string          `json:"category"`
 	Adjustable   bool            `json:"adjustable"`
 	IsAdjustment bool            `json:"is_adjustment"`
 	AdjustedFrom *int32          `json:"adjusted_from"`
@@ -35,6 +36,7 @@ func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
 	l.Currency = ledger.Currency
 	l.Amount = ledger.Amount
 	l.Note = ledger.Note
+	l.Category = ledger.Category
 	l.Adjustable = time.Since(ledger.CreatedAt) <= domain.EditableDuration
 	l.IsAdjustment = ledger.IsAdjustment
 	l.AdjustedFrom = ledger.AdjustedFrom
@@ -51,6 +53,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 			Type      string          `json:"type"`
 			Amount    decimal.Decimal `json:"amount"`
 			Note      string          `json:"note"`
+			Category  string          `json:"category"`
 		}
 
 		var req request
@@ -88,6 +91,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 				Type:      ledgerType,
 				Amount:    req.Amount,
 				Note:      req.Note,
+				Category:  req.Category,
 			})
 
 			return nil, err
@@ -165,11 +169,12 @@ func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request
 func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id     int32
-			Date   *time.Time       `json:"date"`
-			Type   *string          `json:"type"`
-			Amount *decimal.Decimal `json:"amount"`
-			Note   *string          `json:"note"`
+			id       int32
+			Date     *time.Time       `json:"date"`
+			Type     *string          `json:"type"`
+			Amount   *decimal.Decimal `json:"amount"`
+			Note     *string          `json:"note"`
+			Category *string          `json:"category"`
 		}
 
 		var req request
@@ -203,13 +208,15 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 				ledgerType = &t
 			}
 
-			return nil, x.service.UpdateLedger(domain.UpdateLedgerRequest{
-				ID:     req.id,
-				Date:   req.Date,
-				Type:   ledgerType,
-				Amount: req.Amount,
-				Note:   req.Note,
+			err = x.service.UpdateLedger(domain.UpdateLedgerRequest{
+				ID:       req.id,
+				Date:     req.Date,
+				Type:     ledgerType,
+				Amount:   req.Amount,
+				Note:     req.Note,
+				Category: req.Category,
 			})
+			return nil, err
 		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}
 }

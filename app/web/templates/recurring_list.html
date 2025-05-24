@@ -20,8 +20,9 @@
 
                 <div class="md-nav-links hidden md:flex items-center ml-8 space-x-2">
                     <a href="/page/accounts" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">account_balance</span> Accounts </a>
-                    <a href="/page/recurring" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">loop</span> Recurring </a>
+                    <a href="/page/recurring" class="md-btn md-btn-text active"> <span class="material-symbols-outlined mr-2">loop</span> Recurring </a>
                     <a href="/page/reminders" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">notifications</span> Reminders </a>
+                    <a href="/page/budgets" class="md-btn md-btn-text"> <span class="material-symbols-outlined mr-2">savings</span> Budgets </a>
                 </div>
 
                 <div class="md-top-app-bar-actions">
@@ -52,13 +53,17 @@
                     <span class="material-symbols-outlined md-nav-drawer-item-icon">account_balance</span>
                     <span>Accounts</span>
                 </a>
-                <a href="/page/recurring" class="md-nav-drawer-item">
+                <a href="/page/recurring" class="md-nav-drawer-item active">
                     <span class="material-symbols-outlined md-nav-drawer-item-icon">loop</span>
                     <span>Recurring</span>
                 </a>
                 <a href="/page/reminders" class="md-nav-drawer-item">
                     <span class="material-symbols-outlined md-nav-drawer-item-icon">notifications</span>
                     <span>Reminders</span>
+                </a>
+                <a href="/page/budgets" class="md-nav-drawer-item">
+                    <span class="material-symbols-outlined md-nav-drawer-item-icon">savings</span>
+                    <span>Budgets</span>
                 </a>
                 <button hx-post="/logout" hx-target="body" class="md-nav-drawer-item">
                     <span class="material-symbols-outlined md-nav-drawer-item-icon">logout</span>

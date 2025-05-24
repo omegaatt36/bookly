@@ -5,10 +5,23 @@ INSERT INTO ledgers (
     type,
     amount,
     note,
+    category
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+) RETURNING *;
+
+-- name: AdjustLedger :one
+INSERT INTO ledgers (
+    account_id,
+    date,
+    type,
+    amount,
+    note,
+    category,
     is_adjustment,
     adjusted_from
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
+    $1, $2, $3, $4, $5, $6, true, $7
 ) RETURNING *;
 
 -- name: GetLedgerByID :one
@@ -44,6 +57,7 @@ SET
     type = CASE WHEN sqlc.narg('type')::text IS NULL THEN type ELSE sqlc.narg('type') END,
     amount = CASE WHEN sqlc.narg('amount')::decimal IS NULL THEN amount ELSE sqlc.narg('amount') END,
     note = CASE WHEN sqlc.narg('note')::text IS NULL THEN note ELSE sqlc.narg('note') END,
+    category = CASE WHEN sqlc.narg('category')::text IS NULL THEN category ELSE sqlc.narg('category') END,
     updated_at = NOW()
 WHERE id = sqlc.arg('id') AND deleted_at IS NULL
 RETURNING *;
@@ -61,3 +75,12 @@ RETURNING *;
 SELECT amount FROM ledgers
 WHERE id = sqlc.arg('id') AND deleted_at IS NULL
 LIMIT 1;
+
+-- name: GetLedgersByCategory :many
+SELECT
+    l.*,
+    a.currency
+FROM ledgers l
+JOIN accounts a ON l.account_id = a.id
+WHERE l.account_id = $1 AND l.category = $2 AND l.deleted_at IS NULL AND a.deleted_at IS NULL
+ORDER BY l.date DESC, l.updated_at DESC;

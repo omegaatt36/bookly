@@ -24,6 +24,10 @@ func (s *Server) registerRoutes() {
 	router.HandleFunc("GET /page/recurring/create", authenticatedHandler(s.pageCreateRecurring))
 	router.HandleFunc("GET /page/recurring/{recurring_id}", authenticatedHandler(s.pageRecurringDetails))
 	router.HandleFunc("GET /page/reminders", authenticatedHandler(s.pageReminders))
+	router.HandleFunc("GET /page/budgets", authenticatedHandler(s.pageBudgets))
+	router.HandleFunc("GET /page/budgets/list", authenticatedHandler(s.pageBudgetList))
+	router.HandleFunc("GET /page/budgets/create", authenticatedHandler(s.pageCreateBudget))
+	router.HandleFunc("GET /page/budgets/{budget_id}", authenticatedHandler(s.pageBudget))
 
 	// Authentication
 	router.HandleFunc("POST /login", s.login)
@@ -47,6 +51,11 @@ func (s *Server) registerRoutes() {
 	router.HandleFunc("PUT /recurring/{recurring_id}", authenticatedHandler(s.updateRecurring))
 	router.HandleFunc("DELETE /recurring/{recurring_id}", authenticatedHandler(s.deleteRecurring))
 	router.HandleFunc("POST /reminders/{reminder_id}/read", authenticatedHandler(s.markReminderAsRead))
+
+	// Budgets
+	router.HandleFunc("POST /budgets", authenticatedHandler(s.createBudget))
+	router.HandleFunc("PATCH /budgets/{budget_id}", authenticatedHandler(s.updateBudget))
+	router.HandleFunc("DELETE /budgets/{budget_id}", authenticatedHandler(s.deleteBudget))
 
 	s.router = logging(router)
 }

@@ -1,0 +1,130 @@
+{{ define "budget_details.html" }}
+<div class="md-card">
+    <div class="md-card-header">
+        <div class="flex justify-between items-start">
+            <div>
+                <h2 class="headline-medium">{{ .Budget.Name }}</h2>
+                <p class="body-large text-text-secondary">{{ .Budget.Category }}</p>
+            </div>
+            <div class="flex gap-2">
+                <button class="md-btn md-btn-icon" onclick="editBudget({{ .Budget.ID }})">
+                    <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="md-btn md-btn-icon" 
+                        hx-delete="/budgets/{{ .Budget.ID }}" 
+                        hx-confirm="Are you sure you want to delete this budget?"
+                        hx-target="#budget-list"
+                        hx-swap="outerHTML">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="md-card-content">
+        <!-- Budget Progress -->
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="body-large font-medium">Budget Progress</span>
+                <span class="body-large">${{ .UsedAmount }} / ${{ .Budget.Amount }}</span>
+            </div>
+            <div class="w-full bg-surface-variant rounded-full h-2">
+                <div class="bg-primary rounded-full h-2 transition-all" style="width: {{ .Percentage }}%"></div>
+            </div>
+            <p class="body-small text-text-secondary mt-1">{{ .Percentage }}% used</p>
+        </div>
+
+        <!-- Budget Details -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <p class="body-small text-text-secondary">Period Type</p>
+                <p class="body-large">{{ if eq .Budget.PeriodType "monthly" }}Monthly{{ else }}Yearly{{ end }}</p>
+            </div>
+            <div>
+                <p class="body-small text-text-secondary">Status</p>
+                <p class="body-large">
+                    {{ if .Budget.IsActive }}
+                        <span class="text-success">Active</span>
+                    {{ else }}
+                        <span class="text-error">Inactive</span>
+                    {{ end }}
+                </p>
+            </div>
+            <div>
+                <p class="body-small text-text-secondary">Current Period</p>
+                <p class="body-large">{{ .PeriodStart }} - {{ .PeriodEnd }}</p>
+            </div>
+            <div>
+                <p class="body-small text-text-secondary">Budget Period</p>
+                <p class="body-large">
+                    {{ .Budget.StartDate }}
+                    {{ if .Budget.EndDate }}
+                        - {{ .Budget.EndDate }}
+                    {{ else }}
+                        - Ongoing
+                    {{ end }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Edit Form (Hidden by default) -->
+        <div id="edit-budget-form-{{ .Budget.ID }}" class="hidden">
+            <form hx-patch="/budgets/{{ .Budget.ID }}" hx-target="#budget-details" hx-swap="innerHTML">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="text" name="name" id="edit-name" placeholder=" " value="{{ .Budget.Name }}">
+                        <label for="edit-name">Budget Name</label>
+                    </div>
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="text" name="category" id="edit-category" placeholder=" " value="{{ .Budget.Category }}">
+                        <label for="edit-category">Category</label>
+                    </div>
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="number" name="amount" id="edit-amount" placeholder=" " step="0.01" value="{{ .Budget.Amount }}">
+                        <label for="edit-amount">Amount</label>
+                    </div>
+                    <div class="md-text-field md-text-field-outlined">
+                        <select name="period_type" id="edit-period-type">
+                            <option value="monthly" {{ if eq .Budget.PeriodType "monthly" }}selected{{ end }}>Monthly</option>
+                            <option value="yearly" {{ if eq .Budget.PeriodType "yearly" }}selected{{ end }}>Yearly</option>
+                        </select>
+                        <label for="edit-period-type">Period Type</label>
+                    </div>
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="date" name="start_date" id="edit-start-date" placeholder=" " value="{{ .Budget.StartDate }}">
+                        <label for="edit-start-date">Start Date</label>
+                    </div>
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="date" name="end_date" id="edit-end-date" placeholder=" " value="{{ .Budget.EndDate }}">
+                        <label for="edit-end-date">End Date</label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 mt-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" value="true" {{ if .Budget.IsActive }}checked{{ end }} class="mr-2">
+                        <span class="body-medium">Active</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" class="md-btn md-btn-text" onclick="cancelEditBudget({{ .Budget.ID }})">
+                        Cancel
+                    </button>
+                    <button type="submit" class="md-btn md-btn-filled">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editBudget(id) {
+    document.getElementById('edit-budget-form-' + id).classList.remove('hidden');
+}
+
+function cancelEditBudget(id) {
+    document.getElementById('edit-budget-form-' + id).classList.add('hidden');
+}
+</script>
+{{ end }}

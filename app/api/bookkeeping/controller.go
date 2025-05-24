@@ -7,7 +7,8 @@ import (
 
 // Controller represents a controller
 type Controller struct {
-	service *bookkeeping.Service
+	service    *bookkeeping.Service
+	budgetRepo domain.BudgetRepository
 }
 
 // NewControllerRequest represents a request to create a new controller
@@ -17,6 +18,7 @@ type NewControllerRequest struct {
 	RecurringTransactionRepository domain.RecurringTransactionRepository
 	ReminderRepository             domain.ReminderRepository
 	BankAccountRepository          domain.BankAccountRepository
+	BudgetRepository               domain.BudgetRepository
 }
 
 // NewController creates a new controller
@@ -29,5 +31,6 @@ func NewController(req NewControllerRequest) *Controller {
 			ReminderRepo:             req.ReminderRepository,
 			BankAccountRepo:          req.BankAccountRepository,
 		}),
+		budgetRepo: req.BudgetRepository,
 	}
 }

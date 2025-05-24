@@ -20,13 +20,12 @@ func (r *Repository) CreateLedger(req domain.CreateLedgerRequest) (int32, error)
 		// Create the ledger entry
 		var err error
 		ledger, err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
-			AccountID:    req.AccountID,
-			Date:         pgtype.Timestamptz{Time: req.Date, Valid: true},
-			Type:         string(req.Type),
-			Amount:       req.Amount,
-			Note:         pgtype.Text{String: req.Note, Valid: true},
-			IsAdjustment: false, // isAdjustment
-			AdjustedFrom: pgtype.Int4{},
+			AccountID: req.AccountID,
+			Date:      pgtype.Timestamptz{Time: req.Date, Valid: true},
+			Type:      string(req.Type),
+			Amount:    req.Amount,
+			Note:      pgtype.Text{String: req.Note, Valid: true},
+			Category:  pgtype.Text{String: req.Category, Valid: req.Category != ""},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create ledger: %w", err)
@@ -74,6 +73,7 @@ func (r *Repository) GetLedgerByID(id int32) (*domain.Ledger, error) {
 		Currency:     ledger.Currency,
 		Amount:       ledger.Amount,
 		Note:         ledger.Note.String,
+		Category:     ledger.Category.String,
 		IsAdjustment: ledger.IsAdjustment,
 		AdjustedFrom: func() *int32 {
 			if ledger.AdjustedFrom.Valid {
@@ -107,6 +107,7 @@ func (r *Repository) GetLedgersByAccountID(accountID int32) ([]*domain.Ledger, e
 			AccountID:    ledger.AccountID,
 			Date:         ledger.Date.Time,
 			Type:         domain.LedgerType(ledger.Type),
+			Category:     ledger.Category.String,
 			Currency:     ledger.Currency,
 			Amount:       ledger.Amount,
 			Note:         ledger.Note.String,
@@ -169,6 +170,13 @@ func (r *Repository) UpdateLedger(req domain.UpdateLedgerRequest) error {
 		if req.Note != nil {
 			updateParams.Note = pgtype.Text{
 				String: *req.Note,
+				Valid:  true,
+			}
+		}
+
+		if req.Category != nil {
+			updateParams.Category = pgtype.Text{
+				String: *req.Category,
 				Valid:  true,
 			}
 		}
@@ -264,13 +272,13 @@ func (r *Repository) DeleteLedger(id int32) error {
 func (r *Repository) AdjustLedger(originalID int32, adjustment domain.CreateLedgerRequest) error {
 	return r.ExecuteTx(r.ctx, func(repo *Repository) error {
 		// Create a new ledger entry marked as an adjustment
-		_, err := repo.querier.CreateLedger(repo.ctx, sqlcgen.CreateLedgerParams{
+		_, err := repo.querier.AdjustLedger(repo.ctx, sqlcgen.AdjustLedgerParams{
 			AccountID:    adjustment.AccountID,
 			Date:         pgtype.Timestamptz{Time: adjustment.Date, Valid: true},
 			Type:         string(adjustment.Type),
 			Amount:       adjustment.Amount,
 			Note:         pgtype.Text{String: adjustment.Note, Valid: true},
-			IsAdjustment: true,
+			Category:     pgtype.Text{String: adjustment.Category, Valid: adjustment.Category != ""},
 			AdjustedFrom: pgtype.Int4{Int32: originalID, Valid: true},
 		})
 		if err != nil {

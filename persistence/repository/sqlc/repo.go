@@ -16,6 +16,7 @@ var (
 	_ domain.LedgerRepository      = (*Repository)(nil)
 	_ domain.UserRepository        = (*Repository)(nil)
 	_ domain.BankAccountRepository = (*Repository)(nil)
+	_ domain.BudgetRepository      = (*Repository)(nil)
 )
 
 // Repository implements repository interfaces using SQLC-generated code

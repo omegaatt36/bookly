@@ -16,6 +16,8 @@ tags:
     description: Authentication and authorization operations
   - name: users
     description: Operations related to user management
+  - name: budgets
+    description: Operations related to budget management
 paths:
   /accounts:
     post:
@@ -791,6 +793,178 @@ paths:
           $ref: "#/components/responses/NotFoundError"
         500:
           $ref: "#/components/responses/InternalError"
+  /budgets:
+    post:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Create a new budget
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBudgetRequest"
+      responses:
+        200:
+          description: Budget created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        400:
+          $ref: "#/components/responses/ParamError"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Get all budgets for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Filter to only active budgets
+      responses:
+        200:
+          description: List of budgets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetsResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalError"
+  /budgets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+        description: Budget ID
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Get a budget by ID
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Budget retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    patch:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Update a budget
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBudgetRequest"
+      responses:
+        200:
+          description: Budget updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        400:
+          $ref: "#/components/responses/ParamError"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+    delete:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Delete a budget
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Budget deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
+  /budgets/{id}/summary:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+        description: Budget ID
+    get:
+      servers:
+        - url: /v1
+      tags:
+        - budgets
+      summary: Get budget summary with usage
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Budget summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetSummaryResponse"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalError"
 
 components:
   securitySchemes:
@@ -1106,6 +1280,9 @@ components:
         note:
           type: string
           description: Optional note for the entry
+        category:
+          type: string
+          description: Category of the ledger entry
         adjustable:
           type: boolean
           description: Indicates if the entry can be adjusted (based on age)
@@ -1156,8 +1333,12 @@ components:
           example: "50.50"
         note:
           type: string
-          description: Optional note for the entry
-          example: "Groceries"
+          description: Optional note for the ledger
+          example: "Monthly rent payment"
+        category:
+          type: string
+          description: Category of the ledger
+          example: "Housing"
       required:
         - date
         - type
@@ -1185,6 +1366,10 @@ components:
           type: string
           description: New optional note for the entry
           example: "Updated Groceries"
+        category:
+          type: string
+          description: New category for the ledger
+          example: "Food"
 
     AdjustLedgerRequest:
       description: Request body for adjusting a ledger entry
@@ -1582,3 +1767,191 @@ components:
           type: string
           description: New nickname for the user
           example: "janedoe"
+    BudgetResponse:
+      description: Budget response
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 200
+        data:
+          $ref: "#/components/schemas/jsonBudget"
+    BudgetsResponse:
+      description: List of budgets response
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/jsonBudget"
+    BudgetSummaryResponse:
+      description: Budget summary with usage response
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Response code
+          example: 200
+        data:
+          $ref: "#/components/schemas/BudgetSummary"
+    jsonBudget:
+      description: Budget data
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Budget ID
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        user_id:
+          type: integer
+          format: int32
+          description: User ID who owns the budget
+        name:
+          type: string
+          description: Budget name
+        category:
+          type: string
+          description: Budget category
+        amount:
+          type: string
+          description: Budget amount
+        period_type:
+          type: string
+          enum: [monthly, yearly]
+          description: Budget period type
+        start_date:
+          type: string
+          format: date-time
+          description: Budget start date
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Budget end date
+        is_active:
+          type: boolean
+          description: Whether the budget is active
+      required:
+        - id
+        - created_at
+        - updated_at
+        - user_id
+        - name
+        - category
+        - amount
+        - period_type
+        - start_date
+        - is_active
+    CreateBudgetRequest:
+      description: Request to create a budget
+      type: object
+      properties:
+        name:
+          type: string
+          description: Budget name
+          example: "Monthly Food Budget"
+        category:
+          type: string
+          description: Budget category
+          example: "Food"
+        amount:
+          type: string
+          description: Budget amount
+          example: "500.00"
+        period_type:
+          type: string
+          enum: [monthly, yearly]
+          description: Budget period type
+          example: "monthly"
+        start_date:
+          type: string
+          format: date-time
+          description: Budget start date
+          example: "2024-01-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Budget end date (optional)
+          example: "2024-12-31T23:59:59Z"
+      required:
+        - name
+        - category
+        - amount
+        - period_type
+        - start_date
+    UpdateBudgetRequest:
+      description: Request to update a budget
+      type: object
+      properties:
+        name:
+          type: string
+          description: New budget name
+          example: "Updated Food Budget"
+        category:
+          type: string
+          description: New budget category
+          example: "Groceries"
+        amount:
+          type: string
+          description: New budget amount
+          example: "600.00"
+        period_type:
+          type: string
+          enum: [monthly, yearly]
+          description: New budget period type
+          example: "monthly"
+        start_date:
+          type: string
+          format: date-time
+          description: New budget start date
+          example: "2024-02-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: New budget end date
+          example: "2024-12-31T23:59:59Z"
+        is_active:
+          type: boolean
+          description: Whether the budget is active
+          example: true
+    BudgetSummary:
+      description: Budget summary with usage information
+      type: object
+      properties:
+        budget:
+          $ref: "#/components/schemas/jsonBudget"
+        used_amount:
+          type: string
+          description: Amount used in the current period
+        percentage:
+          type: string
+          description: Percentage of budget used
+        period_start:
+          type: string
+          format: date-time
+          description: Current period start date
+        period_end:
+          type: string
+          format: date-time
+          description: Current period end date
+      required:
+        - budget
+        - used_amount
+        - percentage
+        - period_start
+        - period_end
