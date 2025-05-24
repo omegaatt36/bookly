@@ -1,0 +1,68 @@
+{{ define "create_budget.html" }}
+<div class="md-dialog-container active">
+    <div class="md-dialog">
+        <h2 class="md-dialog-title">Create Budget</h2>
+        <form hx-post="/budgets" hx-target="#budget-list" hx-swap="outerHTML">
+            <div class="md-dialog-content">
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="text" name="name" id="name" placeholder=" " required>
+                        <label for="name">Budget Name</label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="text" name="category" id="category" placeholder=" " required>
+                        <label for="category">Category</label>
+                    </div>
+                    <p class="md-text-field-helper">e.g., Food, Transportation, Entertainment</p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="number" name="amount" id="amount" placeholder=" " step="0.01" min="0" required>
+                        <label for="amount">Budget Amount</label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <select name="period_type" id="period_type" required>
+                            <option value="">Select Period</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                        <label for="period_type">Period Type</label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="date" name="start_date" id="start_date" placeholder=" " required>
+                        <label for="start_date">Start Date</label>
+</div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="md-text-field md-text-field-outlined">
+                        <input type="date" name="end_date" id="end_date" placeholder=" ">
+                        <label for="end_date">End Date (Optional)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="md-dialog-actions">
+                <button type="button" class="md-btn md-btn-text" onclick="document.getElementById('create-budget-modal').innerHTML = ''">
+                    Cancel
+                </button>
+                <button type="submit" class="md-btn md-btn-filled">
+                    Create Budget
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="md-scrim active" onclick="document.getElementById('create-budget-modal').innerHTML = ''"></div>
+{{ end }}

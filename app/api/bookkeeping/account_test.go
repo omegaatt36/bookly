@@ -44,7 +44,7 @@ func (s *testAccountSuite) SetupTest() {
 	s.repo = repository.NewSQLCRepository(db)
 	s.router = http.NewServeMux()
 	controller := bookkeeping.NewController(bookkeeping.NewControllerRequest{
-		s.repo, s.repo, nil, nil, nil,
+		s.repo, s.repo, nil, nil, nil, nil,
 	})
 
 	authMiddleware := func(next http.Handler) http.Handler {

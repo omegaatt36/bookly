@@ -18,6 +18,7 @@ type ledger struct {
 	Currency     string     `json:"currency"`
 	Amount       string     `json:"amount"` // Using string to represent decimal
 	Note         string     `json:"note"`
+	Category     string     `json:"category"`
 	Adjustable   bool       `json:"adjustable"`
 	IsAdjustment bool       `json:"is_adjustment"`
 	AdjustedFrom *int32     `json:"adjusted_from"`
@@ -117,10 +118,11 @@ func (s *Server) pageLedgersByAccount(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		Date   string `json:"date"`
-		Type   string `json:"type"`
-		Amount string `json:"amount"`
-		Note   string `json:"note"`
+		Date     string `json:"date"`
+		Type     string `json:"type"`
+		Amount   string `json:"amount"`
+		Note     string `json:"note"`
+		Category string `json:"category"`
 	}
 
 	date := r.FormValue("date")
@@ -134,6 +136,7 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 	payload.Type = r.FormValue("type")
 	payload.Amount = r.FormValue("amount")
 	payload.Note = r.FormValue("note")
+	payload.Category = r.FormValue("category")
 
 	accountID := parseInt32(r.PathValue("account_id"))
 	if err := s.sendRequest(r, "POST", fmt.Sprintf("/v1/accounts/%d/ledgers", accountID), payload, nil); err != nil {
@@ -155,10 +158,11 @@ func (s *Server) createLedger(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		Date   string `json:"date,omitempty"`
-		Type   string `json:"type,omitempty"`
-		Amount string `json:"amount,omitempty"`
-		Note   string `json:"note,omitempty"`
+		Date     string `json:"date,omitempty"`
+		Type     string `json:"type,omitempty"`
+		Amount   string `json:"amount,omitempty"`
+		Note     string `json:"note,omitempty"`
+		Category string `json:"category,omitempty"`
 	}
 
 	ledgerID := parseInt32(r.PathValue("ledger_id"))
@@ -174,6 +178,7 @@ func (s *Server) updateLedger(w http.ResponseWriter, r *http.Request) {
 	payload.Type = r.FormValue("type")
 	payload.Amount = r.FormValue("amount")
 	payload.Note = r.FormValue("note")
+	payload.Category = r.FormValue("category")
 
 	if err := s.sendRequest(r, "PATCH", fmt.Sprintf("/v1/ledgers/%d", ledgerID), payload, nil); err != nil {
 		slog.Error("failed to update ledger", slog.String("error", err.Error()))

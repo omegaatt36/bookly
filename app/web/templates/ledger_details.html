@@ -38,6 +38,11 @@
                     <label for="note-{{ .ID }}">Note</label>
                 </div>
                 
+                <div class="md-text-field md-text-field-outlined mb-4">
+                    <input type="text" id="category-{{ .ID }}" name="category" value="{{ .Category }}" placeholder=" " />
+                    <label for="category-{{ .ID }}">Category</label>
+                </div>
+                
                 <div class="md-dialog-actions">
                     <button type="button" class="md-btn md-btn-text" onclick="closeLedgerDetailsModal()">Cancel</button>
                     <button type="submit" class="md-btn md-btn-text">Save</button>

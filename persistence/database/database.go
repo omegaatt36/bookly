@@ -86,17 +86,17 @@ func (db *database) Open() error {
 		return fmt.Errorf("failed to parse connection string: %w", err)
 	}
 
-	if !db.Opt.Silence {
-		pgxLogger := pgxslog.NewLogger(
-			slog.Default(),
-		)
-		tracer := &tracelog.TraceLog{
-			Logger:   pgxLogger,
-			LogLevel: tracelog.LogLevelDebug,
-		}
-
-		config.ConnConfig.Tracer = tracer
+	// if db.Opt.Silence {
+	pgxLogger := pgxslog.NewLogger(
+		slog.Default(),
+	)
+	tracer := &tracelog.TraceLog{
+		Logger:   pgxLogger,
+		LogLevel: tracelog.LogLevelDebug,
 	}
+
+	config.ConnConfig.Tracer = tracer
+	// }
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {

@@ -12,38 +12,39 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const createLedger = `-- name: CreateLedger :one
+const adjustLedger = `-- name: AdjustLedger :one
 INSERT INTO ledgers (
     account_id,
     date,
     type,
     amount,
     note,
+    category,
     is_adjustment,
     adjusted_from
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
-) RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
+    $1, $2, $3, $4, $5, $6, true, $7
+) RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, category, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
-type CreateLedgerParams struct {
+type AdjustLedgerParams struct {
 	AccountID    int32
 	Date         pgtype.Timestamptz
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
-	IsAdjustment bool
+	Category     pgtype.Text
 	AdjustedFrom pgtype.Int4
 }
 
-func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (Ledger, error) {
-	row := q.db.QueryRow(ctx, createLedger,
+func (q *Queries) AdjustLedger(ctx context.Context, arg AdjustLedgerParams) (Ledger, error) {
+	row := q.db.QueryRow(ctx, adjustLedger,
 		arg.AccountID,
 		arg.Date,
 		arg.Type,
 		arg.Amount,
 		arg.Note,
-		arg.IsAdjustment,
+		arg.Category,
 		arg.AdjustedFrom,
 	)
 	var i Ledger
@@ -57,6 +58,58 @@ func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (Led
 		&i.Type,
 		&i.Amount,
 		&i.Note,
+		&i.Category,
+		&i.IsAdjustment,
+		&i.AdjustedFrom,
+		&i.IsVoided,
+		&i.VoidedAt,
+	)
+	return i, err
+}
+
+const createLedger = `-- name: CreateLedger :one
+INSERT INTO ledgers (
+    account_id,
+    date,
+    type,
+    amount,
+    note,
+    category
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+) RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, category, is_adjustment, adjusted_from, is_voided, voided_at
+`
+
+type CreateLedgerParams struct {
+	AccountID int32
+	Date      pgtype.Timestamptz
+	Type      string
+	Amount    decimal.Decimal
+	Note      pgtype.Text
+	Category  pgtype.Text
+}
+
+func (q *Queries) CreateLedger(ctx context.Context, arg CreateLedgerParams) (Ledger, error) {
+	row := q.db.QueryRow(ctx, createLedger,
+		arg.AccountID,
+		arg.Date,
+		arg.Type,
+		arg.Amount,
+		arg.Note,
+		arg.Category,
+	)
+	var i Ledger
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.AccountID,
+		&i.Date,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.Category,
 		&i.IsAdjustment,
 		&i.AdjustedFrom,
 		&i.IsVoided,
@@ -71,7 +124,7 @@ SET
     deleted_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, category, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
 func (q *Queries) DeleteLedger(ctx context.Context, id int32) (Ledger, error) {
@@ -87,6 +140,7 @@ func (q *Queries) DeleteLedger(ctx context.Context, id int32) (Ledger, error) {
 		&i.Type,
 		&i.Amount,
 		&i.Note,
+		&i.Category,
 		&i.IsAdjustment,
 		&i.AdjustedFrom,
 		&i.IsVoided,
@@ -110,7 +164,7 @@ func (q *Queries) GetLedgerAmount(ctx context.Context, id int32) (decimal.Decima
 
 const getLedgerByID = `-- name: GetLedgerByID :one
 SELECT
-    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
+    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.category, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
     a.currency
 FROM ledgers l
 JOIN accounts a ON l.account_id = a.id
@@ -128,6 +182,7 @@ type GetLedgerByIDRow struct {
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
+	Category     pgtype.Text
 	IsAdjustment bool
 	AdjustedFrom pgtype.Int4
 	IsVoided     bool
@@ -148,6 +203,7 @@ func (q *Queries) GetLedgerByID(ctx context.Context, id int32) (GetLedgerByIDRow
 		&i.Type,
 		&i.Amount,
 		&i.Note,
+		&i.Category,
 		&i.IsAdjustment,
 		&i.AdjustedFrom,
 		&i.IsVoided,
@@ -159,7 +215,7 @@ func (q *Queries) GetLedgerByID(ctx context.Context, id int32) (GetLedgerByIDRow
 
 const getLedgersByAccountID = `-- name: GetLedgersByAccountID :many
 SELECT
-    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
+    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.category, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
     a.currency
 FROM ledgers l
 JOIN accounts a ON l.account_id = a.id
@@ -177,6 +233,7 @@ type GetLedgersByAccountIDRow struct {
 	Type         string
 	Amount       decimal.Decimal
 	Note         pgtype.Text
+	Category     pgtype.Text
 	IsAdjustment bool
 	AdjustedFrom pgtype.Int4
 	IsVoided     bool
@@ -203,6 +260,76 @@ func (q *Queries) GetLedgersByAccountID(ctx context.Context, accountID int32) ([
 			&i.Type,
 			&i.Amount,
 			&i.Note,
+			&i.Category,
+			&i.IsAdjustment,
+			&i.AdjustedFrom,
+			&i.IsVoided,
+			&i.VoidedAt,
+			&i.Currency,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLedgersByCategory = `-- name: GetLedgersByCategory :many
+SELECT
+    l.id, l.created_at, l.updated_at, l.deleted_at, l.account_id, l.date, l.type, l.amount, l.note, l.category, l.is_adjustment, l.adjusted_from, l.is_voided, l.voided_at,
+    a.currency
+FROM ledgers l
+JOIN accounts a ON l.account_id = a.id
+WHERE l.account_id = $1 AND l.category = $2 AND l.deleted_at IS NULL AND a.deleted_at IS NULL
+ORDER BY l.date DESC, l.updated_at DESC
+`
+
+type GetLedgersByCategoryParams struct {
+	AccountID int32
+	Category  pgtype.Text
+}
+
+type GetLedgersByCategoryRow struct {
+	ID           int32
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
+	AccountID    int32
+	Date         pgtype.Timestamptz
+	Type         string
+	Amount       decimal.Decimal
+	Note         pgtype.Text
+	Category     pgtype.Text
+	IsAdjustment bool
+	AdjustedFrom pgtype.Int4
+	IsVoided     bool
+	VoidedAt     pgtype.Timestamptz
+	Currency     string
+}
+
+func (q *Queries) GetLedgersByCategory(ctx context.Context, arg GetLedgersByCategoryParams) ([]GetLedgersByCategoryRow, error) {
+	rows, err := q.db.Query(ctx, getLedgersByCategory, arg.AccountID, arg.Category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetLedgersByCategoryRow{}
+	for rows.Next() {
+		var i GetLedgersByCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.AccountID,
+			&i.Date,
+			&i.Type,
+			&i.Amount,
+			&i.Note,
+			&i.Category,
 			&i.IsAdjustment,
 			&i.AdjustedFrom,
 			&i.IsVoided,
@@ -226,17 +353,19 @@ SET
     type = CASE WHEN $2::text IS NULL THEN type ELSE $2 END,
     amount = CASE WHEN $3::decimal IS NULL THEN amount ELSE $3 END,
     note = CASE WHEN $4::text IS NULL THEN note ELSE $4 END,
+    category = CASE WHEN $5::text IS NULL THEN category ELSE $5 END,
     updated_at = NOW()
-WHERE id = $5 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
+WHERE id = $6 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, category, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
 type UpdateLedgerParams struct {
-	Date   pgtype.Timestamptz
-	Type   pgtype.Text
-	Amount pgtype.Numeric
-	Note   pgtype.Text
-	ID     int32
+	Date     pgtype.Timestamptz
+	Type     pgtype.Text
+	Amount   pgtype.Numeric
+	Note     pgtype.Text
+	Category pgtype.Text
+	ID       int32
 }
 
 func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) (Ledger, error) {
@@ -245,6 +374,7 @@ func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) (Led
 		arg.Type,
 		arg.Amount,
 		arg.Note,
+		arg.Category,
 		arg.ID,
 	)
 	var i Ledger
@@ -258,6 +388,7 @@ func (q *Queries) UpdateLedger(ctx context.Context, arg UpdateLedgerParams) (Led
 		&i.Type,
 		&i.Amount,
 		&i.Note,
+		&i.Category,
 		&i.IsAdjustment,
 		&i.AdjustedFrom,
 		&i.IsVoided,
@@ -273,7 +404,7 @@ SET
     voided_at = NOW(),
     updated_at = NOW()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, is_adjustment, adjusted_from, is_voided, voided_at
+RETURNING id, created_at, updated_at, deleted_at, account_id, date, type, amount, note, category, is_adjustment, adjusted_from, is_voided, voided_at
 `
 
 func (q *Queries) VoidLedger(ctx context.Context, id int32) (Ledger, error) {
@@ -289,6 +420,7 @@ func (q *Queries) VoidLedger(ctx context.Context, id int32) (Ledger, error) {
 		&i.Type,
 		&i.Amount,
 		&i.Note,
+		&i.Category,
 		&i.IsAdjustment,
 		&i.AdjustedFrom,
 		&i.IsVoided,

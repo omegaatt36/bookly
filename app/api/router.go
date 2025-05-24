@@ -32,6 +32,7 @@ func (s *Server) registerRouters() {
 			RecurringTransactionRepository: repo,
 			ReminderRepository:             repo,
 			BankAccountRepository:          repo,
+			BudgetRepository:               repo,
 		})
 
 		// Register account routes
@@ -58,13 +59,21 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("DELETE /recurring/{id}", bookkeepingX.DeleteRecurringTransaction())
 		v1Router.HandleFunc("GET /recurring/reminders", bookkeepingX.GetReminders())
 		v1Router.HandleFunc("POST /recurring/reminders/{id}/read", bookkeepingX.MarkReminderAsRead())
-		
+
 		// Register bank account routes
 		v1Router.HandleFunc("POST /accounts/{account_id}/bank-account", bookkeepingX.CreateBankAccount())
 		v1Router.HandleFunc("GET /accounts/{account_id}/bank-account", bookkeepingX.GetBankAccountByAccountID())
 		v1Router.HandleFunc("GET /bank-accounts/{id}", bookkeepingX.GetBankAccountByID())
 		v1Router.HandleFunc("PATCH /bank-accounts/{id}", bookkeepingX.UpdateBankAccount())
 		v1Router.HandleFunc("DELETE /bank-accounts/{id}", bookkeepingX.DeleteBankAccount())
+		
+		// Register budget routes
+		v1Router.HandleFunc("POST /budgets", bookkeepingX.CreateBudget())
+		v1Router.HandleFunc("GET /budgets", bookkeepingX.GetBudgets())
+		v1Router.HandleFunc("GET /budgets/{id}", bookkeepingX.GetBudget())
+		v1Router.HandleFunc("PATCH /budgets/{id}", bookkeepingX.UpdateBudget())
+		v1Router.HandleFunc("DELETE /budgets/{id}", bookkeepingX.DeleteBudget())
+		v1Router.HandleFunc("GET /budgets/{id}/summary", bookkeepingX.GetBudgetSummary())
 	}
 	{
 		userOptions := make([]user.Option, 0)

@@ -1,0 +1,45 @@
+{{ define "budget_list.html" }}
+<div class="space-y-4">
+    {{ if .Budgets }}
+        {{ range .Budgets }}
+        <div class="md-card md-card-outlined cursor-pointer hover:shadow-md transition-shadow" 
+             hx-get="/page/budgets/{{ .ID }}" 
+             hx-target="#budget-details" 
+             hx-swap="innerHTML">
+            <div class="md-card-content">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="headline-small">{{ .Name }}</h3>
+                        <p class="body-medium text-text-secondary">{{ .Category }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="body-large font-medium">${{ .Amount }}</p>
+                        <span class="md-chip md-chip-filter {{ if eq .PeriodType "monthly" }}bg-primary-container{{ else }}bg-secondary-container{{ end }}">
+                            {{ if eq .PeriodType "monthly" }}Monthly{{ else }}Yearly{{ end }}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                    <p class="body-small text-text-secondary">
+                        Start: {{ .StartDate }}
+                    </p>
+                    {{ if .IsActive }}
+                        <span class="md-chip bg-success-container text-success">Active</span>
+                    {{ else }}
+                        <span class="md-chip bg-error-container text-error">Inactive</span>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        {{ end }}
+    {{ else }}
+        <div class="md-card md-card-filled">
+            <div class="md-card-content text-center py-8">
+                <span class="material-symbols-outlined text-6xl text-text-secondary mb-4">savings</span>
+                <p class="body-large text-text-secondary">No budgets yet</p>
+                <p class="body-medium text-text-secondary mt-2">Create your first budget to start tracking your spending</p>
+            </div>
+        </div>
+    {{ end }}
+</div>
+{{ end }}

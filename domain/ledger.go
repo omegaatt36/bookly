@@ -26,6 +26,7 @@ type Ledger struct {
 	Currency     string
 	Amount       decimal.Decimal
 	Note         string
+	Category     string
 	IsAdjustment bool
 	AdjustedFrom *int32
 	IsVoided     bool
@@ -39,15 +40,17 @@ type CreateLedgerRequest struct {
 	Type      LedgerType
 	Amount    decimal.Decimal
 	Note      string
+	Category  string
 }
 
 // UpdateLedgerRequest defines the request to update a ledger
 type UpdateLedgerRequest struct {
-	ID     int32
-	Date   *time.Time
-	Type   *LedgerType
-	Amount *decimal.Decimal
-	Note   *string
+	ID       int32
+	Date     *time.Time
+	Type     *LedgerType
+	Amount   *decimal.Decimal
+	Note     *string
+	Category *string
 }
 
 // LedgerRepository represents a ledger repository
