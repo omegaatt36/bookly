@@ -3,7 +3,6 @@ package web
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // parseInt32 converts a string to int32 safely, returning 0 if conversion fails
@@ -25,9 +23,6 @@ func parseInt32(s string) int32 {
 
 	return int32(val)
 }
-
-//go:embed templates/*.html
-var templatesFS embed.FS
 
 // Server represents a web server
 type Server struct {
@@ -56,34 +51,34 @@ func NewServer(options ...Option) *Server {
 }
 
 func (s *Server) initTemplates() {
-	funcMap := template.FuncMap{
-		"now": func() time.Time {
-			return time.Now()
-		},
-		"shorten": func(str string) string {
-			if len(str) > 6 {
-				return str[:6] + "..."
-			}
-			return str
-		},
-		"dollar": func(_, amount string) string {
-			return fmt.Sprintf("$%s", amount)
-		},
-		"seq": func(start, end int) []int {
-			seq := make([]int, end-start+1)
-			for i := range seq {
-				seq[i] = start + i
-			}
-			return seq
-		},
-	}
+	// funcMap := template.FuncMap{
+	// 	"now": func() time.Time {
+	// 		return time.Now()
+	// 	},
+	// 	"shorten": func(str string) string {
+	// 		if len(str) > 6 {
+	// 			return str[:6] + "..."
+	// 		}
+	// 		return str
+	// 	},
+	// 	"dollar": func(_, amount string) string {
+	// 		return fmt.Sprintf("$%s", amount)
+	// 	},
+	// 	"seq": func(start, end int) []int {
+	// 		seq := make([]int, end-start+1)
+	// 		for i := range seq {
+	// 			seq[i] = start + i
+	// 		}
+	// 		return seq
+	// 	},
+	// }
 
-	templates, err := template.New("templates").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
-	if err != nil {
-		slog.Error("failed to parse templates", slog.String("error", err.Error()))
-	}
+	// templates, err := template.New("templates").Funcs(funcMap).ParseFS(templatesFS, "templates/*.html")
+	// if err != nil {
+	// 	slog.Error("failed to parse templates", slog.String("error", err.Error()))
+	// }
 
-	s.templates = templates
+	// s.templates = templates
 }
 
 // Run starts the server.
