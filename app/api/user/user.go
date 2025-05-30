@@ -3,41 +3,30 @@ package user
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-type jsonUser struct {
-	ID        int32  `json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Name      string `json:"name"`
-	Nickname  string `json:"nickname"`
-	Disabled  bool   `json:"disabled"`
-}
-
-func (r *jsonUser) fromDomain(u *domain.User) {
-	r.ID = u.ID
-	r.CreatedAt = u.CreatedAt.Format(time.RFC3339)
-	r.UpdatedAt = u.UpdatedAt.Format(time.RFC3339)
-	r.Name = u.Name
-	r.Nickname = u.Nickname
-	r.Disabled = u.Disabled
+func convertUserFromDomain(u *domain.User) datatype.User {
+	return datatype.User{
+		ID:        u.ID,
+		CreatedAt: u.CreatedAt.Format(datatype.TimeFormat),
+		UpdatedAt: u.UpdatedAt.Format(datatype.TimeFormat),
+		Name:      u.Name,
+		Nickname:  u.Nickname,
+		Disabled:  u.Disabled,
+	}
 }
 
 // CreateUser handles the creation of a new user.
 func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type request struct {
-			Name     string `json:"name"`
-			Nickname string `json:"nickname"`
-		}
 
-		var req request
-		engine.Chain(r, w, func(_ *engine.Context, req request) (*engine.Empty, error) {
+		var req datatype.CreateUserRequest
+		engine.Chain(r, w, func(_ *engine.Context, req datatype.CreateUserRequest) (*engine.Empty, error) {
 			// Allow user creation without auth - this is typically for signup
 			// In a real system with admin roles, we would check if the authenticated user has admin privileges
 			if req.Name == "" {
@@ -59,7 +48,7 @@ func (x *Controller) CreateUser() func(w http.ResponseWriter, r *http.Request) {
 // GetAllUsers retrieves all users from the system.
 func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonUser, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]datatype.User, error) {
 			// Admin validation would go here in a real system
 			// For now, check if the user is authenticated
 			if ctx.GetUserID() == 0 {
@@ -70,9 +59,9 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 				return nil, err
 			}
 
-			jsonUsers := make([]jsonUser, len(users))
+			jsonUsers := make([]datatype.User, len(users))
 			for index, u := range users {
-				jsonUsers[index].fromDomain(u)
+				jsonUsers[index] = convertUserFromDomain(u)
 			}
 
 			return jsonUsers, nil
@@ -80,11 +69,10 @@ func (x *Controller) GetAllUsers() func(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// GetUserByID retrieves a user by their ID.
-func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) {
+func (x *Controller) GetUserSelf() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonUser, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.User, error) {
 			authenticatedUserID := ctx.GetUserID()
 			if authenticatedUserID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -100,8 +88,34 @@ func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) 
 				return nil, err
 			}
 
-			var jsonUser jsonUser
-			jsonUser.fromDomain(u)
+			jsonUser := convertUserFromDomain(u)
+
+			return &jsonUser, nil
+		}).Param("id", &id).Call(nil).ResponseJSON()
+	}
+}
+
+// GetUserByID retrieves a user by their ID.
+func (x *Controller) GetUserByID() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var id int32
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.User, error) {
+			authenticatedUserID := ctx.GetUserID()
+			if authenticatedUserID == 0 {
+				return nil, app.Unauthorized(errors.New("user not authenticated"))
+			}
+
+			// User can only retrieve their own information unless they're an admin
+			// In a real system, we would check admin role here
+			if id != authenticatedUserID {
+				return nil, app.Forbidden(errors.New("access denied: cannot view other user's information"))
+			}
+			u, err := x.service.GetUserByID(id)
+			if err != nil {
+				return nil, err
+			}
+
+			jsonUser := convertUserFromDomain(u)
 
 			return &jsonUser, nil
 		}).Param("id", &id).Call(nil).ResponseJSON()

@@ -75,6 +75,7 @@ func (s *Server) registerRouters() {
 		userX := user.NewController(repo, userOptions...)
 
 		v1Router.HandleFunc("GET /users", userX.GetAllUsers())
+		v1Router.HandleFunc("GET /users/me", userX.GetUserSelf())
 		v1Router.HandleFunc("GET /users/{id}", userX.GetUserByID())
 		v1Router.HandleFunc("PATCH /users/{id}", userX.UpdateUser())
 		v1Router.HandleFunc("DELETE /users/{id}", userX.DeactivateUserByID())

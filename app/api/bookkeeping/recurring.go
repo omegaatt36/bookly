@@ -11,69 +11,41 @@ import (
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
-
-// RecurringTransactionResponse is the response for a recurring transaction
-type RecurringTransactionResponse struct {
-	ID           int32           `json:"id"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
-	Name         string          `json:"name"`
-	Type         string          `json:"type"`
-	Amount       decimal.Decimal `json:"amount"`
-	Note         string          `json:"note"`
-	StartDate    time.Time       `json:"start_date"`
-	EndDate      *time.Time      `json:"end_date,omitempty"`
-	RecurType    string          `json:"recur_type"`
-	Status       string          `json:"status"`
-	Frequency    int             `json:"frequency"`
-	DayOfWeek    *int            `json:"day_of_week,omitempty"`
-	DayOfMonth   *int            `json:"day_of_month,omitempty"`
-	MonthOfYear  *int            `json:"month_of_year,omitempty"`
-	LastExecuted *time.Time      `json:"last_executed,omitempty"`
-	NextDue      time.Time       `json:"next_due"`
-}
-
-// ReminderResponse is the response for a reminder
-type ReminderResponse struct {
-	ID                     int32      `json:"id"`
-	CreatedAt              time.Time  `json:"created_at"`
-	RecurringTransactionID int32      `json:"recurring_transaction_id"`
-	ReminderDate           time.Time  `json:"reminder_date"`
-	IsRead                 bool       `json:"is_read"`
-	ReadAt                 *time.Time `json:"read_at,omitempty"`
-}
 
 // CreateRecurringTransaction creates a new recurring transaction
 func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type request struct {
-			AccountID   int32           `json:"account_id"`
-			Name        string          `json:"name"`
-			Type        string          `json:"type"`
-			Amount      decimal.Decimal `json:"amount"`
-			Note        string          `json:"note"`
-			StartDate   time.Time       `json:"start_date"`
-			EndDate     *time.Time      `json:"end_date,omitempty"`
-			RecurType   string          `json:"recur_type"`
-			Frequency   int             `json:"frequency"`
-			DayOfWeek   *int            `json:"day_of_week,omitempty"`
-			DayOfMonth  *int            `json:"day_of_month,omitempty"`
-			MonthOfYear *int            `json:"month_of_year,omitempty"`
-		}
-
-		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
+		var req datatype.CreateRecurringTransactionRequest
+		engine.Chain(r, w, func(ctx *engine.Context, req datatype.CreateRecurringTransactionRequest) (*datatype.RecurringTransaction, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			if req.Name == "" || req.AccountID == 0 {
-				return nil, app.ParamError(errors.New("name and account_id are required"))
+			// Verify account ownership
+			account, err := x.service.GetAccountByID(req.AccountID)
+			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					return nil, app.NotFoundError()
+				}
+				slog.Error("Failed to get account", "account_id", req.AccountID, "error", err)
+				return nil, err
+			}
+			if account.UserID != userID {
+				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
 			}
 
-			if req.Amount.LessThanOrEqual(decimal.Zero) {
+			if req.Name == "" {
+				return nil, app.ParamError(errors.New("name is required"))
+			}
+
+			amount, err := decimal.NewFromString(req.Amount)
+			if err != nil {
+				return nil, app.ParamError(errors.New("invalid amount format"))
+			}
+			if amount.LessThanOrEqual(decimal.Zero) {
 				return nil, app.ParamError(errors.New("amount must be greater than zero"))
 			}
 
@@ -87,15 +59,29 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 				return nil, app.ParamError(err)
 			}
 
+			startDate, err := time.Parse(datatype.TimeFormat, req.StartDate)
+			if err != nil {
+				return nil, app.ParamError(errors.New("invalid start_date format"))
+			}
+
+			var endDate *time.Time
+			if req.EndDate != nil && *req.EndDate != "" {
+				t, err := time.Parse(datatype.TimeFormat, *req.EndDate)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid end_date format"))
+				}
+				endDate = &t
+			}
+
 			serviceReq := domain.CreateRecurringTransactionRequest{
 				UserID:      userID,
 				AccountID:   req.AccountID,
 				Name:        req.Name,
 				Type:        ledgerType,
-				Amount:      req.Amount,
+				Amount:      amount,
 				Note:        req.Note,
-				StartDate:   req.StartDate,
-				EndDate:     req.EndDate,
+				StartDate:   startDate,
+				EndDate:     endDate,
 				RecurType:   recurType,
 				Frequency:   req.Frequency,
 				DayOfWeek:   req.DayOfWeek,
@@ -105,11 +91,11 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 
 			transaction, err := x.service.CreateRecurringTransaction(r.Context(), serviceReq)
 			if err != nil {
-				slog.Error("Failed to create recurring transaction", "error", err)
+				slog.Error("Failed to create recurring transaction", "error", err, "request", serviceReq)
 				return nil, err
 			}
 
-			response := mapToRecurringTransactionResponse(transaction)
+			response := convertRecurringTransactionFromDomain(transaction)
 			return &response, nil
 		}).BindJSON(&req).Call(req).ResponseJSON()
 	}
@@ -118,7 +104,7 @@ func (x *Controller) CreateRecurringTransaction() func(w http.ResponseWriter, r 
 // GetRecurringTransactions gets all recurring transactions for the current user
 func (x *Controller) GetRecurringTransactions() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]RecurringTransactionResponse, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]datatype.RecurringTransaction, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -126,13 +112,13 @@ func (x *Controller) GetRecurringTransactions() func(w http.ResponseWriter, r *h
 
 			transactions, err := x.service.GetRecurringTransactionsByUserID(r.Context(), userID)
 			if err != nil {
-				slog.Error("Failed to get recurring transactions", "error", err)
+				slog.Error("Failed to get recurring transactions", "user_id", userID, "error", err)
 				return nil, err
 			}
 
-			response := make([]RecurringTransactionResponse, len(transactions))
+			response := make([]datatype.RecurringTransaction, len(transactions))
 			for i, transaction := range transactions {
-				response[i] = mapToRecurringTransactionResponse(transaction)
+				response[i] = convertRecurringTransactionFromDomain(transaction)
 			}
 
 			return response, nil
@@ -145,7 +131,7 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
 
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*RecurringTransactionResponse, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.RecurringTransaction, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -153,15 +139,20 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 
 			transaction, err := x.service.GetRecurringTransaction(r.Context(), id)
 			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					return nil, app.NotFoundError()
+				}
 				slog.Error("Failed to get recurring transaction", "id", id, "error", err)
 				return nil, err
 			}
 
 			if transaction.UserID != userID {
-				return nil, app.NotFoundError()
+				// This case should ideally not happen if service layer correctly filters by user ID or if ID is globally unique and checked
+				// However, as a safeguard:
+				return nil, app.Forbidden(errors.New("access denied: recurring transaction does not belong to user"))
 			}
 
-			response := mapToRecurringTransactionResponse(transaction)
+			response := convertRecurringTransactionFromDomain(transaction)
 			return &response, nil
 		}).Param("id", &id).Call(nil).ResponseJSON()
 	}
@@ -170,89 +161,93 @@ func (x *Controller) GetRecurringTransaction() func(w http.ResponseWriter, r *ht
 // UpdateRecurringTransaction updates a recurring transaction
 func (x *Controller) UpdateRecurringTransaction() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type request struct {
-			id          int32
-			Name        *string          `json:"name,omitempty"`
-			Type        *string          `json:"type,omitempty"`
-			Amount      *decimal.Decimal `json:"amount,omitempty"`
-			Note        *string          `json:"note,omitempty"`
-			EndDate     *time.Time       `json:"end_date,omitempty"`
-			RecurType   *string          `json:"recur_type,omitempty"`
-			Status      *string          `json:"status,omitempty"`
-			Frequency   *int             `json:"frequency,omitempty"`
-			DayOfWeek   *int             `json:"day_of_week,omitempty"`
-			DayOfMonth  *int             `json:"day_of_month,omitempty"`
-			MonthOfYear *int             `json:"month_of_year,omitempty"`
+		type requestPayload struct {
+			datatype.UpdateRecurringTransactionRequest
 		}
+		var payload requestPayload
+		var recurringTransactionID int32
 
-		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*RecurringTransactionResponse, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, p requestPayload) (*datatype.RecurringTransaction, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
 			}
 
-			existingTransaction, err := x.service.GetRecurringTransaction(r.Context(), req.id)
+			existingTransaction, err := x.service.GetRecurringTransaction(r.Context(), recurringTransactionID)
 			if err != nil {
-				slog.Error("Failed to get recurring transaction", "id", req.id, "error", err)
+				if errors.Is(err, domain.ErrNotFound) {
+					return nil, app.NotFoundError()
+				}
+				slog.Error("Failed to get recurring transaction for update", "id", recurringTransactionID, "error", err)
 				return nil, err
 			}
 
 			if existingTransaction.UserID != userID {
-				return nil, app.NotFoundError()
-			}
-
-			var transactionType *domain.LedgerType
-			if req.Type != nil {
-				t, err := domain.ParseLedgerType(*req.Type)
-				if err != nil {
-					return nil, app.ParamError(err)
-				}
-				transactionType = &t
-			}
-
-			var recurType *domain.RecurrenceType
-			if req.RecurType != nil {
-				rt, err := domain.ParseRecurrenceType(*req.RecurType)
-				if err != nil {
-					return nil, app.ParamError(err)
-				}
-				recurType = &rt
-			}
-
-			var status *domain.RecurrenceStatus
-			if req.Status != nil {
-				s, err := domain.ParseRecurrenceStatus(*req.Status)
-				if err != nil {
-					return nil, app.ParamError(err)
-				}
-				status = &s
+				return nil, app.Forbidden(errors.New("access denied: recurring transaction does not belong to user"))
 			}
 
 			serviceReq := domain.UpdateRecurringTransactionRequest{
-				ID:          req.id,
-				Name:        req.Name,
-				Type:        transactionType,
-				Amount:      req.Amount,
-				Note:        req.Note,
-				EndDate:     req.EndDate,
-				RecurType:   recurType,
-				Status:      status,
-				Frequency:   req.Frequency,
-				DayOfWeek:   req.DayOfWeek,
-				DayOfMonth:  req.DayOfMonth,
-				MonthOfYear: req.MonthOfYear,
+				ID:          recurringTransactionID,
+				Name:        p.Name,
+				Note:        p.Note,
+				Frequency:   p.Frequency,
+				DayOfWeek:   p.DayOfWeek,
+				DayOfMonth:  p.DayOfMonth,
+				MonthOfYear: p.MonthOfYear,
+			}
+
+			if p.Type != nil && *p.Type != "" {
+				t, err := domain.ParseLedgerType(*p.Type)
+				if err != nil {
+					return nil, app.ParamError(err)
+				}
+				serviceReq.Type = &t
+			}
+
+			if p.Amount != nil && *p.Amount != "" {
+				amount, err := decimal.NewFromString(*p.Amount)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid amount format"))
+				}
+				if amount.LessThanOrEqual(decimal.Zero) {
+					return nil, app.ParamError(errors.New("amount must be greater than zero"))
+				}
+				serviceReq.Amount = &amount
+			}
+
+			if p.EndDate != nil && *p.EndDate != "" {
+				t, err := time.Parse(datatype.TimeFormat, *p.EndDate)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid end_date format"))
+				}
+				serviceReq.EndDate = &t
+			}
+
+			if p.RecurType != nil && *p.RecurType != "" {
+				rt, err := domain.ParseRecurrenceType(*p.RecurType)
+				if err != nil {
+					return nil, app.ParamError(err)
+				}
+				serviceReq.RecurType = &rt
+			}
+
+			if p.Status != nil && *p.Status != "" {
+				s, err := domain.ParseRecurrenceStatus(*p.Status)
+				if err != nil {
+					return nil, app.ParamError(err)
+				}
+				serviceReq.Status = &s
 			}
 
 			transaction, err := x.service.UpdateRecurringTransaction(r.Context(), serviceReq)
 			if err != nil {
-				slog.Error("Failed to update recurring transaction", "id", req.id, "error", err)
+				slog.Error("Failed to update recurring transaction", "id", recurringTransactionID, "error", err, "request", serviceReq)
 				return nil, err
 			}
 
-			response := mapToRecurringTransactionResponse(transaction)
+			response := convertRecurringTransactionFromDomain(transaction)
 			return &response, nil
-		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
+		}).Param("id", &recurringTransactionID).BindJSON(&payload).Call(payload).ResponseJSON()
 	}
 }
 
@@ -268,12 +263,15 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 
 			existingTransaction, err := x.service.GetRecurringTransaction(r.Context(), id)
 			if err != nil {
-				slog.Error("Failed to get recurring transaction", "id", id, "error", err)
+				if errors.Is(err, domain.ErrNotFound) {
+					return nil, app.NotFoundError()
+				}
+				slog.Error("Failed to get recurring transaction for delete", "id", id, "error", err)
 				return nil, err
 			}
 
 			if existingTransaction.UserID != userID {
-				return nil, app.NotFoundError()
+				return nil, app.Forbidden(errors.New("access denied: recurring transaction does not belong to user"))
 			}
 
 			if err := x.service.DeleteRecurringTransaction(r.Context(), id); err != nil {
@@ -289,7 +287,7 @@ func (x *Controller) DeleteRecurringTransaction() func(w http.ResponseWriter, r 
 // GetReminders gets all active reminders for the current user
 func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]ReminderResponse, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]datatype.Reminder, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -297,13 +295,13 @@ func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request)
 
 			reminders, err := x.service.GetActiveRemindersByUserID(r.Context(), userID)
 			if err != nil {
-				slog.Error("Failed to get reminders", "error", err)
+				slog.Error("Failed to get reminders", "user_id", userID, "error", err)
 				return nil, err
 			}
 
-			response := make([]ReminderResponse, len(reminders))
+			response := make([]datatype.Reminder, len(reminders))
 			for i, reminder := range reminders {
-				response[i] = mapToReminderResponse(reminder)
+				response[i] = convertReminderFromDomain(reminder)
 			}
 
 			return response, nil
@@ -315,7 +313,7 @@ func (x *Controller) GetReminders() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*ReminderResponse, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.Reminder, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -323,14 +321,28 @@ func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Re
 
 			reminder, err := x.service.GetReminderByID(r.Context(), id)
 			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					slog.Error("Reminder not found", "id", id)
+					return nil, app.NotFoundError()
+				}
 				slog.Error("Failed to get reminder", "id", id, "error", err)
 				return nil, err
 			}
 
+			// Verify ownership by checking the associated recurring transaction's user ID
 			transaction, err := x.service.GetRecurringTransaction(r.Context(), reminder.RecurringTransactionID)
 			if err != nil {
-				slog.Error("Failed to get transaction for reminder", "id", reminder.RecurringTransactionID, "error", err)
-				return nil, err
+				// If the transaction is not found, it's an internal data integrity issue or the transaction was deleted.
+				// Log it and return an error.
+				slog.Error("Failed to get recurring transaction for reminder",
+					"reminder_id", id,
+					"recurring_transaction_id", reminder.RecurringTransactionID,
+					"error", err)
+				if errors.Is(err, domain.ErrNotFound) {
+					slog.Error("Recurring transaction not found for reminder", "reminder_id", id)
+					return nil, app.NotFoundError()
+				}
+				return nil, err // Or a more generic server error
 			}
 
 			if transaction.UserID != userID {
@@ -338,49 +350,60 @@ func (x *Controller) MarkReminderAsRead() func(w http.ResponseWriter, r *http.Re
 			}
 
 			// Mark reminder as read
-			reminder, err = x.service.MarkReminderAsRead(r.Context(), id)
+			updatedReminder, err := x.service.MarkReminderAsRead(r.Context(), id)
 			if err != nil {
 				slog.Error("Failed to mark reminder as read", "id", id, "error", err)
 				return nil, err
 			}
 
-			response := mapToReminderResponse(reminder)
+			response := convertReminderFromDomain(updatedReminder)
 			return &response, nil
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
 	}
 }
 
-// DTO
-func mapToRecurringTransactionResponse(t *domain.RecurringTransaction) RecurringTransactionResponse {
-	return RecurringTransactionResponse{
-		ID:           t.ID,
-		CreatedAt:    t.CreatedAt,
-		UpdatedAt:    t.UpdatedAt,
-		Name:         t.Name,
-		Type:         string(t.Type),
-		Amount:       t.Amount,
-		Note:         t.Note,
-		StartDate:    t.StartDate,
-		EndDate:      t.EndDate,
-		RecurType:    string(t.RecurrenceType),
-		Status:       string(t.Status),
-		Frequency:    t.Frequency,
-		DayOfWeek:    t.DayOfWeek,
-		DayOfMonth:   t.DayOfMonth,
-		MonthOfYear:  t.MonthOfYear,
-		LastExecuted: t.LastExecuted,
-		NextDue:      t.NextDue,
+func convertRecurringTransactionFromDomain(t *domain.RecurringTransaction) datatype.RecurringTransaction {
+	resp := datatype.RecurringTransaction{
+		ID:             t.ID,
+		CreatedAt:      t.CreatedAt.Format(datatype.TimeFormat),
+		UpdatedAt:      t.UpdatedAt.Format(datatype.TimeFormat),
+		UserID:         t.UserID,
+		AccountID:      t.AccountID,
+		Name:           t.Name,
+		Type:           string(t.Type),
+		Amount:         t.Amount.String(),
+		Note:           t.Note,
+		StartDate:      t.StartDate.Format(datatype.TimeFormat),
+		RecurrenceType: string(t.RecurrenceType),
+		Status:         string(t.Status),
+		Frequency:      t.Frequency,
+		DayOfWeek:      t.DayOfWeek,
+		DayOfMonth:     t.DayOfMonth,
+		MonthOfYear:    t.MonthOfYear,
+		NextDue:        t.NextDue.Format(datatype.TimeFormat),
 	}
+	if t.EndDate != nil {
+		endDateStr := t.EndDate.Format(datatype.TimeFormat)
+		resp.EndDate = &endDateStr
+	}
+	if t.LastExecuted != nil {
+		lastExecutedStr := t.LastExecuted.Format(datatype.TimeFormat)
+		resp.LastExecuted = &lastExecutedStr
+	}
+	return resp
 }
 
-// DTO
-func mapToReminderResponse(r *domain.Reminder) ReminderResponse {
-	return ReminderResponse{
+func convertReminderFromDomain(r *domain.Reminder) datatype.Reminder {
+	resp := datatype.Reminder{
 		ID:                     r.ID,
-		CreatedAt:              r.CreatedAt,
+		CreatedAt:              r.CreatedAt.Format(datatype.TimeFormat),
 		RecurringTransactionID: r.RecurringTransactionID,
-		ReminderDate:           r.ReminderDate,
+		ReminderDate:           r.ReminderDate.Format(datatype.TimeFormat),
 		IsRead:                 r.IsRead,
-		ReadAt:                 r.ReadAt,
 	}
+	if r.ReadAt != nil {
+		readAtStr := r.ReadAt.Format(datatype.TimeFormat)
+		resp.ReadAt = &readAtStr
+	}
+	return resp
 }

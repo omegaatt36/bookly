@@ -10,36 +10,30 @@ import (
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-type jsonLedger struct {
-	ID           int32           `json:"id"`
-	AccountID    int32           `json:"account_id"`
-	Date         time.Time       `json:"date"`
-	Type         string          `json:"type"`
-	Currency     string          `json:"currency"`
-	Amount       decimal.Decimal `json:"amount"`
-	Note         string          `json:"note"`
-	Adjustable   bool            `json:"adjustable"`
-	IsAdjustment bool            `json:"is_adjustment"`
-	AdjustedFrom *int32          `json:"adjusted_from"`
-	IsVoided     bool            `json:"is_voided"`
-	VoidedAt     *time.Time      `json:"voided_at"`
-}
-
-func (l *jsonLedger) fromDomain(ledger *domain.Ledger) {
-	l.ID = ledger.ID
-	l.AccountID = ledger.AccountID
-	l.Date = ledger.Date
-	l.Type = ledger.Type.String()
-	l.Currency = ledger.Currency
-	l.Amount = ledger.Amount
-	l.Note = ledger.Note
-	l.Adjustable = time.Since(ledger.CreatedAt) <= domain.EditableDuration
-	l.IsAdjustment = ledger.IsAdjustment
-	l.AdjustedFrom = ledger.AdjustedFrom
-	l.IsVoided = ledger.IsVoided
-	l.VoidedAt = ledger.VoidedAt
+func convertLedgerFromDomain(ledger *domain.Ledger) datatype.Ledger {
+	return datatype.Ledger{
+		ID:           ledger.ID,
+		AccountID:    ledger.AccountID,
+		Date:         ledger.Date.Format(datatype.TimeFormat),
+		Type:         ledger.Type.String(),
+		Currency:     ledger.Currency,
+		Amount:       ledger.Amount.String(),
+		Note:         ledger.Note,
+		Adjustable:   time.Since(ledger.CreatedAt) <= domain.EditableDuration,
+		IsAdjustment: ledger.IsAdjustment,
+		AdjustedFrom: ledger.AdjustedFrom,
+		IsVoided:     ledger.IsVoided,
+		VoidedAt: func() *string {
+			if ledger.VoidedAt != nil {
+				t := ledger.VoidedAt.Format(datatype.TimeFormat)
+				return &t
+			}
+			return nil
+		}(),
+	}
 }
 
 // CreateLedger handles the creation of a new ledger entry
@@ -47,10 +41,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
 			accountID int32
-			Date      time.Time       `json:"date"`
-			Type      string          `json:"type"`
-			Amount    decimal.Decimal `json:"amount"`
-			Note      string          `json:"note"`
+			datatype.CreateLedgerRequest
 		}
 
 		var req request
@@ -74,19 +65,24 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 				return nil, err
 			}
 
-			if req.Date.IsZero() {
-				req.Date = time.Now()
+			date := time.Now()
+			if req.Date != "" {
+				date, err = time.Parse(datatype.TimeFormat, req.Date)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid date format"))
+				}
 			}
 
-			if req.Amount.IsZero() {
+			amount, err := decimal.NewFromString(req.Amount)
+			if err != nil {
 				return nil, app.ParamError(errors.New("amount is required"))
 			}
 
 			_, err = x.service.CreateLedger(domain.CreateLedgerRequest{
 				AccountID: req.accountID,
-				Date:      req.Date,
+				Date:      date,
 				Type:      ledgerType,
-				Amount:    req.Amount,
+				Amount:    amount,
 				Note:      req.Note,
 			})
 
@@ -99,7 +95,7 @@ func (x *Controller) CreateLedger() func(w http.ResponseWriter, r *http.Request)
 func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var accountID int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonLedger, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]datatype.Ledger, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -119,9 +115,9 @@ func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.R
 				return nil, err
 			}
 
-			jsonLedgers := make([]jsonLedger, len(ledgers))
+			jsonLedgers := make([]datatype.Ledger, len(ledgers))
 			for index, ledger := range ledgers {
-				jsonLedgers[index].fromDomain(ledger)
+				jsonLedgers[index] = convertLedgerFromDomain(ledger)
 			}
 
 			return jsonLedgers, nil
@@ -133,7 +129,7 @@ func (x *Controller) GetLedgersByAccount() func(w http.ResponseWriter, r *http.R
 func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonLedger, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.Ledger, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -153,8 +149,7 @@ func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request
 				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
 			}
 
-			var jsonLedger jsonLedger
-			jsonLedger.fromDomain(ledger)
+			jsonLedger := convertLedgerFromDomain(ledger)
 
 			return &jsonLedger, nil
 		}).Param("id", &id).Call(&engine.Empty{}).ResponseJSON()
@@ -165,11 +160,8 @@ func (x *Controller) GetLedgerByID() func(w http.ResponseWriter, r *http.Request
 func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id     int32
-			Date   *time.Time       `json:"date"`
-			Type   *string          `json:"type"`
-			Amount *decimal.Decimal `json:"amount"`
-			Note   *string          `json:"note"`
+			id int32
+			datatype.UpdateLedgerRequest
 		}
 
 		var req request
@@ -194,22 +186,36 @@ func (x *Controller) UpdateLedger() func(w http.ResponseWriter, r *http.Request)
 				return nil, app.Forbidden(errors.New("access denied: ledger does not belong to user"))
 			}
 
-			var ledgerType *domain.LedgerType
+			updateLedgerReq := domain.UpdateLedgerRequest{
+				ID:   req.id,
+				Note: req.Note,
+			}
+
 			if req.Type != nil {
 				t, err := domain.ParseLedgerType(*req.Type)
 				if err != nil {
 					return nil, err
 				}
-				ledgerType = &t
+				updateLedgerReq.Type = &t
 			}
 
-			return nil, x.service.UpdateLedger(domain.UpdateLedgerRequest{
-				ID:     req.id,
-				Date:   req.Date,
-				Type:   ledgerType,
-				Amount: req.Amount,
-				Note:   req.Note,
-			})
+			if req.Date != nil {
+				date, err := time.Parse(datatype.TimeFormat, *req.Date)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid date format"))
+				}
+				updateLedgerReq.Date = &date
+			}
+
+			if req.Amount != nil {
+				a, err := decimal.NewFromString(*req.Amount)
+				if err != nil {
+					return nil, app.ParamError(errors.New("amount is required"))
+				}
+				updateLedgerReq.Amount = &a
+			}
+
+			return nil, x.service.UpdateLedger(updateLedgerReq)
 		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()
 	}
 }
@@ -248,12 +254,8 @@ func (x *Controller) VoidLedger() func(w http.ResponseWriter, r *http.Request) {
 func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id        int32
-			AccountID int32           `json:"account_id"`
-			Date      time.Time       `json:"date"`
-			Type      string          `json:"type"`
-			Amount    decimal.Decimal `json:"amount"`
-			Note      string          `json:"note"`
+			id int32
+			datatype.CreateLedgerRequest
 		}
 
 		var req request
@@ -294,15 +296,24 @@ func (x *Controller) AdjustLedger() func(w http.ResponseWriter, r *http.Request)
 				return nil, err
 			}
 
-			if req.Amount.IsZero() {
+			date := time.Now()
+			if req.Date != "" {
+				date, err = time.Parse(datatype.TimeFormat, req.Date)
+				if err != nil {
+					return nil, app.ParamError(errors.New("invalid date format"))
+				}
+			}
+
+			amount, err := decimal.NewFromString(req.Amount)
+			if err != nil {
 				return nil, app.ParamError(errors.New("amount is required"))
 			}
 
 			return nil, x.service.AdjustLedger(req.id, domain.CreateLedgerRequest{
 				AccountID: req.AccountID,
-				Date:      req.Date,
+				Date:      date,
 				Type:      ledgerType,
-				Amount:    req.Amount,
+				Amount:    amount,
 				Note:      req.Note,
 			})
 		}).Param("id", &req.id).BindJSON(&req).Call(req).ResponseJSON()

@@ -19,6 +19,7 @@ import (
 	"github.com/omegaatt36/bookly/persistence/database"
 	"github.com/omegaatt36/bookly/persistence/repository" // Assuming SQLCRepository is here
 	"github.com/omegaatt36/bookly/persistence/sqlc"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
 type testRecurringSuite struct {
@@ -140,33 +141,37 @@ func (s *testRecurringSuite) createSeedRecurringTransaction(accountID int32,
 
 // Define response structs matching the expected {"code": 0, "data": ...} structure
 type recurringSingleResponse struct {
-	Code int                                      `json:"code"`
-	Data bookkeeping.RecurringTransactionResponse `json:"data"`
+	Code int                           `json:"code"`
+	Data datatype.RecurringTransaction `json:"data"`
 }
 
 type recurringListResponse struct {
-	Code int                                        `json:"code"`
-	Data []bookkeeping.RecurringTransactionResponse `json:"data"`
+	Code int                             `json:"code"`
+	Data []datatype.RecurringTransaction `json:"data"`
 }
 
 type reminderListResponse struct {
-	Code int                            `json:"code"`
-	Data []bookkeeping.ReminderResponse `json:"data"`
+	Code int                 `json:"code"`
+	Data []datatype.Reminder `json:"data"`
 }
 
 type reminderSingleResponse struct {
-	Code int                          `json:"code"`
-	Data bookkeeping.ReminderResponse `json:"data"`
+	Code int               `json:"code"`
+	Data datatype.Reminder `json:"data"`
 }
 
 type emptyResponse struct {
-	Code int `json:"code"`
-	Data any `json:"data"`
+	Code    int    `json:"code"`
+	Data    any    `json:"data,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 func (s *testRecurringSuite) TestCreateRecurringTransaction() {
 	// Ensure the date is in RFC3339 format and includes optional fields if needed
 	now := time.Now()
+	// Use datatype.TimeFormat for date formatting
+	startDateStr := now.Format(datatype.TimeFormat)
+
 	reqBody := fmt.Appendf(nil, `{
 		"account_id": %d,
 		"name": "Monthly Income",
@@ -177,7 +182,7 @@ func (s *testRecurringSuite) TestCreateRecurringTransaction() {
 		"recur_type": "monthly",
 		"frequency": 1,
 		"day_of_month": 1
-	}`, s.accountID, now.Format(time.RFC3339))
+	}`, s.accountID, startDateStr)
 
 	req := httptest.NewRequest(http.MethodPost, "/recurring", bytes.NewBuffer(reqBody))
 	w := httptest.NewRecorder()
@@ -193,11 +198,12 @@ func (s *testRecurringSuite) TestCreateRecurringTransaction() {
 
 	s.Equal("Monthly Income", resp.Data.Name)
 	s.Equal("income", resp.Data.Type)
-	s.Equal(decimal.NewFromFloat(1000.00).String(), resp.Data.Amount.String())
-	s.Equal("monthly", resp.Data.RecurType)
+	s.Equal(decimal.NewFromFloat(1000.00).String(), resp.Data.Amount) // Amount is now a string
+	s.Equal("monthly", resp.Data.RecurrenceType)                       // Field name changed
 	s.Equal(1, resp.Data.Frequency)
 	s.NotNil(resp.Data.DayOfMonth) // DayOfMonth should not be nil if set in request
 	s.Equal(1, *resp.Data.DayOfMonth)
+	s.Equal(startDateStr, resp.Data.StartDate)
 }
 
 func (s *testRecurringSuite) TestGetRecurringTransactions() {
@@ -268,7 +274,7 @@ func (s *testRecurringSuite) TestUpdateRecurringTransaction() {
 	s.Equal(0, resp.Code) // Verify the code field
 
 	s.Equal("Updated Daily Expense", resp.Data.Name)
-	s.Equal(decimal.NewFromFloat(15.00).String(), resp.Data.Amount.String())
+	s.Equal(decimal.NewFromFloat(15.00).String(), resp.Data.Amount) // Amount is now a string
 	s.Equal("paused", resp.Data.Status)
 }
 
@@ -320,7 +326,7 @@ func (s *testRecurringSuite) TestGetReminders() {
 
 	// Manually create a reminder that is due (in a real scenario, this would be done by a scheduler)
 	// Ensure reminder date is also truncated
-	reminderDate := now.Add(-time.Minute).Truncate(time.Second)
+	reminderDate := now.Add(-time.Minute).Truncate(time.Second) // Use Truncate(time.Second) for consistency with API
 	reminder, err := s.repo.CreateReminder(s.T().Context(), transaction.ID, reminderDate) // Reminder is due now
 	s.NoError(err)
 	s.NotNil(reminder)
@@ -342,6 +348,8 @@ func (s *testRecurringSuite) TestGetReminders() {
 	s.Equal(reminder.ID, resp.Data[0].ID)
 	s.Equal(transaction.ID, resp.Data[0].RecurringTransactionID)
 	s.False(resp.Data[0].IsRead)
+	// Compare formatted time string
+	s.Equal(reminderDate.Format(datatype.TimeFormat), resp.Data[0].ReminderDate)
 }
 
 func (s *testRecurringSuite) TestMarkReminderAsRead() {
@@ -361,7 +369,7 @@ func (s *testRecurringSuite) TestMarkReminderAsRead() {
 	s.NoError(err)
 	s.NotNil(transaction)
 
-	reminderDate := now.Add(-time.Minute).Truncate(time.Second)
+	reminderDate := now.Add(-time.Minute).Truncate(time.Second) // Use Truncate(time.Second) for consistency
 	reminder, err := s.repo.CreateReminder(s.T().Context(), transaction.ID, reminderDate)
 	s.NoError(err)
 	s.NotNil(reminder)
@@ -381,10 +389,14 @@ func (s *testRecurringSuite) TestMarkReminderAsRead() {
 
 	s.True(resp.Data.IsRead)
 	s.NotNil(resp.Data.ReadAt)
+	// Compare formatted time string for ReadAt as well, after ensuring it's not nil
+	s.NotEmpty(*resp.Data.ReadAt) // Check that ReadAt is not an empty string
 
 	// Verify in the repository as well
 	updatedReminder, err := s.repo.GetReminderByID(s.T().Context(), reminder.ID)
 	s.NoError(err)
 	s.True(updatedReminder.IsRead)
 	s.NotNil(updatedReminder.ReadAt)
+	// Also check the formatted time from repo matches if needed, though API response check is primary here
+	// For example: s.Equal(updatedReminder.ReadAt.Format(datatype.TimeFormat), *resp.Data.ReadAt)
 }

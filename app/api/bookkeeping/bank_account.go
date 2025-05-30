@@ -3,48 +3,32 @@ package bookkeeping
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-type jsonBankAccount struct {
-	ID            int32  `json:"id"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
-	AccountID     int32  `json:"account_id"`
-	AccountNumber string `json:"account_number"`
-	BankName      string `json:"bank_name"`
-	BranchName    string `json:"branch_name,omitempty"`
-	SwiftCode     string `json:"swift_code,omitempty"`
-}
-
-func (r *jsonBankAccount) fromDomain(bankAccount *domain.BankAccount) {
-	r.ID = bankAccount.ID
-	r.CreatedAt = bankAccount.CreatedAt.Format(time.RFC3339)
-	r.UpdatedAt = bankAccount.UpdatedAt.Format(time.RFC3339)
-	r.AccountID = bankAccount.AccountID
-	r.AccountNumber = bankAccount.AccountNumber
-	r.BankName = bankAccount.BankName
-	r.BranchName = bankAccount.BranchName
-	r.SwiftCode = bankAccount.SwiftCode
+func convertBankAccountFromDomain(bankAccount *domain.BankAccount) datatype.BankAccount {
+	return datatype.BankAccount{
+		ID:            bankAccount.ID,
+		CreatedAt:     bankAccount.CreatedAt.Format(datatype.TimeFormat),
+		UpdatedAt:     bankAccount.UpdatedAt.Format(datatype.TimeFormat),
+		AccountID:     bankAccount.AccountID,
+		AccountNumber: bankAccount.AccountNumber,
+		BankName:      bankAccount.BankName,
+		BranchName:    bankAccount.BranchName,
+		SwiftCode:     bankAccount.SwiftCode,
+	}
 }
 
 // CreateBankAccount handles the creation of a new bank account
 func (x *Controller) CreateBankAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type request struct {
-			AccountID     int32  `json:"account_id"`
-			AccountNumber string `json:"account_number"`
-			BankName      string `json:"bank_name"`
-			BranchName    string `json:"branch_name,omitempty"`
-			SwiftCode     string `json:"swift_code,omitempty"`
-		}
 
-		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		var req datatype.CreateBankAccountRequest
+		engine.Chain(r, w, func(ctx *engine.Context, req datatype.CreateBankAccountRequest) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -85,7 +69,7 @@ func (x *Controller) CreateBankAccount() func(w http.ResponseWriter, r *http.Req
 func (x *Controller) GetBankAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonBankAccount, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.BankAccount, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -108,8 +92,7 @@ func (x *Controller) GetBankAccountByID() func(w http.ResponseWriter, r *http.Re
 				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
 			}
 
-			var jsonBankAccount jsonBankAccount
-			jsonBankAccount.fromDomain(bankAccount)
+			jsonBankAccount := convertBankAccountFromDomain(bankAccount)
 
 			return &jsonBankAccount, nil
 		}).Param("id", &id).Call(nil).ResponseJSON()
@@ -120,7 +103,7 @@ func (x *Controller) GetBankAccountByID() func(w http.ResponseWriter, r *http.Re
 func (x *Controller) GetBankAccountByAccountID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var accountID int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonBankAccount, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.BankAccount, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -146,9 +129,7 @@ func (x *Controller) GetBankAccountByAccountID() func(w http.ResponseWriter, r *
 				return nil, err
 			}
 
-			var jsonBankAccount jsonBankAccount
-			jsonBankAccount.fromDomain(bankAccount)
-
+			jsonBankAccount := convertBankAccountFromDomain(bankAccount)
 			return &jsonBankAccount, nil
 		}).Param("account_id", &accountID).Call(nil).ResponseJSON()
 	}
@@ -158,11 +139,8 @@ func (x *Controller) GetBankAccountByAccountID() func(w http.ResponseWriter, r *
 func (x *Controller) UpdateBankAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id            int32
-			AccountNumber *string `json:"account_number,omitempty"`
-			BankName      *string `json:"bank_name,omitempty"`
-			BranchName    *string `json:"branch_name,omitempty"`
-			SwiftCode     *string `json:"swift_code,omitempty"`
+			id int32
+			datatype.UpdateBankAccountRequest
 		}
 
 		var req request

@@ -3,44 +3,31 @@ package bookkeeping
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/omegaatt36/bookly/app"
 	"github.com/omegaatt36/bookly/app/api/engine"
 	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-type jsonAccount struct {
-	ID        int32  `json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Name      string `json:"name"`
-	Status    string `json:"status"`
-	Currency  string `json:"currency"`
-	Balance   string `json:"balance"`
-}
-
-func (r *jsonAccount) fromDomain(account *domain.Account) {
-	r.ID = account.ID
-	r.CreatedAt = account.CreatedAt.Format(time.RFC3339)
-	r.UpdatedAt = account.UpdatedAt.Format(time.RFC3339)
-	r.Name = account.Name
-	r.Status = account.Status.String()
-	r.Currency = account.Currency
-	r.Balance = account.Balance.String()
-
+func convertAccountFromDomain(account *domain.Account) datatype.Account {
+	return datatype.Account{
+		ID:        account.ID,
+		CreatedAt: account.CreatedAt.Format(datatype.TimeFormat),
+		UpdatedAt: account.UpdatedAt.Format(datatype.TimeFormat),
+		Name:      account.Name,
+		Status:    account.Status.String(),
+		Currency:  account.Currency,
+		Balance:   account.Balance.String(),
+	}
 }
 
 // CreateAccount handles the creation of a new account
 func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type request struct {
-			Name     string `json:"name"`
-			Currency string `json:"currency"`
-		}
 
-		var req request
-		engine.Chain(r, w, func(ctx *engine.Context, req request) (*engine.Empty, error) {
+		var req datatype.CreateAccountRequest
+		engine.Chain(r, w, func(ctx *engine.Context, req datatype.CreateAccountRequest) (*engine.Empty, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -66,7 +53,7 @@ func (x *Controller) CreateAccount() func(w http.ResponseWriter, r *http.Request
 // GetAllAccounts handles the retrieval of all accounts for the current authenticated user
 func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) ([]datatype.Account, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -77,9 +64,9 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 				return nil, err
 			}
 
-			jsonAccounts := make([]jsonAccount, len(accounts))
+			jsonAccounts := make([]datatype.Account, len(accounts))
 			for index, account := range accounts {
-				jsonAccounts[index].fromDomain(account)
+				jsonAccounts[index] = convertAccountFromDomain(account)
 			}
 
 			return jsonAccounts, nil
@@ -91,7 +78,7 @@ func (x *Controller) GetAllAccounts() func(w http.ResponseWriter, r *http.Reques
 func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var id int32
-		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*jsonAccount, error) {
+		engine.Chain(r, w, func(ctx *engine.Context, _ *engine.Empty) (*datatype.Account, error) {
 			userID := ctx.GetUserID()
 			if userID == 0 {
 				return nil, app.Unauthorized(errors.New("user not authenticated"))
@@ -107,9 +94,7 @@ func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Reques
 				return nil, app.Forbidden(errors.New("access denied: account does not belong to user"))
 			}
 
-			var jsonAccount jsonAccount
-			jsonAccount.fromDomain(account)
-
+			jsonAccount := convertAccountFromDomain(account)
 			return &jsonAccount, nil
 		}).Param("id", &id).Call(nil).ResponseJSON()
 	}
@@ -119,9 +104,8 @@ func (x *Controller) GetAccountByID() func(w http.ResponseWriter, r *http.Reques
 func (x *Controller) UpdateAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			id     int32
-			Name   *string `json:"name"`
-			Status *string `json:"status"`
+			id int32
+			datatype.UpdateAccountRequest
 		}
 
 		var req request
@@ -186,15 +170,15 @@ func (x *Controller) DeactivateAccountByID() func(w http.ResponseWriter, r *http
 func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var userID int32
-		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]jsonAccount, error) {
+		engine.Chain(r, w, func(_ *engine.Context, _ *engine.Empty) ([]datatype.Account, error) {
 			accounts, err := x.service.GetAccountsByUserID(userID)
 			if err != nil {
 				return nil, err
 			}
 
-			jsonAccounts := make([]jsonAccount, len(accounts))
+			jsonAccounts := make([]datatype.Account, len(accounts))
 			for index, account := range accounts {
-				jsonAccounts[index].fromDomain(account)
+				jsonAccounts[index] = convertAccountFromDomain(account)
 			}
 
 			return jsonAccounts, nil
@@ -206,9 +190,8 @@ func (x *Controller) GetUserAccounts() func(w http.ResponseWriter, r *http.Reque
 func (x *Controller) CreateUserAccount() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type request struct {
-			userID   int32
-			Name     string `json:"name"`
-			Currency string `json:"currency"`
+			userID int32
+			datatype.CreateAccountForUserRequest
 		}
 
 		var req request
