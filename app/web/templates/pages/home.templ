@@ -1,0 +1,205 @@
+package pages
+
+import (
+	"github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/app/web/templates/layout"
+)
+
+templ Home(user *api.User) {
+	@layout.Base("首頁", user) {
+		<div class="max-w-7xl mx-auto">
+			<!-- Welcome Section -->
+			<div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-8 mb-8">
+				<div class="flex items-center justify-between">
+					<div>
+						<h1 class="text-3xl font-bold text-foreground mb-2">
+							歡迎回來，{ user.Name }！
+						</h1>
+						<p class="text-muted-foreground text-lg">
+							今天是管理財務的好日子，讓我們看看您的財務狀況吧。
+						</p>
+					</div>
+					<div class="hidden lg:block">
+						<svg class="w-24 h-24 text-primary/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+						</svg>
+					</div>
+				</div>
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+				<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors cursor-pointer"
+					hx-get="/ledgers/new"
+					hx-target="#modal-container"
+					hx-swap="innerHTML">
+					<div class="flex items-center">
+						<div class="w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center mr-4">
+							<svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+							</svg>
+						</div>
+						<div>
+							<h3 class="font-semibold text-foreground">新增收入</h3>
+							<p class="text-sm text-muted-foreground">記錄收入項目</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors cursor-pointer"
+					hx-get="/ledgers/new?type=expense"
+					hx-target="#modal-container"
+					hx-swap="innerHTML">
+					<div class="flex items-center">
+						<div class="w-12 h-12 bg-destructive/20 rounded-lg flex items-center justify-center mr-4">
+							<svg class="w-6 h-6 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+							</svg>
+						</div>
+						<div>
+							<h3 class="font-semibold text-foreground">新增支出</h3>
+							<p class="text-sm text-muted-foreground">記錄支出項目</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors cursor-pointer"
+					hx-get="/accounts/new"
+					hx-target="#modal-container"
+					hx-swap="innerHTML">
+					<div class="flex items-center">
+						<div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mr-4">
+							<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+							</svg>
+						</div>
+						<div>
+							<h3 class="font-semibold text-foreground">新增帳戶</h3>
+							<p class="text-sm text-muted-foreground">建立新的帳戶</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors cursor-pointer"
+					hx-get="/recurring/new"
+					hx-target="#modal-container"
+					hx-swap="innerHTML">
+					<div class="flex items-center">
+						<div class="w-12 h-12 bg-warning/20 rounded-lg flex items-center justify-center mr-4">
+							<svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+							</svg>
+						</div>
+						<div>
+							<h3 class="font-semibold text-foreground">定期交易</h3>
+							<p class="text-sm text-muted-foreground">設定定期交易</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Statistics Overview (Future Implementation) -->
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				<!-- Account Summary -->
+				<div class="bg-background-secondary border border-border rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-foreground mb-4">帳戶摘要</h3>
+					<div class="space-y-4"
+						hx-get="/api/accounts/summary"
+						hx-trigger="load"
+						hx-swap="innerHTML">
+						<!-- Loading placeholder -->
+						<div class="animate-pulse">
+							<div class="h-4 bg-background-tertiary rounded mb-2"></div>
+							<div class="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
+							<div class="h-4 bg-background-tertiary rounded w-1/2"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Recent Transactions -->
+				<div class="bg-background-secondary border border-border rounded-lg p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-lg font-semibold text-foreground">最近交易</h3>
+						<a href="/ledgers" class="text-primary hover:text-primary/80 text-sm font-medium">
+							查看全部
+						</a>
+					</div>
+					<div class="space-y-3"
+						hx-get="/api/ledgers/recent"
+						hx-trigger="load"
+						hx-swap="innerHTML">
+						<!-- Loading placeholder -->
+						<div class="animate-pulse space-y-3">
+							<div class="flex justify-between">
+								<div class="h-4 bg-background-tertiary rounded w-1/3"></div>
+								<div class="h-4 bg-background-tertiary rounded w-1/4"></div>
+							</div>
+							<div class="flex justify-between">
+								<div class="h-4 bg-background-tertiary rounded w-1/2"></div>
+								<div class="h-4 bg-background-tertiary rounded w-1/5"></div>
+							</div>
+							<div class="flex justify-between">
+								<div class="h-4 bg-background-tertiary rounded w-2/5"></div>
+								<div class="h-4 bg-background-tertiary rounded w-1/4"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Monthly Statistics -->
+				<div class="bg-background-secondary border border-border rounded-lg p-6">
+					<h3 class="text-lg font-semibold text-foreground mb-4">本月統計</h3>
+					<div class="space-y-4"
+						hx-get="/api/statistics/monthly"
+						hx-trigger="load"
+						hx-swap="innerHTML">
+						<!-- Loading placeholder -->
+						<div class="animate-pulse">
+							<div class="flex justify-between mb-3">
+								<span class="h-4 bg-background-tertiary rounded w-1/4"></span>
+								<span class="h-4 bg-background-tertiary rounded w-1/5"></span>
+							</div>
+							<div class="flex justify-between mb-3">
+								<span class="h-4 bg-background-tertiary rounded w-1/3"></span>
+								<span class="h-4 bg-background-tertiary rounded w-1/4"></span>
+							</div>
+							<div class="flex justify-between">
+								<span class="h-4 bg-background-tertiary rounded w-1/4"></span>
+								<span class="h-4 bg-background-tertiary rounded w-1/6"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Upcoming Reminders -->
+				<div class="bg-background-secondary border border-border rounded-lg p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-lg font-semibold text-foreground">即將到期</h3>
+						<a href="/reminders" class="text-primary hover:text-primary/80 text-sm font-medium">
+							查看全部
+						</a>
+					</div>
+					<div class="space-y-3"
+						hx-get="/api/reminders/upcoming"
+						hx-trigger="load"
+						hx-swap="innerHTML">
+						<!-- Loading placeholder -->
+						<div class="animate-pulse space-y-3">
+							<div class="flex items-center justify-between">
+								<div class="h-4 bg-background-tertiary rounded w-2/3"></div>
+								<div class="h-3 bg-background-tertiary rounded w-16"></div>
+							</div>
+							<div class="flex items-center justify-between">
+								<div class="h-4 bg-background-tertiary rounded w-1/2"></div>
+								<div class="h-3 bg-background-tertiary rounded w-12"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal Container -->
+			<div id="modal-container"></div>
+		</div>
+	}
+}

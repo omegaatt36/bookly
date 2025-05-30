@@ -3,6 +3,7 @@ module github.com/omegaatt36/bookly
 go 1.24
 
 require (
+	github.com/a-h/templ v0.3.865
 	github.com/go-co-op/gocron/v2 v2.16.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jackc/pgx/v5 v5.7.4

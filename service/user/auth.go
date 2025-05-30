@@ -75,7 +75,7 @@ func (s *Service) Login(req LoginRequest) (string, error) {
 
 	user, identity, err := s.userRepo.GetUserByIdentity(req.Provider, req.Identifier)
 	if err != nil {
-		return "", errors.New("invalid identifier or credentials")
+		return "", fmt.Errorf("invalid identifier or credentials, %w", err)
 	}
 
 	valid, err := authenticator.VerifyCredential(req.Credential, identity)

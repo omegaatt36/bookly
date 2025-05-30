@@ -1,0 +1,114 @@
+/* Tailwind CSS v4 with custom properties */
+@import "tailwindcss";
+
+/* Custom color properties for Tailwind v4 */
+@theme {
+  /* Nord Theme colors */
+  --color-nord-0: #2e3440;
+  --color-nord-1: #3b4252;
+  --color-nord-2: #434c5e;
+  --color-nord-3: #4c566a;
+  --color-nord-4: #d8dee9;
+  --color-nord-5: #e5e9f0;
+  --color-nord-6: #eceff4;
+  --color-nord-7: #8fbcbb;
+  --color-nord-8: #88c0d0;
+  --color-nord-9: #81a1c1;
+  --color-nord-10: #5e81ac;
+  --color-nord-11: #bf616a;
+  --color-nord-12: #d08770;
+  --color-nord-13: #ebcb8b;
+  --color-nord-14: #a3be8c;
+  --color-nord-15: #b48ead;
+
+  /* Semantic color mapping */
+  --color-background: var(--color-nord-0);
+  --color-background-secondary: var(--color-nord-1);
+  --color-background-tertiary: var(--color-nord-2);
+  --color-background-accent: var(--color-nord-3);
+  
+  --color-foreground: var(--color-nord-4);
+  --color-foreground-secondary: var(--color-nord-5);
+  --color-foreground-accent: var(--color-nord-6);
+  
+  --color-primary: var(--color-nord-8);
+  --color-primary-foreground: var(--color-nord-0);
+  
+  --color-secondary: var(--color-nord-9);
+  --color-secondary-foreground: var(--color-nord-0);
+  
+  --color-accent: var(--color-nord-10);
+  --color-accent-foreground: var(--color-nord-6);
+  
+  --color-destructive: var(--color-nord-11);
+  --color-destructive-foreground: var(--color-nord-6);
+  
+  --color-success: var(--color-nord-14);
+  --color-success-foreground: var(--color-nord-0);
+  
+  --color-warning: var(--color-nord-13);
+  --color-warning-foreground: var(--color-nord-0);
+  
+  --color-info: var(--color-nord-15);
+  --color-info-foreground: var(--color-nord-6);
+  
+  --color-muted: var(--color-nord-2);
+  --color-muted-foreground: var(--color-nord-4);
+  
+  --color-border: var(--color-nord-3);
+  --color-input: var(--color-nord-1);
+  --color-ring: var(--color-nord-8);
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    transform: translateY(-10px);
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1; 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    transform: scale(0.95);
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1);
+    opacity: 1; 
+  }
+}
+
+/* Custom utility classes */
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Dark mode setup */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

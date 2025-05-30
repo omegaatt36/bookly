@@ -362,7 +362,7 @@ func mapToRecurringTransactionResponse(t *domain.RecurringTransaction) Recurring
 		Note:         t.Note,
 		StartDate:    t.StartDate,
 		EndDate:      t.EndDate,
-		RecurType:    string(t.RecurType),
+		RecurType:    string(t.RecurrenceType),
 		Status:       string(t.Status),
 		Frequency:    t.Frequency,
 		DayOfWeek:    t.DayOfWeek,

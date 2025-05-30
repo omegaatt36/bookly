@@ -1,0 +1,205 @@
+package pages
+
+templ Login() {
+	<!DOCTYPE html>
+	<html lang="zh-TW" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>登入 - Bookly</title>
+			<link href="/static/css/output.css" rel="stylesheet"/>
+			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+		</head>
+		<body class="bg-background text-foreground min-h-screen flex items-center justify-center">
+			<div class="w-full max-w-md">
+				<!-- Logo Section -->
+				<div class="text-center mb-8">
+					<h1 class="text-4xl font-bold text-primary mb-2">Bookly</h1>
+					<p class="text-muted-foreground">個人記帳系統</p>
+				</div>
+
+				<!-- Login Form -->
+				<div class="bg-background-secondary border border-border rounded-lg p-8 shadow-lg">
+					<h2 class="text-2xl font-semibold text-foreground mb-6 text-center">登入您的帳戶</h2>
+
+					<form hx-post="/auth/login" hx-target="#login-form" hx-swap="outerHTML" id="login-form">
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium text-foreground mb-1">電子信箱</label>
+								<input
+									type="email"
+									name="email"
+									class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+									placeholder="your@email.com"
+									required
+								/>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-foreground mb-1">密碼</label>
+								<input
+									type="password"
+									name="password"
+									class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+									placeholder="••••••••"
+									required
+								/>
+							</div>
+						</div>
+
+						<button
+							type="submit"
+							class="w-full mt-6 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+						>
+							登入
+						</button>
+					</form>
+
+					<!-- Register Link -->
+					<div class="mt-6 text-center">
+						<p class="text-muted-foreground">
+							還沒有帳戶？
+							<a href="/auth/register" class="text-primary hover:text-primary/80 font-medium">
+								立即註冊
+							</a>
+						</p>
+					</div>
+				</div>
+
+				<!-- Features Section -->
+				<div class="mt-8 grid grid-cols-3 gap-4 text-center">
+					<div class="p-4">
+						<div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+							</svg>
+						</div>
+						<h3 class="text-sm font-medium text-foreground">安全保障</h3>
+						<p class="text-xs text-muted-foreground mt-1">完全保護您的財務數據</p>
+					</div>
+
+					<div class="p-4">
+						<div class="w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+							</svg>
+						</div>
+						<h3 class="text-sm font-medium text-foreground">智能分析</h3>
+						<p class="text-xs text-muted-foreground mt-1">深入了解您的財務狀況</p>
+					</div>
+
+					<div class="p-4">
+						<div class="w-12 h-12 bg-warning/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+							<svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+							</svg>
+						</div>
+						<h3 class="text-sm font-medium text-foreground">自動化</h3>
+						<p class="text-xs text-muted-foreground mt-1">定期交易自動執行</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Toast Container -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+		</body>
+	</html>
+}
+
+templ Register() {
+	<!DOCTYPE html>
+	<html lang="zh-TW" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>註冊 - Bookly</title>
+			<link href="/static/css/output.css" rel="stylesheet"/>
+			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+		</head>
+		<body class="bg-background text-foreground min-h-screen flex items-center justify-center">
+			<div class="w-full max-w-md">
+				<!-- Logo Section -->
+				<div class="text-center mb-8">
+					<h1 class="text-4xl font-bold text-primary mb-2">Bookly</h1>
+					<p class="text-muted-foreground">開始您的財務管理之旅</p>
+				</div>
+
+				<!-- Register Form -->
+				<div class="bg-background-secondary border border-border rounded-lg p-8 shadow-lg">
+					<h2 class="text-2xl font-semibold text-foreground mb-6 text-center">建立新帳戶</h2>
+
+					<form hx-post="/auth/register" hx-target="#register-form" hx-swap="outerHTML" id="register-form">
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium text-foreground mb-1">電子信箱</label>
+								<input
+									type="email"
+									name="email"
+									class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+									placeholder="your@email.com"
+									required
+								/>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-foreground mb-1">密碼</label>
+								<input
+									type="password"
+									name="password"
+									class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+									placeholder="••••••••"
+									minlength="8"
+									required
+								/>
+								<p class="text-xs text-muted-foreground mt-1">密碼至少需要 8 個字元</p>
+							</div>
+
+							<div>
+								<label class="block text-sm font-medium text-foreground mb-1">確認密碼</label>
+								<input
+									type="password"
+									name="confirm_password"
+									class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+									placeholder="••••••••"
+									required
+								/>
+							</div>
+						</div>
+
+						<button
+							type="submit"
+							class="w-full mt-6 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+						>
+							建立帳戶
+						</button>
+					</form>
+
+					<!-- Login Link -->
+					<div class="mt-6 text-center">
+						<p class="text-muted-foreground">
+							已經有帳戶了？
+							<a href="/auth/login" class="text-primary hover:text-primary/80 font-medium">
+								立即登入
+							</a>
+						</p>
+					</div>
+				</div>
+
+				<!-- Terms -->
+				<div class="mt-6 text-center">
+					<p class="text-xs text-muted-foreground">
+						註冊即表示您同意我們的
+						<a href="#" class="text-primary hover:text-primary/80">服務條款</a>
+						和
+						<a href="#" class="text-primary hover:text-primary/80">隱私政策</a>
+					</p>
+				</div>
+			</div>
+
+			<!-- Toast Container -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+		</body>
+	</html>
+}

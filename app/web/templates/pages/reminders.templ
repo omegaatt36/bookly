@@ -1,0 +1,284 @@
+package pages
+
+import (
+	"github.com/omegaatt36/bookly/app/web/templates/layout"
+	"github.com/omegaatt36/bookly/app/web/api"
+	"time"
+)
+
+templ Reminders(user *api.User, reminders []api.Reminder) {
+	@layout.Base("提醒通知", user) {
+		<div class="max-w-7xl mx-auto">
+			<!-- Header Section -->
+			<div class="flex items-center justify-between mb-8">
+				<div>
+					<h1 class="text-2xl font-bold text-foreground mb-2">提醒通知</h1>
+					<p class="text-muted-foreground">管理您的定期交易提醒</p>
+				</div>
+				<div class="flex items-center space-x-3">
+					<button
+						class="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors flex items-center"
+						hx-post="/reminders/mark-all-read"
+						hx-target="#reminders-list"
+						hx-swap="outerHTML"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+						全部標記為已讀
+					</button>
+				</div>
+			</div>
+
+			<!-- Filter Tabs -->
+			<div class="bg-background-secondary border border-border rounded-lg p-1 mb-6 inline-flex">
+				<button
+					class="px-4 py-2 text-sm font-medium rounded-md transition-colors bg-primary text-primary-foreground"
+					hx-get="/reminders?filter=all"
+					hx-target="#reminders-list"
+					hx-swap="outerHTML"
+				>
+					全部
+				</button>
+				<button
+					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
+					hx-get="/reminders?filter=unread"
+					hx-target="#reminders-list"
+					hx-swap="outerHTML"
+				>
+					未讀
+				</button>
+				<button
+					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
+					hx-get="/reminders?filter=read"
+					hx-target="#reminders-list"
+					hx-swap="outerHTML"
+				>
+					已讀
+				</button>
+				<button
+					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
+					hx-get="/reminders?filter=overdue"
+					hx-target="#reminders-list"
+					hx-swap="outerHTML"
+				>
+					逾期
+				</button>
+			</div>
+
+			<!-- Reminders List -->
+			<div id="reminders-list">
+				if len(reminders) > 0 {
+					<div class="space-y-3">
+						for _, reminder := range reminders {
+							@ReminderCard(reminder)
+						}
+					</div>
+				} else {
+					@EmptyRemindersState()
+				}
+			</div>
+		</div>
+
+		<!-- Modal Container -->
+		<div id="modal-container"></div>
+	}
+}
+
+templ ReminderCard(reminder api.Reminder) {
+	<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors"
+		class={ getReminderCardClass(reminder.IsRead, reminder.ReminderDate) }>
+		<div class="flex items-start justify-between">
+			<div class="flex items-start flex-1">
+				<!-- Status Indicator -->
+				<div class="w-3 h-3 rounded-full mr-4 mt-2 flex-shrink-0"
+					class={ getReminderStatusColor(reminder.IsRead, reminder.ReminderDate) }></div>
+
+				<!-- Reminder Content -->
+				<div class="flex-1">
+					<div class="flex items-start justify-between mb-2">
+						<div>
+							<p class="text-sm text-muted-foreground mt-1">
+								定期交易提醒
+								if reminder.RecurringTransactionID != 0 {
+									- 交易 ID: { reminder.RecurringTransactionID }
+								}
+							</p>
+						</div>
+						<div class="text-right">
+							<div class="text-sm font-medium"
+								class={ getReminderDateColor(reminder.ReminderDate) }>
+									{ formatReminderDate(reminder.ReminderDate) }
+							</div>
+							<div class="text-xs text-muted-foreground">
+								{ reminder.ReminderDate.Format("15:04") }
+							</div>
+						</div>
+					</div>
+
+					<!-- Due Date Info -->
+					<div class="flex items-center space-x-4 mb-4">
+						<div class="flex items-center">
+							<svg class="w-4 h-4 text-muted-foreground mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+							</svg>
+							<span class="text-sm text-muted-foreground">
+								到期時間：{ reminder.ReminderDate.Format("2006-01-02 15:04") }
+							</span>
+						</div>
+						if isOverdue(reminder.ReminderDate) {
+							<div class="flex items-center">
+								<svg class="w-4 h-4 text-destructive mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+								</svg>
+								<span class="text-sm text-destructive font-medium">已逾期</span>
+							</div>
+						}
+					</div>
+
+					<!-- Action Buttons -->
+					<div class="flex items-center justify-between">
+						<div class="flex items-center space-x-2">
+							if !reminder.IsRead {
+								<button
+									class="px-3 py-1 text-xs bg-primary/20 text-primary rounded hover:bg-primary/30 transition-colors"
+									hx-post={ "/reminders/" + string(rune(reminder.ID)) + "/read" }
+									hx-target="#reminders-list"
+									hx-swap="outerHTML"
+								>
+									標記為已讀
+								</button>
+							} else {
+								<button
+									class="px-3 py-1 text-xs bg-muted/20 text-muted-foreground rounded hover:bg-muted/30 transition-colors"
+									hx-post={ "/reminders/" + string(rune(reminder.ID)) + "/unread" }
+									hx-target="#reminders-list"
+									hx-swap="outerHTML"
+								>
+									標記為未讀
+								</button>
+							}
+							if reminder.RecurringTransactionID != 0 {
+								<button
+									class="px-3 py-1 text-xs bg-success/20 text-success rounded hover:bg-success/30 transition-colors"
+									hx-post={ "/reminders/" + string(rune(reminder.ID)) + "/execute" }
+									hx-target="#reminders-list"
+									hx-swap="outerHTML"
+									hx-confirm="確定要執行此定期交易嗎？"
+								>
+									立即執行
+								</button>
+							}
+						</div>
+						<div class="flex items-center space-x-2">
+							<button
+								class="px-3 py-1 text-xs bg-warning/20 text-warning rounded hover:bg-warning/30 transition-colors"
+								hx-post={ "/reminders/" + string(rune(reminder.ID)) + "/snooze" }
+								hx-target="#modal-container"
+								hx-swap="innerHTML"
+							>
+								延遲提醒
+							</button>
+							<button
+								class="px-3 py-1 text-xs bg-destructive/20 text-destructive rounded hover:bg-destructive/30 transition-colors"
+								hx-delete={ "/reminders/" + string(rune(reminder.ID)) }
+								hx-target="#reminders-list"
+								hx-swap="outerHTML"
+								hx-confirm="確定要刪除此提醒嗎？"
+							>
+								刪除
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ EmptyRemindersState() {
+	<div class="text-center py-12">
+		<svg class="w-24 h-24 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 1v5h5m10.414 4.414A2 2 0 0118 9V7a6 6 0 10-12 0v2a2 2 0 00-1.414 1.414L3 12h18l-1.586-1.586z"></path>
+		</svg>
+		<h3 class="text-lg font-semibold text-foreground mb-2">目前沒有提醒</h3>
+		<p class="text-muted-foreground mb-6">設定定期交易後會自動產生提醒通知</p>
+		<button
+			class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+			onclick="window.location.href='/recurring'"
+		>
+			設定定期交易
+		</button>
+	</div>
+}
+
+func getReminderCardClass(isRead bool, dueDate time.Time) string {
+	if !isRead && isOverdue(dueDate) {
+		return "border-destructive/50 bg-destructive/5"
+	} else if !isRead {
+		return "border-primary/50 bg-primary/5"
+	}
+	return ""
+}
+
+func getReminderStatusColor(isRead bool, dueDate time.Time) string {
+	if !isRead && isOverdue(dueDate) {
+		return "bg-destructive"
+	} else if !isRead {
+		return "bg-primary"
+	}
+	return "bg-muted"
+}
+
+func getReminderDateColor(dueDate time.Time) string {
+	if isOverdue(dueDate) {
+		return "text-destructive"
+	} else if isToday(dueDate) {
+		return "text-warning"
+	} else if isTomorrow(dueDate) {
+		return "text-primary"
+	}
+	return "text-foreground"
+}
+
+func formatReminderDate(dueDate time.Time) string {
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	reminderDate := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, dueDate.Location())
+
+	switch {
+	case reminderDate.Before(today):
+		days := int(today.Sub(reminderDate).Hours() / 24)
+		if days == 1 {
+			return "昨天"
+		}
+		return string(rune(days)) + " 天前"
+	case reminderDate.Equal(today):
+		return "今天"
+	case reminderDate.Equal(today.AddDate(0, 0, 1)):
+		return "明天"
+	case reminderDate.Before(today.AddDate(0, 0, 7)):
+		days := int(reminderDate.Sub(today).Hours() / 24)
+		return string(rune(days)) + " 天後"
+	default:
+		return dueDate.Format("2006-01-02")
+	}
+}
+
+func isOverdue(dueDate time.Time) bool {
+	return time.Now().After(dueDate)
+}
+
+func isToday(dueDate time.Time) bool {
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	reminderDate := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, dueDate.Location())
+	return reminderDate.Equal(today)
+}
+
+func isTomorrow(dueDate time.Time) bool {
+	now := time.Now()
+	tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+	reminderDate := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, dueDate.Location())
+	return reminderDate.Equal(tomorrow)
+}

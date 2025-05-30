@@ -1,0 +1,336 @@
+package pages
+
+import (
+	"github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/app/web/templates/layout"
+	"time"
+)
+
+templ AccountDetail(user *api.User, account api.Account, ledgers []api.Ledger) {
+	@layout.Base("帳戶詳情 - " + account.Name, user) {
+		<div class="max-w-7xl mx-auto">
+			<!-- Account Header -->
+			<div class="bg-background-secondary border border-border rounded-lg p-6 mb-8">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center">
+						<div class="w-16 h-16 rounded-lg flex items-center justify-center mr-4"
+							 class={ getAccountIconBg(account.Currency) }>
+							<span class="text-2xl font-bold text-white">
+								{ getCurrencySymbol(account.Currency) }
+							</span>
+						</div>
+						<div>
+							<h1 class="text-2xl font-bold text-foreground">{ account.Name }</h1>
+							<div class="flex items-center mt-1">
+								<span class="text-muted-foreground mr-3">{ account.Currency }</span>
+								if account.Status == "active" {
+									<span class="px-2 py-1 bg-success/20 text-success text-xs rounded-full">
+										啟用中
+									</span>
+								} else {
+									<span class="px-2 py-1 bg-muted/20 text-muted-foreground text-xs rounded-full">
+										已停用
+									</span>
+								}
+							</div>
+						</div>
+					</div>
+					<div class="text-right">
+						<div class="text-3xl font-bold text-foreground">
+							{ account.Balance }
+						</div>
+						<div class="text-muted-foreground">當前餘額</div>
+					</div>
+				</div>
+
+				<!-- Quick Actions -->
+				<div class="mt-6 flex space-x-3">
+					<button
+						class="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors flex items-center"
+						hx-get={ "/ledgers/new?account_id=" + string(rune(account.ID)) + "&type=income" }
+						hx-target="#modal-container"
+						hx-swap="innerHTML"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+						</svg>
+						新增收入
+					</button>
+					<button
+						class="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors flex items-center"
+						hx-get={ "/ledgers/new?account_id=" + string(rune(account.ID)) + "&type=expense" }
+						hx-target="#modal-container"
+						hx-swap="innerHTML"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+						</svg>
+						新增支出
+					</button>
+					<button
+						class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center"
+						hx-get={ "/ledgers/new?account_id=" + string(rune(account.ID)) + "&type=transfer" }
+						hx-target="#modal-container"
+						hx-swap="innerHTML"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+						</svg>
+						轉帳
+					</button>
+					<button
+						class="px-4 py-2 bg-background-tertiary text-foreground border border-border rounded-lg hover:bg-background-accent transition-colors flex items-center"
+						hx-get={ "/accounts/" + string(rune(account.ID)) + "/edit" }
+						hx-target="#modal-container"
+						hx-swap="innerHTML"
+					>
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+						</svg>
+						編輯帳戶
+					</button>
+				</div>
+			</div>
+
+			<!-- Ledger Transactions -->
+			<div class="bg-background-secondary border border-border rounded-lg">
+				<div class="p-6 border-b border-border">
+					<div class="flex items-center justify-between">
+						<h2 class="text-xl font-semibold text-foreground">交易明細</h2>
+						<div class="flex items-center space-x-3">
+							<!-- Filter Dropdown -->
+							<div class="relative">
+								<button class="px-3 py-2 bg-background-tertiary border border-border rounded-lg text-foreground hover:bg-background-accent transition-colors flex items-center"
+										onclick="toggleFilterDropdown()">
+									<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+									</svg>
+									篩選
+								</button>
+								<div class="absolute right-0 mt-2 w-48 bg-background-secondary border border-border rounded-lg shadow-lg hidden z-10">
+									<a href={ templ.URL("/accounts/" + templ.EscapeString(string(rune(account.ID))) + "?filter=all") }
+									   class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary">
+										所有交易
+									</a>
+									<a href={ templ.URL("/accounts/" + templ.EscapeString(string(rune(account.ID))) + "?filter=income") }
+									   class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary">
+										收入
+									</a>
+									<a href={ templ.URL("/accounts/" + templ.EscapeString(string(rune(account.ID))) + "?filter=expense") }
+									   class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary">
+										支出
+									</a>
+									<a href={ templ.URL("/accounts/" + templ.EscapeString(string(rune(account.ID))) + "?filter=transfer") }
+									   class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary">
+										轉帳
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Ledger List -->
+				<div id="ledger-list">
+					if len(ledgers) > 0 {
+						for _, ledger := range ledgers {
+							@LedgerItem(ledger)
+						}
+					} else {
+						@EmptyLedgerState(account.ID)
+					}
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal Container -->
+		<div id="modal-container"></div>
+	}
+}
+
+templ LedgerItem(ledger api.Ledger) {
+	<div class="px-6 py-4 border-b border-border hover:bg-background-tertiary transition-colors">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center">
+				<div class="w-10 h-10 rounded-lg flex items-center justify-center mr-4"
+					 class={ getLedgerIconBg(ledger.Type) }>
+					if ledger.Type == "income" {
+						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+						</svg>
+					} else if ledger.Type == "expense" {
+						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+						</svg>
+					} else {
+						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+						</svg>
+					}
+				</div>
+				<div>
+					<div class="font-medium text-foreground">{ ledger.Note }</div>
+					<div class="text-sm text-muted-foreground">
+						{ ledger.Date.Format("2006-01-02 15:04") }
+						if ledger.Note != "" {
+							- { ledger.Note }
+						}
+					</div>
+				</div>
+			</div>
+			<div class="text-right">
+				<div class="font-semibold"
+					 class={ getLedgerAmountColor(ledger.Type) }>
+					{ formatLedgerAmount(ledger.Type, ledger.Amount) }
+				</div>
+				if canAdjustLedger(ledger.CreatedAt) {
+					<div class="flex items-center space-x-2 mt-1">
+						<button
+							class="text-xs text-primary hover:text-primary/80"
+							hx-get={ "/ledgers/" + string(rune(ledger.ID)) + "/edit" }
+							hx-target="#modal-container"
+							hx-swap="innerHTML"
+						>
+							調整
+						</button>
+						<span class="text-xs text-muted-foreground">|</span>
+						<button
+							class="text-xs text-destructive hover:text-destructive/80"
+							hx-post={ "/ledgers/" + string(rune(ledger.ID)) + "/void" }
+							hx-target="#ledger-list"
+							hx-swap="outerHTML"
+							hx-confirm="確定要作廢此交易嗎？"
+						>
+							作廢
+						</button>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+templ EmptyLedgerState(accountID int32) {
+	<div class="text-center py-12">
+		<svg class="w-16 h-16 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+		</svg>
+		<h3 class="text-lg font-semibold text-foreground mb-2">尚無交易記錄</h3>
+		<p class="text-muted-foreground mb-6">開始記錄您的第一筆交易</p>
+		<div class="flex justify-center space-x-3">
+			<button
+				class="px-4 py-2 bg-success text-success-foreground rounded-lg hover:bg-success/90 transition-colors"
+				hx-get={ "/ledgers/new?account_id=" + string(rune(accountID)) + "&type=income" }
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+			>
+				新增收入
+			</button>
+			<button
+				class="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+				hx-get={ "/ledgers/new?account_id=" + string(rune(accountID)) + "&type=expense" }
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+			>
+				新增支出
+			</button>
+		</div>
+	</div>
+}
+
+func getLedgerIconBg(ledgerType string) string {
+	switch ledgerType {
+	case "income":
+		return "bg-success"
+	case "expense":
+		return "bg-destructive"
+	case "transfer":
+		return "bg-primary"
+	default:
+		return "bg-muted"
+	}
+}
+
+func getLedgerAmountColor(ledgerType string) string {
+	switch ledgerType {
+	case "income":
+		return "text-success"
+	case "expense":
+		return "text-destructive"
+	case "transfer":
+		return "text-primary"
+	default:
+		return "text-foreground"
+	}
+}
+
+func formatLedgerAmount(ledgerType, amount string) string {
+	switch ledgerType {
+	case "income":
+		return "+" + amount
+	case "expense":
+		return "-" + amount
+	case "transfer":
+		return amount
+	default:
+		return amount
+	}
+}
+
+func canAdjustLedger(createdAt time.Time) bool {
+	return time.Since(createdAt) <= 15*time.Minute
+}
+
+func getAccountIconBg(currency string) string {
+	switch currency {
+	case "USD":
+		return "bg-green-500"
+	case "TWD":
+		return "bg-blue-500"
+	case "EUR":
+		return "bg-purple-500"
+	case "JPY":
+		return "bg-red-500"
+	default:
+		return "bg-primary"
+	}
+}
+
+func getCurrencySymbol(currency string) string {
+	switch currency {
+	case "USD":
+		return "$"
+	case "TWD":
+		return "NT"
+	case "EUR":
+		return "€"
+	case "JPY":
+		return "¥"
+	default:
+		return currency[:2]
+	}
+}
+
+script toggleFilterDropdown() {
+	const dropdown = this.nextElementSibling;
+	const isHidden = dropdown.classList.contains('hidden');
+
+	// Close all other dropdowns
+	document.querySelectorAll('.absolute.right-0.mt-2').forEach(d => {
+		if (d !== dropdown) d.classList.add('hidden');
+	});
+
+	// Toggle current dropdown
+	dropdown.classList.toggle('hidden', !isHidden);
+
+	// Close on outside click
+	if (isHidden) {
+		const button = this; // Capture 'this' for the event listener
+		document.addEventListener('click', function closeDropdown(e) {
+			if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+				dropdown.classList.add('hidden');
+				document.removeEventListener('click', closeDropdown);
+			}
+		});
+	}
+}

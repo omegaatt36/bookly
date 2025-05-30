@@ -2,3 +2,9 @@ build
 tmp
 *.hurl
 bin/*
+
+# Templ specific
+*_templ.go
+
+# Generated CSS
+app/web/static/css/styles.css

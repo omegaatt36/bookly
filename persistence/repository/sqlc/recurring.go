@@ -270,7 +270,7 @@ func mapToRecurringTransaction(rt sqlcgen.RecurringTransaction) *domain.Recurrin
 		Note:         rt.Note.String,
 		StartDate:    rt.StartDate.Time,
 		EndDate:      endDate,
-		RecurType:    domain.RecurrenceType(rt.RecurType),
+		RecurrenceType:    domain.RecurrenceType(rt.RecurType),
 		Status:       domain.RecurrenceStatus(rt.Status),
 		Frequency:    int(rt.Frequency),
 		DayOfWeek:    dayOfWeek,

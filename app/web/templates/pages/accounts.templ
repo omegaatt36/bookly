@@ -1,0 +1,238 @@
+package pages
+
+import (
+	"fmt"
+	api "github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/app/web/templates/layout"
+)
+
+templ AccountsList(user *api.User, accounts []api.Account) {
+	@layout.Base("帳戶管理", user) {
+		<div class="max-w-7xl mx-auto">
+			<!-- Header Section -->
+			<div class="flex items-center justify-between mb-8">
+				<div>
+					<h1 class="text-2xl font-bold text-foreground mb-2">帳戶管理</h1>
+					<p class="text-muted-foreground">管理您的所有財務帳戶</p>
+				</div>
+				<button
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center"
+					hx-get="/accounts/new"
+					hx-target="#modal-container"
+					hx-swap="innerHTML"
+				>
+					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+					</svg>
+					新增帳戶
+				</button>
+			</div>
+			<!-- Accounts Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="accounts-list">
+				for _, account := range accounts {
+					@AccountCard(account)
+				}
+				if len(accounts) == 0 {
+					<div class="col-span-full">
+						@EmptyAccountsState()
+					</div>
+				}
+			</div>
+		</div>
+		<!-- Modal Container -->
+		<div id="modal-container"></div>
+	}
+}
+
+templ AccountCard(account api.Account) {
+	<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors">
+		<div class="flex items-start justify-between mb-4">
+			<div class="flex items-center">
+				<div
+					class="w-12 h-12 rounded-lg flex items-center justify-center mr-3"
+					class={ getAccountIconBg(account.Currency) }
+				>
+					<span class="text-lg font-bold text-white">
+						{ getCurrencySymbol(account.Currency) }
+					</span>
+				</div>
+				<div>
+					<h3 class="font-semibold text-foreground">{ account.Name }</h3>
+					<p class="text-sm text-muted-foreground">{ account.Currency }</p>
+				</div>
+			</div>
+			<div class="flex items-center space-x-2">
+				if account.Status == "active" {
+					<span class="px-2 py-1 bg-success/20 text-success text-xs rounded-full">
+						啟用
+					</span>
+				} else {
+					<span class="px-2 py-1 bg-muted/20 text-muted-foreground text-xs rounded-full">
+						停用
+					</span>
+				}
+				<div class="relative">
+					<button class="p-1 hover:bg-background-accent rounded" onclick="toggleDropdown()">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"></path>
+						</svg>
+					</button>
+					<div class="absolute right-0 mt-2 w-48 bg-background-secondary border border-border rounded-lg shadow-lg hidden z-10">
+						<a
+							href={ templ.URL("/accounts/" + templ.EscapeString(fmt.Sprintf("%d", account.ID))) }
+							class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary"
+						>
+							查看詳情
+						</a>
+						<button
+							hx-get={ fmt.Sprintf("/accounts/%d/edit", account.ID) }
+							hx-target="#modal-container"
+							hx-swap="innerHTML"
+							class="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-background-tertiary"
+						>
+							編輯
+						</button>
+						if account.Status == "active" {
+							<button
+								hx-post={ fmt.Sprintf("/accounts/%d/deactivate", account.ID) }
+								hx-target="#accounts-list"
+								hx-swap="outerHTML"
+								hx-confirm="確定要停用此帳戶嗎？"
+								class="block w-full text-left px-4 py-2 text-sm text-warning hover:bg-background-tertiary"
+							>
+								停用帳戶
+							</button>
+						} else {
+							<button
+								hx-post={ fmt.Sprintf("/accounts/%d/activate", account.ID) }
+								hx-target="#accounts-list"
+								hx-swap="outerHTML"
+								class="block w-full text-left px-4 py-2 text-sm text-success hover:bg-background-tertiary"
+							>
+								啟用帳戶
+							</button>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Balance -->
+		<div class="mb-4">
+			<div class="text-2xl font-bold text-foreground">
+				{ account.Balance }
+			</div>
+			<div class="text-sm text-muted-foreground">當前餘額</div>
+		</div>
+		<!-- Quick Actions -->
+		<div class="flex space-x-2">
+			<button
+				class="flex-1 px-3 py-2 bg-success/20 text-success rounded-lg hover:bg-success/30 transition-colors text-sm"
+				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=income", account.ID) }
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+			>
+				收入
+			</button>
+			<button
+				class="flex-1 px-3 py-2 bg-destructive/20 text-destructive rounded-lg hover:bg-destructive/30 transition-colors text-sm"
+				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=expense", account.ID) }
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+			>
+				支出
+			</button>
+			<button
+				class="flex-1 px-3 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors text-sm"
+				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=transfer", account.ID) }
+				hx-target="#modal-container"
+				hx-swap="innerHTML"
+			>
+				轉帳
+			</button>
+		</div>
+		<!-- View Ledgers Link -->
+		<div class="mt-4 pt-4 border-t border-border">
+			<a
+				href={ templ.URL(fmt.Sprintf("/accounts/%d/ledgers", account.ID)) }
+				class="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
+			>
+				查看交易明細
+				<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+				</svg>
+			</a>
+		</div>
+	</div>
+}
+
+templ EmptyAccountsState() {
+	<div class="text-center py-12">
+		<svg class="w-24 h-24 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+		</svg>
+		<h3 class="text-lg font-semibold text-foreground mb-2">尚未建立任何帳戶</h3>
+		<p class="text-muted-foreground mb-6">開始建立您的第一個帳戶來管理財務</p>
+		<button
+			class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+			hx-get="/accounts/new"
+			hx-target="#modal-container"
+			hx-swap="innerHTML"
+		>
+			建立第一個帳戶
+		</button>
+	</div>
+}
+
+// func getAccountIconBg(currency string) string {
+// 	switch currency {
+// 	case "USD":
+// 		return "bg-green-500"
+// 	case "TWD":
+// 		return "bg-blue-500"
+// 	case "EUR":
+// 		return "bg-purple-500"
+// 	case "JPY":
+// 		return "bg-red-500"
+// 	default:
+// 		return "bg-primary"
+// 	}
+// }
+
+// func getCurrencySymbol(currency string) string {
+// 	switch currency {
+// 	case "USD":
+// 		return "$"
+// 	case "TWD":
+// 		return "NT"
+// 	case "EUR":
+// 		return "€"
+// 	case "JPY":
+// 		return "¥"
+// 	default:
+// 		return currency[:2]
+// 	}
+// }
+
+script toggleDropdown() {
+	const button = this;
+	const dropdown = button.nextElementSibling;
+	const isHidden = dropdown.classList.contains('hidden');
+
+	// Close all other dropdowns
+	document.querySelectorAll('.absolute.right-0.mt-2').forEach(d => {
+		if (d !== dropdown) d.classList.add('hidden');
+	});
+
+	// Toggle current dropdown
+	dropdown.classList.toggle('hidden', !isHidden);
+
+	// Close on outside click
+	if (isHidden) {
+		document.addEventListener('click', function closeDropdown(e) {
+			if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+				dropdown.classList.add('hidden');
+				document.removeEventListener('click', closeDropdown);
+			}
+		});
+	}
+}

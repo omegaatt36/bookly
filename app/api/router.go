@@ -58,7 +58,7 @@ func (s *Server) registerRouters() {
 		v1Router.HandleFunc("DELETE /recurring/{id}", bookkeepingX.DeleteRecurringTransaction())
 		v1Router.HandleFunc("GET /recurring/reminders", bookkeepingX.GetReminders())
 		v1Router.HandleFunc("POST /recurring/reminders/{id}/read", bookkeepingX.MarkReminderAsRead())
-		
+
 		// Register bank account routes
 		v1Router.HandleFunc("POST /accounts/{account_id}/bank-account", bookkeepingX.CreateBankAccount())
 		v1Router.HandleFunc("GET /accounts/{account_id}/bank-account", bookkeepingX.GetBankAccountByAccountID())

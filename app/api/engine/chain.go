@@ -172,6 +172,10 @@ func (h *Handler[Req, Resp]) responseError() {
 		res.Code = codeError.AppCode
 		res.Message = codeError.Error()
 	}
+	slog.ErrorContext(h.r.Context(), "http response error",
+		slog.Int("status_code", statusCode),
+		slog.String("error", h.err.Error()),
+	)
 
 	if err := encodeJSON(h.w, statusCode, res); err != nil {
 		panic(err)

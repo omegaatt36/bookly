@@ -1,10 +1,14 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/golang-jwt/jwt"
+	"github.com/omegaatt36/bookly/app/web/api"
 )
 
 type wrappedWriter struct {
@@ -35,14 +39,54 @@ func logging(next http.Handler) http.Handler {
 	})
 }
 
+type contextKey struct{}
+
+var userIDKey = contextKey{}
+
 func authenticatedHandler(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, err := r.Cookie("token")
-		if err != nil || token.Value == "" {
+		cookie, err := r.Cookie("token")
+		if err != nil || cookie.Value == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 
+		tokenStr := cookie.Value
+
+		token, _, err := new(jwt.Parser).ParseUnverified(tokenStr, jwt.MapClaims{})
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		r = r.WithContext(context.WithValue(r.Context(), userIDKey, int32(userID)))
+
 		next.ServeHTTP(w, r)
+	}
+}
+
+func (s *Server) getUserFromContext(r *http.Request) *api.User {
+	userID, ok := r.Context().Value(userIDKey).(int32)
+	if !ok {
+		slog.Error("userID not found in context")
+		return &api.User{}
+	}
+
+	return &api.User{
+		ID:       userID,
+		Name:     "name",
+		Nickname: "nickname",
 	}
 }

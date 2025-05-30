@@ -112,7 +112,7 @@ func (s *Service) ProcessDueTransactions(ctx context.Context) error {
 		// Calculate next due date
 		nextDue := calculateNextDueDate(
 			transaction.NextDue,
-			transaction.RecurType,
+			transaction.RecurrenceType,
 			transaction.Frequency,
 			transaction.DayOfWeek,
 			transaction.DayOfMonth,

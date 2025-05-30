@@ -1,0 +1,146 @@
+package layout
+
+import api "github.com/omegaatt36/bookly/app/web/api"
+
+templ Base(title string, user *api.User) {
+	<!DOCTYPE html>
+	<html lang="zh-TW" class="dark">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - Bookly</title>
+			<link href="/static/css/output.css" rel="stylesheet"/>
+			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+		</head>
+		<body class="bg-background text-foreground min-h-screen">
+			<div class="flex min-h-screen">
+				<!-- Sidebar -->
+				if user != nil {
+					@Sidebar(user)
+				}
+				<!-- Main Content -->
+				<main class="flex-1 overflow-auto">
+					if user != nil {
+						@Header(title, user)
+					}
+					<div class="p-6">
+						{ children... }
+					</div>
+				</main>
+			</div>
+			<!-- Toast Container -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+		</body>
+	</html>
+}
+
+templ Sidebar(user *api.User) {
+	<aside class="w-64 bg-background-secondary border-r border-border flex flex-col">
+		<!-- Logo -->
+		<div class="p-6 border-b border-border">
+			<h1 class="text-2xl font-bold text-primary">Bookly</h1>
+			<p class="text-sm text-muted-foreground mt-1">個人記帳系統</p>
+		</div>
+
+		<!-- Navigation -->
+		<nav class="flex-1 p-4">
+			<ul class="space-y-2">
+				<li>
+					<a href="/" class="flex items-center px-4 py-2 text-foreground hover:bg-background-tertiary rounded-lg transition-colors">
+						<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+						</svg>
+						首頁
+					</a>
+				</li>
+				<li>
+					<a href="/accounts" class="flex items-center px-4 py-2 text-foreground hover:bg-background-tertiary rounded-lg transition-colors">
+						<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+						</svg>
+						帳戶管理
+					</a>
+				</li>
+				<li>
+					<a href="/recurring" class="flex items-center px-4 py-2 text-foreground hover:bg-background-tertiary rounded-lg transition-colors">
+						<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+						</svg>
+						定期交易
+					</a>
+				</li>
+				<li>
+					<a href="/reminders" class="flex items-center px-4 py-2 text-foreground hover:bg-background-tertiary rounded-lg transition-colors">
+						<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 1v5h5m10.414 4.414A2 2 0 0118 9V7a6 6 0 10-12 0v2a2 2 0 00-1.414 1.414L3 12h18l-1.586-1.586z"></path>
+						</svg>
+						提醒通知
+					</a>
+				</li>
+			</ul>
+		</nav>
+
+		<!-- User Info -->
+		<div class="p-4 border-t border-border">
+			<div class="flex items-center">
+				<div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+					<span class="text-sm font-medium text-primary-foreground">
+						{ string(user.Name) }
+					</span>
+				</div>
+				<div class="ml-3 flex-1 min-w-0">
+					<p class="text-sm font-medium text-foreground truncate">{ user.Name }</p>
+				</div>
+				<button
+					hx-post="/auth/logout"
+					hx-trigger="click"
+					class="ml-2 text-muted-foreground hover:text-foreground"
+					title="登出"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+					</svg>
+				</button>
+			</div>
+		</div>
+	</aside>
+}
+
+templ Header(title string, user *api.User) {
+	<header class="bg-background-secondary border-b border-border p-4">
+		<div class="flex items-center justify-between">
+			<div>
+				<h2 class="text-xl font-semibold text-foreground">{ title }</h2>
+			</div>
+			<div class="flex items-center space-x-4">
+				<button
+					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+					hx-get="/accounts/new"
+					hx-target="#modal-container"
+					hx-swap="innerHTML"
+				>
+					新增交易
+				</button>
+			</div>
+		</div>
+	</header>
+}
+
+templ Toast(message string, toastType string) {
+	<div class="bg-background-secondary border border-border rounded-lg p-4 shadow-lg animate-slide-in max-w-sm"
+		 _="on load wait 3s then remove me">
+		<div class="flex items-center">
+			if toastType == "success" {
+				<svg class="w-5 h-5 text-success mr-3" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+				</svg>
+			} else if toastType == "error" {
+				<svg class="w-5 h-5 text-destructive mr-3" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+				</svg>
+			}
+			<p class="text-foreground">{ message }</p>
+		</div>
+	</div>
+}

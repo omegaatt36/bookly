@@ -19,25 +19,25 @@ type RecurrenceStatus string
 
 // RecurringTransaction represents a recurring transaction configuration
 type RecurringTransaction struct {
-	ID           int32
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	UserID       int32
-	AccountID    int32
-	Name         string
-	Type         LedgerType
-	Amount       decimal.Decimal
-	Note         string
-	StartDate    time.Time
-	EndDate      *time.Time
-	RecurType    RecurrenceType
-	Status       RecurrenceStatus
-	Frequency    int        // How often the recurrence happens (e.g., every 2 weeks)
-	DayOfWeek    *int       // 0-6 (Sunday-Saturday) for weekly recurrences
-	DayOfMonth   *int       // 1-31 for monthly recurrences
-	MonthOfYear  *int       // 1-12 for yearly recurrences
-	LastExecuted *time.Time // When the transaction was last created
-	NextDue      time.Time  // When the next transaction is due
+	ID             int32
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	UserID         int32
+	AccountID      int32
+	Name           string
+	Type           LedgerType
+	Amount         decimal.Decimal
+	Note           string
+	StartDate      time.Time
+	EndDate        *time.Time
+	RecurrenceType RecurrenceType
+	Status         RecurrenceStatus
+	Frequency      int        // How often the recurrence happens (e.g., every 2 weeks)
+	DayOfWeek      *int       // 0-6 (Sunday-Saturday) for weekly recurrences
+	DayOfMonth     *int       // 1-31 for monthly recurrences
+	MonthOfYear    *int       // 1-12 for yearly recurrences
+	LastExecuted   *time.Time // When the transaction was last created
+	NextDue        time.Time  // When the next transaction is due
 }
 
 // Reminder represents a reminder for a recurring transaction
