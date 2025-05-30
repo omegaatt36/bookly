@@ -1,18 +1,19 @@
 package pages
 
 import (
+	"fmt"
 	"github.com/omegaatt36/bookly/app/web/templates/layout"
-	api "github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-templ RecurringTransactions(user *api.User, transactions []api.RecurringTransaction) {
-	@layout.Base("定期交易", user) {
+templ RecurringTransactions(user *datatype.User, transactions []datatype.RecurringTransaction) {
+	@layout.Base("Recurring Transactions", user) {
 		<div class="max-w-7xl mx-auto">
 			<!-- Header Section -->
 			<div class="flex items-center justify-between mb-8">
 				<div>
-					<h1 class="text-2xl font-bold text-foreground mb-2">定期交易</h1>
-					<p class="text-muted-foreground">管理您的定期收入與支出</p>
+					<h1 class="text-2xl font-bold text-foreground mb-2">Recurring Transactions</h1>
+					<p class="text-muted-foreground">Manage your recurring income and expenses</p>
 				</div>
 				<button
 					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center"
@@ -23,10 +24,9 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
 					</svg>
-					新增定期交易
+					New Recurring Transaction
 				</button>
 			</div>
-
 			<!-- Filter Tabs -->
 			<div class="bg-background-secondary border border-border rounded-lg p-1 mb-6 inline-flex">
 				<button
@@ -35,7 +35,7 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 					hx-target="#recurring-list"
 					hx-swap="outerHTML"
 				>
-					全部
+					All
 				</button>
 				<button
 					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
@@ -43,7 +43,7 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 					hx-target="#recurring-list"
 					hx-swap="outerHTML"
 				>
-					啟用中
+					Active
 				</button>
 				<button
 					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
@@ -51,7 +51,7 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 					hx-target="#recurring-list"
 					hx-swap="outerHTML"
 				>
-					已暫停
+					Paused
 				</button>
 				<button
 					class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-foreground hover:bg-background-tertiary"
@@ -59,10 +59,9 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 					hx-target="#recurring-list"
 					hx-swap="outerHTML"
 				>
-					已完成
+					Completed
 				</button>
 			</div>
-
 			<!-- Recurring Transactions List -->
 			<div id="recurring-list">
 				if len(transactions) > 0 {
@@ -76,19 +75,20 @@ templ RecurringTransactions(user *api.User, transactions []api.RecurringTransact
 				}
 			</div>
 		</div>
-
 		<!-- Modal Container -->
 		<div id="modal-container"></div>
 	}
 }
 
-templ RecurringTransactionCard(transaction api.RecurringTransaction) {
+templ RecurringTransactionCard(transaction datatype.RecurringTransaction) {
 	<div class="bg-background-secondary border border-border rounded-lg p-6">
 		<div class="flex items-start justify-between">
 			<div class="flex items-start flex-1">
 				<!-- Transaction Type Icon -->
-				<div class="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
-					class={ getRecurringIconBg(transaction.Type) }>
+				<div
+					class="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
+					class={ getRecurringIconBg(transaction.Type) }
+				>
 					if transaction.Type == "income" {
 						<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -103,7 +103,6 @@ templ RecurringTransactionCard(transaction api.RecurringTransaction) {
 						</svg>
 					}
 				</div>
-
 				<!-- Transaction Details -->
 				<div class="flex-1">
 					<div class="flex items-start justify-between mb-2">
@@ -117,13 +116,14 @@ templ RecurringTransactionCard(transaction api.RecurringTransaction) {
 							</p>
 						</div>
 						<div class="text-right">
-							<div class="text-xl font-bold"
-								class={ getRecurringAmountColor(transaction.Type) }>
+							<div
+								class="text-xl font-bold"
+								class={ getRecurringAmountColor(transaction.Type) }
+							>
 								{ formatRecurringAmount(transaction.Type, transaction.Amount) }
 							</div>
 						</div>
 					</div>
-
 					<!-- Schedule Info -->
 					<div class="flex items-center space-x-6 mb-4">
 						<div class="flex items-center">
@@ -139,7 +139,7 @@ templ RecurringTransactionCard(transaction api.RecurringTransaction) {
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 							</svg>
 							<span class="text-sm text-muted-foreground">
-								下次執行：{ transaction.NextDue.Format("2006-01-02") }
+								Next Execution: { mustParseTime(transaction.NextDue).Format("2006-01-02") }
 							</span>
 						</div>
 						if transaction.LastExecuted != nil {
@@ -148,62 +148,62 @@ templ RecurringTransactionCard(transaction api.RecurringTransaction) {
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 								</svg>
 								<span class="text-sm text-muted-foreground">
-									上次執行：{ transaction.LastExecuted.Format("2006-01-02") }
+									Last Execution: { mustParseTime(*transaction.LastExecuted).Format("2006-01-02") }
 								</span>
 							</div>
 						}
 					</div>
-
 					<!-- Status and Actions -->
 					<div class="flex items-center justify-between">
 						<div class="flex items-center space-x-3">
-							<span class="px-3 py-1 text-xs rounded-full"
-								class={ getRecurringStatusBg(transaction.Status) }>
+							<span
+								class="px-3 py-1 text-xs rounded-full"
+								class={ getRecurringStatusBg(transaction.Status) }
+							>
 								{ getRecurringStatusText(transaction.Status) }
 							</span>
 							if transaction.EndDate != nil {
 								<span class="text-xs text-muted-foreground">
-									結束日期：{ transaction.EndDate.Format("2006-01-02") }
+									End Date: { mustParseTime(*transaction.EndDate).Format("2006-01-02") }
 								</span>
 							}
 						</div>
-
 						<div class="flex items-center space-x-2">
 							<button
 								class="px-3 py-1 text-xs bg-primary/20 text-primary rounded hover:bg-primary/30 transition-colors"
-								hx-get={ "/recurring/" + string(rune(transaction.ID)) + "/edit" }
+								hx-get={ fmt.Sprintf("/recurring/%d/edit", transaction.ID) }
 								hx-target="#modal-container"
 								hx-swap="innerHTML"
 							>
-								編輯
+								Edit
 							</button>
 							if transaction.Status == "active" {
 								<button
 									class="px-3 py-1 text-xs bg-warning/20 text-warning rounded hover:bg-warning/30 transition-colors"
-									hx-post={ "/recurring/" + string(rune(transaction.ID)) + "/pause" }
+									hx-post={ fmt.Sprintf("/recurring/%d/pause", transaction.ID) }
 									hx-target="#recurring-list"
 									hx-swap="outerHTML"
 								>
-									暫停
+									Pause
 								</button>
 							} else if transaction.Status == "paused" {
 								<button
 									class="px-3 py-1 text-xs bg-success/20 text-success rounded hover:bg-success/30 transition-colors"
-									hx-post={ "/recurring/" + string(rune(transaction.ID)) + "/resume" }
+									hx-post={ fmt.Sprintf("/recurring/%d/resume", transaction.ID) }
 									hx-target="#recurring-list"
 									hx-swap="outerHTML"
 								>
-									恢復
+									Resume
 								</button>
 							}
 							<button
 								class="px-3 py-1 text-xs bg-destructive/20 text-destructive rounded hover:bg-destructive/30 transition-colors"
-								hx-delete={ "/recurring/" + string(rune(transaction.ID)) }
+								hx-delete={ fmt.Sprintf("/recurring/%d", transaction.ID) }
 								hx-target="#recurring-list"
 								hx-swap="outerHTML"
-								hx-confirm="確定要刪除此定期交易嗎？"
+								hx-confirm="Are you sure you want to delete this recurring transaction?"
 							>
-								刪除
+								Delete
 							</button>
 						</div>
 					</div>
@@ -218,15 +218,15 @@ templ EmptyRecurringState() {
 		<svg class="w-24 h-24 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
 		</svg>
-		<h3 class="text-lg font-semibold text-foreground mb-2">尚未設定定期交易</h3>
-		<p class="text-muted-foreground mb-6">建立定期交易來自動化您的財務管理</p>
+		<h3 class="text-lg font-semibold text-foreground mb-2">No recurring transactions set up yet</h3>
+		<p class="text-muted-foreground mb-6">Create recurring transactions to automate your financial management</p>
 		<button
 			class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
 			hx-get="/recurring/new"
 			hx-target="#modal-container"
 			hx-swap="innerHTML"
 		>
-			建立第一個定期交易
+			Create First Recurring Transaction
 		</button>
 	</div>
 }
@@ -288,38 +288,38 @@ func getRecurringStatusBg(status string) string {
 func getRecurringStatusText(status string) string {
 	switch status {
 	case "active":
-		return "啟用中"
+		return "Active"
 	case "paused":
-		return "已暫停"
+		return "Paused"
 	case "completed":
-		return "已完成"
+		return "Completed"
 	case "cancelled":
-		return "已取消"
+		return "Cancelled"
 	default:
-		return "未知"
+		return "Unknown"
 	}
 }
 
 func getFrequencyText(recurType string) string {
 	switch recurType {
 	case "daily":
-		return "每日"
+		return "Daily"
 	case "weekly":
-		return "每週"
+		return "Weekly"
 	case "biweekly":
-		return "雙週"
+		return "Biweekly"
 	case "monthly":
-		return "每月"
+		return "Monthly"
 	case "quarterly":
-		return "每季"
+		return "Quarterly"
 	case "yearly":
-		return "每年"
+		return "Yearly"
 	default:
-		return "未知"
+		return "Unknown"
 	}
 }
 
-// 注意：getAccountName 可根據實際帳戶資料來源調整
+// Note: getAccountName can be adjusted based on the actual account data source
 func getAccountName(accountID int32) string {
-	return "帳戶 " + string(rune(accountID))
+	return fmt.Sprintf("Account %d", accountID)
 }

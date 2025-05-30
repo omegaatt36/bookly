@@ -1,398 +1,391 @@
 package components
 
-import api "github.com/omegaatt36/bookly/app/web/api"
+import (
+	"fmt"
+	"github.com/omegaatt36/bookly/app/web/components/button"
+	"github.com/omegaatt36/bookly/app/web/components/input"
+	"github.com/omegaatt36/bookly/app/web/components/modal"
+	"github.com/omegaatt36/bookly/app/web/components/radio"
+	"github.com/omegaatt36/bookly/app/web/components/selectbox"
+	"github.com/omegaatt36/bookly/app/web/components/textarea"
+	"github.com/omegaatt36/bookly/sdk/datatype"
+)
 
 templ Modal(title string, size string) {
-	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-		 _="on click if target == me then remove me">
-		<div class="bg-background-secondary border border-border rounded-lg shadow-xl max-h-[90vh] overflow-auto"
-			 class={ getModalSize(size) }>
-			<div class="flex items-center justify-between p-6 border-b border-border">
-				<h3 class="text-lg font-semibold text-foreground">{ title }</h3>
-				<button class="text-muted-foreground hover:text-foreground"
-						_="on click remove closest .fixed">
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-					</svg>
-				</button>
-			</div>
-			<div class="p-6">
-				{ children... }
-			</div>
-		</div>
-	</div>
+	@modal.Modal() {
+		@modal.Header() {
+			{ title }
+			@modal.Close(modal.CloseProps{
+				Class: "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none",
+			}) {
+				<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+				</svg>
+			}
+		}
+		@modal.Body() {
+			{ children... }
+		}
+	}
 }
 
-templ AccountForm(account *api.Account, currencies []string) {
-	@Modal("新增帳戶", "md") {
+templ AccountForm(account *datatype.Account, currencies []string) {
+	@Modal("New Account", "md") {
 		<form hx-post="/accounts" hx-target="#modal-container" hx-swap="innerHTML">
 			<div class="space-y-4">
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">帳戶名稱</label>
-					<input
-						type="text"
-						name="name"
-						value={ getAccountName(account) }
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						placeholder="例如：銀行活存"
-						required
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Account Name</label>
+					@input.Input(input.Props{
+						Type:        input.TypeText,
+						Name:        "name",
+						Value:       getAccountName(account),
+						Placeholder: "e.g. Bank Savings",
+						Required:    true,
+					})
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">貨幣</label>
-					<select
-						name="currency"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						required
-					>
-						<option value="">選擇貨幣</option>
-						for _, currency := range currencies {
-							<option value={ currency }
-								selected?={ isSelectedCurrency(account, currency) }>
-								{ currency }
-							</option>
+					<label class="block text-sm font-medium text-foreground mb-1">Currency</label>
+					@selectbox.SelectBox() {
+						@selectbox.Trigger(selectbox.TriggerProps{
+							Name:     "currency",
+							Required: true,
+						}) {
+							@selectbox.Value(selectbox.ValueProps{
+								Placeholder: "Select Currency",
+							})
 						}
-					</select>
+						@selectbox.Content() {
+							for _, currency := range currencies {
+								@selectbox.Item(selectbox.ItemProps{
+									Value:    currency,
+									Selected: isSelectedCurrency(account, currency),
+								}) {
+									{ currency }
+								}
+							}
+						}
+					}
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">初始餘額</label>
-					<input
-						type="number"
-						name="initial_balance"
-						step="0.01"
-						value={ getAccountBalance(account) }
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						placeholder="0.00"
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Initial Balance</label>
+					@input.Input(input.Props{
+						Type:        input.TypeNumber,
+						Name:        "initial_balance",
+						Value:       getAccountBalance(account),
+						Placeholder: "0.00",
+					})
 				</div>
 			</div>
-
-			<div class="flex justify-end space-x-3 mt-6">
-				<button
-					type="button"
-					class="px-4 py-2 bg-background-tertiary text-foreground border border-border rounded-lg hover:bg-background-accent transition-colors"
-					_="on click remove closest .fixed"
-				>
-					取消
-				</button>
-				<button
-					type="submit"
-					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-				>
-					{ getAccountFormButtonText(account) }
-				</button>
-			</div>
+			@modal.Footer() {
+				<div class="flex justify-end space-x-3">
+					@modal.Close() {
+						@button.Button(button.Props{
+							Type:    button.TypeButton,
+							Variant: button.VariantOutline,
+						}) {
+							Cancel
+						}
+					}
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantDefault,
+					}) {
+						{ getAccountFormButtonText(account) }
+					}
+				</div>
+			}
 		</form>
 	}
 }
 
-templ LedgerForm(accounts []api.Account, ledgerType string, accountID int32) {
-	@Modal("新增交易", "md") {
+templ LedgerForm(accounts []datatype.Account, ledgerType string, accountID int32) {
+	@Modal("New Transaction", "md") {
 		<form hx-post="/ledgers" hx-target="#modal-container" hx-swap="innerHTML">
 			<div class="space-y-4">
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">交易類型</label>
+					<label class="block text-sm font-medium text-foreground mb-3">Transaction Type</label>
 					<div class="grid grid-cols-3 gap-2">
 						<label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-background-tertiary">
-							<input
-								type="radio"
-								name="type"
-								value="income"
-								checked?={ isLedgerTypeSelected("income", ledgerType) }
-								class="sr-only"
-							/>
-							<div class="w-4 h-4 border border-border rounded-full mr-3 flex items-center justify-center">
-								<div class="w-2 h-2 bg-success rounded-full hidden"></div>
-							</div>
-							<span class="text-sm">收入</span>
+							@radio.Radio(radio.Props{
+								Name:    "type",
+								Value:   "income",
+								Checked: isLedgerTypeSelected("income", ledgerType),
+							})
+							<span class="ml-2 text-sm">Income</span>
 						</label>
 						<label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-background-tertiary">
-							<input
-								type="radio"
-								name="type"
-								value="expense"
-								checked?={ isLedgerTypeSelected("expense", ledgerType) }
-								class="sr-only"
-							/>
-							<div class="w-4 h-4 border border-border rounded-full mr-3 flex items-center justify-center">
-								<div class="w-2 h-2 bg-destructive rounded-full hidden"></div>
-							</div>
-							<span class="text-sm">支出</span>
+							@radio.Radio(radio.Props{
+								Name:    "type",
+								Value:   "expense",
+								Checked: isLedgerTypeSelected("expense", ledgerType),
+							})
+							<span class="ml-2 text-sm">Expense</span>
 						</label>
 						<label class="flex items-center p-3 border border-border rounded-lg cursor-pointer hover:bg-background-tertiary">
-							<input
-								type="radio"
-								name="type"
-								value="transfer"
-								checked?={ isLedgerTypeSelected("transfer", ledgerType) }
-								class="sr-only"
-							/>
-							<div class="w-4 h-4 border border-border rounded-full mr-3 flex items-center justify-center">
-								<div class="w-2 h-2 bg-primary rounded-full hidden"></div>
-							</div>
-							<span class="text-sm">轉帳</span>
+							@radio.Radio(radio.Props{
+								Name:    "type",
+								Value:   "transfer",
+								Checked: isLedgerTypeSelected("transfer", ledgerType),
+							})
+							<span class="ml-2 text-sm">Transfer</span>
 						</label>
 					</div>
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">帳戶</label>
-					<select
-						name="account_id"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						required
-					>
-						<option value="">選擇帳戶</option>
-						for _, account := range accounts {
-							<option value={ string(rune(account.ID)) }
-									selected?={ isAccountSelected(account.ID, accountID) }>
-								{ account.Name } ({ account.Currency })
-							</option>
+					<label class="block text-sm font-medium text-foreground mb-1">Account</label>
+					@selectbox.SelectBox() {
+						@selectbox.Trigger(selectbox.TriggerProps{
+							Name:     "account_id",
+							Required: true,
+						}) {
+							@selectbox.Value(selectbox.ValueProps{
+								Placeholder: "Select Account",
+							})
 						}
-					</select>
+						@selectbox.Content() {
+							for _, account := range accounts {
+								@selectbox.Item(selectbox.ItemProps{
+									Value:    fmt.Sprintf("%d", account.ID),
+									Selected: isAccountSelected(account.ID, accountID),
+								}) {
+									{ account.Name } ({ account.Currency })
+								}
+							}
+						}
+					}
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">金額</label>
-					<input
-						type="number"
-						name="amount"
-						step="0.01"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						placeholder="0.00"
-						required
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Amount</label>
+					@input.Input(input.Props{
+						Type:        input.TypeNumber,
+						Name:        "amount",
+						Placeholder: "0.00",
+						Required:    true,
+					})
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">描述</label>
-					<input
-						type="text"
-						name="description"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						placeholder="交易描述"
-						required
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Description</label>
+					@input.Input(input.Props{
+						Type:        input.TypeText,
+						Name:        "description",
+						Placeholder: "Transaction Description",
+						Required:    true,
+					})
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">備註</label>
-					<textarea
-						name="note"
-						rows="3"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-						placeholder="選填"
-					></textarea>
+					<label class="block text-sm font-medium text-foreground mb-1">Note</label>
+					@textarea.Textarea(textarea.Props{
+						Name:        "note",
+						Placeholder: "Optional",
+						Rows:        3,
+					})
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">交易日期</label>
-					<input
-						type="datetime-local"
-						name="transaction_date"
-						value={ getCurrentDateTime() }
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						required
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Transaction Date</label>
+					@input.Input(input.Props{
+						Type:     input.TypeDate,
+						Name:     "transaction_date",
+						Value:    getCurrentDateTime(),
+						Required: true,
+					})
 				</div>
 			</div>
-
-			<div class="flex justify-end space-x-3 mt-6">
-				<button
-					type="button"
-					class="px-4 py-2 bg-background-tertiary text-foreground border border-border rounded-lg hover:bg-background-accent transition-colors"
-					_="on click remove closest .fixed"
-				>
-					取消
-				</button>
-				<button
-					type="submit"
-					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-				>
-					新增交易
-				</button>
-			</div>
+			@modal.Footer() {
+				<div class="flex justify-end space-x-3">
+					@modal.Close() {
+						@button.Button(button.Props{
+							Type:    button.TypeButton,
+							Variant: button.VariantOutline,
+						}) {
+							Cancel
+						}
+					}
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantDefault,
+					}) {
+						Add Transaction
+					}
+				</div>
+			}
 		</form>
 	}
 }
 
-templ RecurringForm(accounts []api.Account, frequencies []string) {
-	@Modal("新增定期交易", "lg") {
+templ RecurringForm(accounts []datatype.Account, frequencies []string) {
+	@Modal("New Recurring Transaction", "lg") {
 		<form hx-post="/recurring" hx-target="#modal-container" hx-swap="innerHTML">
 			<div class="space-y-4">
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">交易類型</label>
-						<select
-							name="type"
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							required
-						>
-							<option value="">選擇類型</option>
-							<option value="income">收入</option>
-							<option value="expense">支出</option>
-							<option value="transfer">轉帳</option>
-						</select>
-					</div>
-
-					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">帳戶</label>
-						<select
-							name="account_id"
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							required
-						>
-							<option value="">選擇帳戶</option>
-							for _, account := range accounts {
-								<option value={ string(rune(account.ID)) }>
-									{ account.Name } ({ account.Currency })
-								</option>
+						<label class="block text-sm font-medium text-foreground mb-1">Transaction Type</label>
+						@selectbox.SelectBox() {
+							@selectbox.Trigger(selectbox.TriggerProps{
+								Name:     "type",
+								Required: true,
+							}) {
+								@selectbox.Value(selectbox.ValueProps{
+									Placeholder: "Select Type",
+								})
 							}
-						</select>
+							@selectbox.Content() {
+								@selectbox.Item(selectbox.ItemProps{Value: "income"}) {
+									Income
+								}
+								@selectbox.Item(selectbox.ItemProps{Value: "expense"}) {
+									Expense
+								}
+								@selectbox.Item(selectbox.ItemProps{Value: "transfer"}) {
+									Transfer
+								}
+							}
+						}
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-foreground mb-1">Account</label>
+						@selectbox.SelectBox() {
+							@selectbox.Trigger(selectbox.TriggerProps{
+								Name:     "account_id",
+								Required: true,
+							}) {
+								@selectbox.Value(selectbox.ValueProps{
+									Placeholder: "Select Account",
+								})
+							}
+							@selectbox.Content() {
+								for _, account := range accounts {
+									@selectbox.Item(selectbox.ItemProps{
+										Value: fmt.Sprintf("%d", account.ID),
+									}) {
+										{ account.Name } ({ account.Currency })
+									}
+								}
+							}
+						}
 					</div>
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">描述</label>
-					<input
-						type="text"
-						name="description"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-						placeholder="例如：房租、薪水等"
-						required
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">Description</label>
+					@input.Input(input.Props{
+						Type:        input.TypeText,
+						Name:        "description",
+						Placeholder: "e.g. Rent, Salary, etc.",
+						Required:    true,
+					})
 				</div>
-
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">金額</label>
-						<input
-							type="number"
-							name="amount"
-							step="0.01"
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							placeholder="0.00"
-							required
-						/>
+						<label class="block text-sm font-medium text-foreground mb-1">Amount</label>
+						@input.Input(input.Props{
+							Type:        input.TypeNumber,
+							Name:        "amount",
+							Placeholder: "0.00",
+							Required:    true,
+						})
 					</div>
-
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">貨幣</label>
-						<input
-							type="text"
-							name="currency"
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							placeholder="TWD"
-							required
-						/>
+						<label class="block text-sm font-medium text-foreground mb-1">Currency</label>
+						@input.Input(input.Props{
+							Type:        input.TypeText,
+							Name:        "currency",
+							Placeholder: "USD",
+							Required:    true,
+						})
 					</div>
 				</div>
-
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">頻率</label>
-						<select
-							name="frequency"
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							required
-						>
-							<option value="">選擇頻率</option>
-							for _, freq := range frequencies {
-								<option value={ freq }>{ getFrequencyDisplayName(freq) }</option>
+						<label class="block text-sm font-medium text-foreground mb-1">Frequency</label>
+						@selectbox.SelectBox() {
+							@selectbox.Trigger(selectbox.TriggerProps{
+								Name:     "frequency",
+								Required: true,
+							}) {
+								@selectbox.Value(selectbox.ValueProps{
+									Placeholder: "Select Frequency",
+								})
 							}
-						</select>
+							@selectbox.Content() {
+								for _, freq := range frequencies {
+									@selectbox.Item(selectbox.ItemProps{
+										Value: freq,
+									}) {
+										{ getFrequencyDisplayName(freq) }
+									}
+								}
+							}
+						}
 					</div>
-
 					<div>
-						<label class="block text-sm font-medium text-foreground mb-1">開始日期</label>
-						<input
-							type="date"
-							name="start_date"
-							value={ getCurrentDate() }
-							class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-							required
-						/>
+						<label class="block text-sm font-medium text-foreground mb-1">Start Date</label>
+						@input.Input(input.Props{
+							Type:     input.TypeDate,
+							Name:     "start_date",
+							Value:    getCurrentDate(),
+							Required: true,
+						})
 					</div>
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">結束日期（選填）</label>
-					<input
-						type="date"
-						name="end_date"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-					/>
+					<label class="block text-sm font-medium text-foreground mb-1">End Date (Optional)</label>
+					@input.Input(input.Props{
+						Type: input.TypeDate,
+						Name: "end_date",
+					})
 				</div>
-
 				<div>
-					<label class="block text-sm font-medium text-foreground mb-1">備註</label>
-					<textarea
-						name="note"
-						rows="3"
-						class="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-						placeholder="選填"
-					></textarea>
+					<label class="block text-sm font-medium text-foreground mb-1">Note</label>
+					@textarea.Textarea(textarea.Props{
+						Name:        "note",
+						Placeholder: "Optional",
+						Rows:        3,
+					})
 				</div>
 			</div>
-
-			<div class="flex justify-end space-x-3 mt-6">
-				<button
-					type="button"
-					class="px-4 py-2 bg-background-tertiary text-foreground border border-border rounded-lg hover:bg-background-accent transition-colors"
-					_="on click remove closest .fixed"
-				>
-					取消
-				</button>
-				<button
-					type="submit"
-					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-				>
-					建立定期交易
-				</button>
-			</div>
+			@modal.Footer() {
+				<div class="flex justify-end space-x-3">
+					@modal.Close() {
+						@button.Button(button.Props{
+							Type:    button.TypeButton,
+							Variant: button.VariantOutline,
+						}) {
+							Cancel
+						}
+					}
+					@button.Button(button.Props{
+						Type:    button.TypeSubmit,
+						Variant: button.VariantDefault,
+					}) {
+						Create Recurring Transaction
+					}
+				</div>
+			}
 		</form>
 	}
 }
 
-func getModalSize(size string) string {
-	switch size {
-	case "sm":
-		return "w-full max-w-md"
-	case "md":
-		return "w-full max-w-lg"
-	case "lg":
-		return "w-full max-w-2xl"
-	case "xl":
-		return "w-full max-w-4xl"
-	default:
-		return "w-full max-w-lg"
-	}
-}
-
-func getAccountName(account *api.Account) string {
+func getAccountName(account *datatype.Account) string {
 	if account != nil {
 		return account.Name
 	}
 	return ""
 }
 
-func getAccountBalance(account *api.Account) string {
+func getAccountBalance(account *datatype.Account) string {
 	if account != nil {
 		return account.Balance
 	}
 	return "0"
 }
 
-func getAccountFormButtonText(account *api.Account) string {
+func getAccountFormButtonText(account *datatype.Account) string {
 	if account != nil {
-		return "更新帳戶"
+		return "Update Account"
 	}
-	return "建立帳戶"
+	return "Create Account"
 }
 
-func isSelectedCurrency(account *api.Account, currency string) bool {
+func isSelectedCurrency(account *datatype.Account, currency string) bool {
 	return account != nil && account.Currency == currency
 }
 
@@ -418,39 +411,18 @@ func getCurrentDate() string {
 func getFrequencyDisplayName(freq string) string {
 	switch freq {
 	case "daily":
-		return "每日"
+		return "Daily"
 	case "weekly":
-		return "每週"
+		return "Weekly"
 	case "biweekly":
-		return "雙週"
+		return "Biweekly"
 	case "monthly":
-		return "每月"
+		return "Monthly"
 	case "quarterly":
-		return "每季"
+		return "Quarterly"
 	case "yearly":
-		return "每年"
+		return "Yearly"
 	default:
 		return freq
 	}
 }
-
-script radioButtonHandler() {
-	document.addEventListener('change', function(e) {
-		if (e.target.type === 'radio') {
-			// Hide all radio indicators in the same group
-			const radios = document.querySelectorAll(`input[name="${e.target.name}"]`);
-			radios.forEach(radio => {
-					const indicator = radio.parentElement.querySelector('.w-2.h-2');
-					if (indicator) {
-						indicator.classList.add('hidden');
-					}
-				});
-
-				// Show the selected radio indicator
-				const selectedIndicator = e.target.parentElement.querySelector('.w-2.h-2');
-				if (selectedIndicator) {
-					selectedIndicator.classList.remove('hidden');
-				}
-			}
-		});
-	}

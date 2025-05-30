@@ -1,0 +1,6 @@
+{
+  "componentsDir": "app/web/components",
+  "utilsDir": "app/web/utils",
+  "moduleName": "github.com/omegaatt36/bookly",
+  "jsDir": "app/web/static/assets/js"
+}

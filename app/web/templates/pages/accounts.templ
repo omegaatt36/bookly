@@ -2,30 +2,33 @@ package pages
 
 import (
 	"fmt"
-	api "github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/app/web/components/badge"
+	"github.com/omegaatt36/bookly/app/web/components/button"
+	"github.com/omegaatt36/bookly/app/web/components/card"
 	"github.com/omegaatt36/bookly/app/web/templates/layout"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
-templ AccountsList(user *api.User, accounts []api.Account) {
-	@layout.Base("帳戶管理", user) {
+templ AccountsList(user *datatype.User, accounts []datatype.Account) {
+	@layout.Base("Account Management", user) {
 		<div class="max-w-7xl mx-auto">
 			<!-- Header Section -->
 			<div class="flex items-center justify-between mb-8">
 				<div>
-					<h1 class="text-2xl font-bold text-foreground mb-2">帳戶管理</h1>
-					<p class="text-muted-foreground">管理您的所有財務帳戶</p>
+					<h1 class="text-2xl font-bold text-foreground mb-2">Account Management</h1>
+					<p class="text-muted-foreground">Manage all your financial accounts</p>
 				</div>
-				<button
-					class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center"
-					hx-get="/accounts/new"
-					hx-target="#modal-container"
-					hx-swap="innerHTML"
-				>
+				@button.Button(button.Props{
+					Variant:  button.VariantDefault,
+					HxGet:    "/accounts/new",
+					HxTarget: "#modal-container",
+					HxSwap:   "innerHTML",
+				}) {
 					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
 					</svg>
-					新增帳戶
-				</button>
+					New Account
+				}
 			</div>
 			<!-- Accounts Grid -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="accounts-list">
@@ -44,125 +47,149 @@ templ AccountsList(user *api.User, accounts []api.Account) {
 	}
 }
 
-templ AccountCard(account api.Account) {
-	<div class="bg-background-secondary border border-border rounded-lg p-6 hover:bg-background-tertiary transition-colors">
-		<div class="flex items-start justify-between mb-4">
-			<div class="flex items-center">
-				<div
-					class="w-12 h-12 rounded-lg flex items-center justify-center mr-3"
-					class={ getAccountIconBg(account.Currency) }
-				>
-					<span class="text-lg font-bold text-white">
-						{ getCurrencySymbol(account.Currency) }
-					</span>
+templ AccountCard(account datatype.Account) {
+	@card.Card(card.Props{
+		Class: "hover:bg-background-tertiary transition-colors",
+	}) {
+		@card.Content() {
+			<div class="flex items-start justify-between mb-4">
+				<div class="flex items-center">
+					<div
+						class="w-12 h-12 rounded-lg flex items-center justify-center mr-3"
+						class={ getAccountIconBg(account.Currency) }
+					>
+						<span class="text-lg font-bold text-white">
+							{ getCurrencySymbol(account.Currency) }
+						</span>
+					</div>
+					<div>
+						<h3 class="font-semibold text-foreground">{ account.Name }</h3>
+						<p class="text-sm text-muted-foreground">{ account.Currency }</p>
+					</div>
 				</div>
-				<div>
-					<h3 class="font-semibold text-foreground">{ account.Name }</h3>
-					<p class="text-sm text-muted-foreground">{ account.Currency }</p>
-				</div>
-			</div>
-			<div class="flex items-center space-x-2">
-				if account.Status == "active" {
-					<span class="px-2 py-1 bg-success/20 text-success text-xs rounded-full">
-						啟用
-					</span>
-				} else {
-					<span class="px-2 py-1 bg-muted/20 text-muted-foreground text-xs rounded-full">
-						停用
-					</span>
-				}
-				<div class="relative">
-					<button class="p-1 hover:bg-background-accent rounded" onclick="toggleDropdown()">
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"></path>
-						</svg>
-					</button>
-					<div class="absolute right-0 mt-2 w-48 bg-background-secondary border border-border rounded-lg shadow-lg hidden z-10">
-						<a
-							href={ templ.URL("/accounts/" + templ.EscapeString(fmt.Sprintf("%d", account.ID))) }
-							class="block px-4 py-2 text-sm text-foreground hover:bg-background-tertiary"
-						>
-							查看詳情
-						</a>
-						<button
-							hx-get={ fmt.Sprintf("/accounts/%d/edit", account.ID) }
-							hx-target="#modal-container"
-							hx-swap="innerHTML"
-							class="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-background-tertiary"
-						>
-							編輯
-						</button>
-						if account.Status == "active" {
-							<button
-								hx-post={ fmt.Sprintf("/accounts/%d/deactivate", account.ID) }
-								hx-target="#accounts-list"
-								hx-swap="outerHTML"
-								hx-confirm="確定要停用此帳戶嗎？"
-								class="block w-full text-left px-4 py-2 text-sm text-warning hover:bg-background-tertiary"
-							>
-								停用帳戶
-							</button>
-						} else {
-							<button
-								hx-post={ fmt.Sprintf("/accounts/%d/activate", account.ID) }
-								hx-target="#accounts-list"
-								hx-swap="outerHTML"
-								class="block w-full text-left px-4 py-2 text-sm text-success hover:bg-background-tertiary"
-							>
-								啟用帳戶
-							</button>
+				<div class="flex items-center space-x-2">
+					if account.Status == "active" {
+						@badge.Badge(badge.Props{
+							Variant: badge.VariantDefault,
+							Class:   "bg-success text-success-foreground border-transparent",
+						}) {
+							Active
 						}
+					} else {
+						@badge.Badge(badge.Props{
+							Variant: badge.VariantSecondary,
+						}) {
+							Disabled
+						}
+					}
+					<div class="relative">
+						@button.Button(button.Props{
+							Variant:    button.VariantGhost,
+							Size:       button.SizeIcon,
+							Class:      "p-1 w-8 h-8",
+							Attributes: templ.Attributes{"onclick": "toggleDropdown()"},
+						}) {
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"></path>
+							</svg>
+						}
+						<div class="absolute right-0 mt-2 w-48 bg-background-secondary border border-border rounded-lg shadow-lg hidden z-10">
+							@button.Button(button.Props{
+								Variant: button.VariantGhost,
+								Href:    fmt.Sprintf("/accounts/%d", account.ID),
+								Class:   "w-full justify-start px-4 py-2 text-sm",
+							}) {
+								View Details
+							}
+							@button.Button(button.Props{
+								Variant:  button.VariantGhost,
+								HxGet:    fmt.Sprintf("/accounts/%d/edit", account.ID),
+								HxTarget: "#modal-container",
+								HxSwap:   "innerHTML",
+								Class:    "w-full justify-start px-4 py-2 text-sm",
+							}) {
+								Edit
+							}
+							if account.Status == "active" {
+								@button.Button(button.Props{
+									Variant:    button.VariantGhost,
+									HxPost:     fmt.Sprintf("/accounts/%d/deactivate", account.ID),
+									HxTarget:   "#accounts-list",
+									HxSwap:     "outerHTML",
+									Class:      "w-full justify-start px-4 py-2 text-sm text-warning",
+									Attributes: templ.Attributes{"hx-confirm": "Are you sure you want to disable this account?"},
+								}) {
+									Disable Account
+								}
+							} else {
+								@button.Button(button.Props{
+									Variant:  button.VariantGhost,
+									HxPost:   fmt.Sprintf("/accounts/%d/activate", account.ID),
+									HxTarget: "#accounts-list",
+									HxSwap:   "outerHTML",
+									Class:    "w-full justify-start px-4 py-2 text-sm text-success",
+								}) {
+									Enable Account
+								}
+							}
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		<!-- Balance -->
-		<div class="mb-4">
-			<div class="text-2xl font-bold text-foreground">
-				{ account.Balance }
+			<!-- Balance -->
+			<div class="mb-4">
+				<div class="text-2xl font-bold text-foreground">
+					{ account.Balance }
+				</div>
+				<div class="text-sm text-muted-foreground">Current Balance</div>
 			</div>
-			<div class="text-sm text-muted-foreground">當前餘額</div>
-		</div>
-		<!-- Quick Actions -->
-		<div class="flex space-x-2">
-			<button
-				class="flex-1 px-3 py-2 bg-success/20 text-success rounded-lg hover:bg-success/30 transition-colors text-sm"
-				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=income", account.ID) }
-				hx-target="#modal-container"
-				hx-swap="innerHTML"
-			>
-				收入
-			</button>
-			<button
-				class="flex-1 px-3 py-2 bg-destructive/20 text-destructive rounded-lg hover:bg-destructive/30 transition-colors text-sm"
-				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=expense", account.ID) }
-				hx-target="#modal-container"
-				hx-swap="innerHTML"
-			>
-				支出
-			</button>
-			<button
-				class="flex-1 px-3 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors text-sm"
-				hx-get={ fmt.Sprintf("/ledgers/new?account_id=%d&type=transfer", account.ID) }
-				hx-target="#modal-container"
-				hx-swap="innerHTML"
-			>
-				轉帳
-			</button>
-		</div>
-		<!-- View Ledgers Link -->
-		<div class="mt-4 pt-4 border-t border-border">
-			<a
-				href={ templ.URL(fmt.Sprintf("/accounts/%d/ledgers", account.ID)) }
-				class="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
-			>
-				查看交易明細
+			<!-- Quick Actions -->
+			<div class="flex space-x-2">
+				@button.Button(button.Props{
+					Variant:   button.VariantOutline,
+					FullWidth: true,
+					Class:     "bg-success/20 text-success hover:bg-success/30 border-success/30",
+					HxGet:     fmt.Sprintf("/ledgers/new?account_id=%d&type=income", account.ID),
+					HxTarget:  "#modal-container",
+					HxSwap:    "innerHTML",
+				}) {
+					Income
+				}
+				@button.Button(button.Props{
+					Variant:   button.VariantOutline,
+					FullWidth: true,
+					Class:     "bg-destructive/20 text-destructive hover:bg-destructive/30 border-destructive/30",
+					HxGet:     fmt.Sprintf("/ledgers/new?account_id=%d&type=expense", account.ID),
+					HxTarget:  "#modal-container",
+					HxSwap:    "innerHTML",
+				}) {
+					Expense
+				}
+				@button.Button(button.Props{
+					Variant:   button.VariantOutline,
+					FullWidth: true,
+					Class:     "bg-primary/20 text-primary hover:bg-primary/30 border-primary/30",
+					HxGet:     fmt.Sprintf("/ledgers/new?account_id=%d&type=transfer", account.ID),
+					HxTarget:  "#modal-container",
+					HxSwap:    "innerHTML",
+				}) {
+					Transfer
+				}
+			</div>
+		}
+		@card.Footer() {
+			@button.Button(button.Props{
+				Variant: button.VariantLink,
+				Href:    fmt.Sprintf("/accounts/%d/ledgers", account.ID),
+				Class:   "text-sm font-medium p-0",
+			}) {
+				View Transactions
 				<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
 				</svg>
-			</a>
-		</div>
-	</div>
+			}
+		}
+	}
 }
 
 templ EmptyAccountsState() {
@@ -170,48 +197,19 @@ templ EmptyAccountsState() {
 		<svg class="w-24 h-24 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
 		</svg>
-		<h3 class="text-lg font-semibold text-foreground mb-2">尚未建立任何帳戶</h3>
-		<p class="text-muted-foreground mb-6">開始建立您的第一個帳戶來管理財務</p>
-		<button
-			class="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-			hx-get="/accounts/new"
-			hx-target="#modal-container"
-			hx-swap="innerHTML"
-		>
-			建立第一個帳戶
-		</button>
+		<h3 class="text-lg font-semibold text-foreground mb-2">No accounts created yet</h3>
+		<p class="text-muted-foreground mb-6">Start by creating your first account to manage your finances</p>
+		@button.Button(button.Props{
+			Variant:  button.VariantDefault,
+			Class:    "px-6 py-3",
+			HxGet:    "/accounts/new",
+			HxTarget: "#modal-container",
+			HxSwap:   "innerHTML",
+		}) {
+			Create First Account
+		}
 	</div>
 }
-
-// func getAccountIconBg(currency string) string {
-// 	switch currency {
-// 	case "USD":
-// 		return "bg-green-500"
-// 	case "TWD":
-// 		return "bg-blue-500"
-// 	case "EUR":
-// 		return "bg-purple-500"
-// 	case "JPY":
-// 		return "bg-red-500"
-// 	default:
-// 		return "bg-primary"
-// 	}
-// }
-
-// func getCurrencySymbol(currency string) string {
-// 	switch currency {
-// 	case "USD":
-// 		return "$"
-// 	case "TWD":
-// 		return "NT"
-// 	case "EUR":
-// 		return "€"
-// 	case "JPY":
-// 		return "¥"
-// 	default:
-// 		return currency[:2]
-// 	}
-// }
 
 script toggleDropdown() {
 	const button = this;

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/omegaatt36/bookly/app/web/api"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
 type wrappedWriter struct {
@@ -77,14 +77,14 @@ func authenticatedHandler(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (s *Server) getUserFromContext(r *http.Request) *api.User {
+func (s *Server) getUserFromContext(r *http.Request) *datatype.User {
 	userID, ok := r.Context().Value(userIDKey).(int32)
 	if !ok {
 		slog.Error("userID not found in context")
-		return &api.User{}
+		return &datatype.User{}
 	}
 
-	return &api.User{
+	return &datatype.User{
 		ID:       userID,
 		Name:     "name",
 		Nickname: "nickname",

@@ -8,3 +8,6 @@ bin/*
 
 # Generated CSS
 app/web/static/css/styles.css
+
+# Generated JS
+app/web/static/assets/js/*.js

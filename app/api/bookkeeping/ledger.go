@@ -16,6 +16,7 @@ import (
 func convertLedgerFromDomain(ledger *domain.Ledger) datatype.Ledger {
 	return datatype.Ledger{
 		ID:           ledger.ID,
+		CreatedAt:    ledger.CreatedAt.Format(datatype.TimeFormat),
 		AccountID:    ledger.AccountID,
 		Date:         ledger.Date.Format(datatype.TimeFormat),
 		Type:         ledger.Type.String(),

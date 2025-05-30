@@ -1,8 +1,11 @@
 module github.com/omegaatt36/bookly
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.3
 
 require (
+	github.com/Oudwins/tailwind-merge-go v0.2.0
 	github.com/a-h/templ v0.3.865
 	github.com/go-co-op/gocron/v2 v2.16.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible

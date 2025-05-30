@@ -6,26 +6,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/omegaatt36/bookly/app/web/api"
 	"github.com/omegaatt36/bookly/app/web/templates/components"
 	"github.com/omegaatt36/bookly/app/web/templates/layout"
 	"github.com/omegaatt36/bookly/app/web/templates/pages"
-	"github.com/omegaatt36/bookly/domain"
+	"github.com/omegaatt36/bookly/sdk/datatype"
 )
 
 // parseInt32 converts a string to int32 safely, returning 0 if conversion fails
 func parseInt32(s string) int32 {
 	if s == "" {
-		slog.Debug("empty string provided for int32 conversion")
+		slog.Warn("empty string provided for int32 conversion")
 		return 0
 	}
-	fmt.Printf("parsing string to int32: '%s'\n", s)
+
 	val, err := strconv.ParseInt(s, 10, 32)
 	if err != nil {
 		slog.Debug("failed to parse string to int32", slog.String("value", s), slog.String("error", err.Error()))
@@ -37,9 +35,8 @@ func parseInt32(s string) int32 {
 
 // Server represents a web server
 type Server struct {
-	port      int
-	router    http.Handler
-	templates *template.Template
+	port   int
+	router http.Handler
 
 	serverURL string
 }
@@ -128,12 +125,7 @@ func (s *Server) sendRequest(r *http.Request, method, path string, body any, res
 	}
 	defer resp.Body.Close()
 
-	var response struct {
-		Code    int             `json:"code"`
-		Data    json.RawMessage `json:"data"`
-		Message string          `json:"message"`
-	}
-
+	var response datatype.Response
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -176,8 +168,8 @@ func (s *Server) pageHome(w http.ResponseWriter, r *http.Request) {
 func (s *Server) pageAccounts(w http.ResponseWriter, r *http.Request) {
 	user := s.getUserFromContext(r)
 	// Get accounts from API
-	var accounts []api.Account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	var accounts []datatype.Account
+	err := s.sendRequest(r, http.MethodGet, "/v1/accounts", nil, &accounts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,22 +184,22 @@ func (s *Server) pageAccountDetail(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("id"))
 
 	// Get account details
-	var account api.Account
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d", accountID), nil, &account)
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodGet, fmt.Sprintf("/v1/accounts/%d", accountID), nil, &account)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Get ledgers for this account
-	var ledger []api.Ledger
-	err = s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d/ledgers", accountID), nil, &ledger)
+	var ledgers []datatype.Ledger
+	err = s.sendRequest(r, http.MethodGet, fmt.Sprintf("/v1/accounts/%d/ledgers", accountID), nil, &ledgers)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	component := pages.AccountDetail(user, account, ledger)
+	component := pages.AccountDetail(user, account, ledgers)
 	component.Render(r.Context(), w)
 }
 
@@ -221,8 +213,8 @@ func (s *Server) pageRecurring(w http.ResponseWriter, r *http.Request) {
 	user := s.getUserFromContext(r)
 
 	// Get recurring transactions
-	var recurringTransactions []api.RecurringTransaction
-	err := s.sendRequest(r, "GET", "/v1/recurring", nil, &recurringTransactions)
+	var recurringTransactions []datatype.RecurringTransaction
+	err := s.sendRequest(r, http.MethodGet, "/v1/recurring", nil, &recurringTransactions)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -236,8 +228,8 @@ func (s *Server) pageReminders(w http.ResponseWriter, r *http.Request) {
 	user := s.getUserFromContext(r)
 
 	// Get reminders
-	var reminders []api.Reminder
-	err := s.sendRequest(r, "GET", "/v1/recurring/reminders", nil, &reminders)
+	var reminders []datatype.Reminder
+	err := s.sendRequest(r, http.MethodGet, "/v1/recurring/reminders", nil, &reminders)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -257,8 +249,8 @@ func (s *Server) modalAccountForm(w http.ResponseWriter, r *http.Request) {
 func (s *Server) modalAccountEdit(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("id"))
 
-	var account api.Account
-	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d", accountID), nil, &account)
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodGet, fmt.Sprintf("/v1/accounts/%d", accountID), nil, &account)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -271,8 +263,8 @@ func (s *Server) modalAccountEdit(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) modalLedgerForm(w http.ResponseWriter, r *http.Request) {
 	// Get accounts for dropdown
-	var accounts []api.Account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	var accounts []datatype.Account
+	err := s.sendRequest(r, http.MethodGet, "/v1/accounts", nil, &accounts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -287,20 +279,20 @@ func (s *Server) modalLedgerForm(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) modalLedgerEdit(w http.ResponseWriter, r *http.Request) {
 	// Similar to modalLedgerForm but with existing ledger data
-	var accounts []api.Account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	var accounts []datatype.Account
+	err := s.sendRequest(r, http.MethodGet, "/v1/accounts", nil, &accounts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	component := components.LedgerForm(accounts, "", 0)
+	component := components.LedgerForm(accounts, "", 0) // Placeholder, actual data loading needed
 	component.Render(r.Context(), w)
 }
 
 func (s *Server) modalRecurringForm(w http.ResponseWriter, r *http.Request) {
-	var accounts []api.Account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	var accounts []datatype.Account
+	err := s.sendRequest(r, http.MethodGet, "/v1/accounts", nil, &accounts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -318,8 +310,8 @@ func (s *Server) modalRecurringForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) modalRecurringEdit(w http.ResponseWriter, r *http.Request) {
-	var accounts []api.Account
-	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
+	var accounts []datatype.Account
+	err := s.sendRequest(r, http.MethodGet, "/v1/accounts", nil, &accounts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -332,7 +324,7 @@ func (s *Server) modalRecurringEdit(w http.ResponseWriter, r *http.Request) {
 		"yearly",
 	}
 
-	component := components.RecurringForm(accounts, recurrenceTypes)
+	component := components.RecurringForm(accounts, recurrenceTypes) // Placeholder, actual data loading needed
 	component.Render(r.Context(), w)
 }
 
@@ -350,10 +342,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token"`
 	}
 
-	err := s.sendRequest(r, "POST", "/public/auth/login", loginReq, &loginResp)
+	err := s.sendRequest(r, http.MethodPost, "/public/auth/login", loginReq, &loginResp)
 	if err != nil {
 		// Return error toast
-		component := layout.Toast("登入失敗："+err.Error(), "error")
+		component := layout.Toast("Login failed: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -378,7 +370,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	confirmPassword := r.FormValue("confirm_password")
 
 	if password != confirmPassword {
-		component := layout.Toast("密碼不一致", "error")
+		component := layout.Toast("Passwords do not match", "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -388,9 +380,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		"password": password,
 	}
 
-	err := s.sendRequest(r, "POST", "/public/auth/register", registerReq, nil)
+	err := s.sendRequest(r, http.MethodPost, "/public/auth/register", registerReq, nil)
 	if err != nil {
-		component := layout.Toast("註冊失敗："+err.Error(), "error")
+		component := layout.Toast("Registration failed: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -420,10 +412,10 @@ func (s *Server) handleCreateAccount(w http.ResponseWriter, r *http.Request) {
 		"name":     name,
 		"currency": currency,
 	}
-	var account domain.Account
-	err := s.sendRequest(r, "POST", "/v1/accounts", req, &account)
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodPost, "/v1/accounts", req, &account)
 	if err != nil {
-		component := layout.Toast("新增帳戶失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to create account: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -435,25 +427,20 @@ func (s *Server) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("id"))
 	name := r.FormValue("name")
 	status := r.FormValue("status")
-	currency := r.FormValue("currency")
 
-	req := map[string]any{
-		"id": accountID,
-	}
+	req := datatype.UpdateAccountRequest{}
+
 	if name != "" {
-		req["name"] = name
+		req.Name = &name
 	}
 	if status != "" {
-		req["status"] = status
-	}
-	if currency != "" {
-		req["currency"] = currency
+		req.Status = &status
 	}
 
-	var account domain.Account
-	err := s.sendRequest(r, "PUT", "/v1/accounts/"+strconv.Itoa(int(accountID)), req, &account)
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodPut, fmt.Sprintf("/v1/accounts/%d", accountID), req, &account)
 	if err != nil {
-		component := layout.Toast("更新帳戶失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to update account: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -463,13 +450,18 @@ func (s *Server) handleUpdateAccount(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleActivateAccount(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("id"))
-	req := map[string]any{
-		"status": "active",
+
+	req := datatype.UpdateAccountRequest{
+		Status: func() *string {
+			status := "active"
+			return &status
+		}(),
 	}
-	var account domain.Account
-	err := s.sendRequest(r, "PUT", "/v1/accounts/"+strconv.Itoa(int(accountID)), req, &account)
+
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodPut, "/v1/accounts/"+strconv.Itoa(int(accountID)), req, &account)
 	if err != nil {
-		component := layout.Toast("帳戶啟用失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to activate account: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -479,13 +471,17 @@ func (s *Server) handleActivateAccount(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeactivateAccount(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("id"))
-	req := map[string]any{
-		"status": "closed",
+	req := datatype.UpdateAccountRequest{
+		Status: func() *string {
+			status := "closed"
+			return &status
+		}(),
 	}
-	var account domain.Account
-	err := s.sendRequest(r, "PUT", "/v1/accounts/"+strconv.Itoa(int(accountID)), req, &account)
+
+	var account datatype.Account
+	err := s.sendRequest(r, http.MethodPut, "/v1/accounts/"+strconv.Itoa(int(accountID)), req, &account)
 	if err != nil {
-		component := layout.Toast("帳戶停用失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to deactivate account: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -495,24 +491,19 @@ func (s *Server) handleDeactivateAccount(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) handleCreateLedger(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.FormValue("account_id"))
-	date := r.FormValue("date")
-	tType := r.FormValue("type")
-	amount := r.FormValue("amount")
-	note := r.FormValue("note")
 
-	req := map[string]any{
-		"account_id": accountID,
-		"date":       date,
-		"type":       tType,
-		"amount":     amount,
+	req := datatype.CreateLedgerRequest{
+		AccountID: accountID,
+		Date:      r.FormValue("date"),
+		Type:      r.FormValue("type"),
+		Amount:    r.FormValue("amount"),
+		Note:      r.FormValue("note"),
 	}
-	if note != "" {
-		req["note"] = note
-	}
-	var ledger domain.Ledger
-	err := s.sendRequest(r, "POST", "/v1/accounts/"+strconv.Itoa(int(accountID))+"/ledgers", req, &ledger)
+
+	var ledger datatype.Ledger
+	err := s.sendRequest(r, http.MethodPost, "/v1/accounts/"+strconv.Itoa(int(accountID))+"/ledgers", req, &ledger)
 	if err != nil {
-		component := layout.Toast("新增交易失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to create transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -527,26 +518,27 @@ func (s *Server) handleUpdateLedger(w http.ResponseWriter, r *http.Request) {
 	amount := r.FormValue("amount")
 	note := r.FormValue("note")
 
-	req := map[string]any{
-		"id": ledgerID,
-	}
-	if date != "" {
-		req["date"] = date
-	}
-	if tType != "" {
-		req["type"] = tType
-	}
-	if amount != "" {
-		req["amount"] = amount
-	}
-	if note != "" {
-		req["note"] = note
+	req := datatype.UpdateLedgerRequest{
+		ID: ledgerID,
 	}
 
-	var ledger domain.Ledger
-	err := s.sendRequest(r, "PUT", "/v1/ledgers/"+strconv.Itoa(int(ledgerID)), req, &ledger)
+	if date != "" {
+		req.Date = &date
+	}
+	if tType != "" {
+		req.Type = &tType
+	}
+	if amount != "" {
+		req.Amount = &amount
+	}
+	if note != "" {
+		req.Note = &note
+	}
+
+	var ledger datatype.Ledger
+	err := s.sendRequest(r, http.MethodPut, "/v1/ledgers/"+strconv.Itoa(int(ledgerID)), req, &ledger)
 	if err != nil {
-		component := layout.Toast("更新交易失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to update transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -555,11 +547,11 @@ func (s *Server) handleUpdateLedger(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleVoidLedger(w http.ResponseWriter, r *http.Request) {
-	// 作廢交易
+	// Void transaction
 	ledgerID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "POST", "/v1/ledgers/"+strconv.Itoa(int(ledgerID))+"/void", nil, nil)
+	err := s.sendRequest(r, http.MethodDelete, "/v1/ledgers/"+strconv.Itoa(int(ledgerID)), nil, nil)
 	if err != nil {
-		component := layout.Toast("作廢失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to void transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -574,41 +566,69 @@ func (s *Server) handleCreateRecurring(w http.ResponseWriter, r *http.Request) {
 	amount := r.FormValue("amount")
 	note := r.FormValue("note")
 	startDate := r.FormValue("start_date")
-	endDate := r.FormValue("end_date")
+	endDateStr := r.FormValue("end_date")
 	recurType := r.FormValue("recur_type")
-	frequency := r.FormValue("frequency")
-	dayOfWeek := r.FormValue("day_of_week")
-	dayOfMonth := r.FormValue("day_of_month")
-	monthOfYear := r.FormValue("month_of_year")
+	frequencyStr := r.FormValue("frequency")
+	dayOfWeekStr := r.FormValue("day_of_week")
+	dayOfMonthStr := r.FormValue("day_of_month")
+	monthOfYearStr := r.FormValue("month_of_year")
 
-	req := map[string]any{
-		"account_id": accountID,
-		"name":       name,
-		"type":       tType,
-		"amount":     amount,
-		"start_date": startDate,
-		"recur_type": recurType,
-		"frequency":  frequency,
+	// Parse optional fields into pointers as needed
+	var (
+		endDate     *string
+		dayOfWeek   *int
+		dayOfMonth  *int
+		monthOfYear *int
+	)
+
+	if endDateStr != "" {
+		endDate = &endDateStr
 	}
-	if note != "" {
-		req["note"] = note
+	if dayOfWeekStr != "" {
+		val, err := strconv.Atoi(dayOfWeekStr)
+		if err == nil {
+			dayOfWeek = &val
+		}
 	}
-	if endDate != "" {
-		req["end_date"] = endDate
+	if dayOfMonthStr != "" {
+		val, err := strconv.Atoi(dayOfMonthStr)
+		if err == nil {
+			dayOfMonth = &val
+		}
 	}
-	if dayOfWeek != "" {
-		req["day_of_week"] = dayOfWeek
+	if monthOfYearStr != "" {
+		val, err := strconv.Atoi(monthOfYearStr)
+		if err == nil {
+			monthOfYear = &val
+		}
 	}
-	if dayOfMonth != "" {
-		req["day_of_month"] = dayOfMonth
+
+	frequency := 1
+	if frequencyStr != "" {
+		if freqInt, err := strconv.Atoi(frequencyStr); err == nil {
+			frequency = freqInt
+		}
 	}
-	if monthOfYear != "" {
-		req["month_of_year"] = monthOfYear
+
+	req := datatype.CreateRecurringTransactionRequest{
+		AccountID:   accountID,
+		Name:        name,
+		Type:        tType,
+		Amount:      amount,
+		Note:        note,
+		StartDate:   startDate,
+		EndDate:     endDate,
+		RecurType:   recurType,
+		Frequency:   frequency,
+		DayOfWeek:   dayOfWeek,
+		DayOfMonth:  dayOfMonth,
+		MonthOfYear: monthOfYear,
 	}
-	var tx domain.RecurringTransaction
-	err := s.sendRequest(r, "POST", "/v1/recurring", req, &tx)
+
+	var tx datatype.RecurringTransaction
+	err := s.sendRequest(r, http.MethodPost, "/v1/recurring", req, &tx)
 	if err != nil {
-		component := layout.Toast("建立定期交易失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to create recurring transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -622,55 +642,89 @@ func (s *Server) handleUpdateRecurring(w http.ResponseWriter, r *http.Request) {
 	tType := r.FormValue("type")
 	amount := r.FormValue("amount")
 	note := r.FormValue("note")
-	endDate := r.FormValue("end_date")
+	endDateStr := r.FormValue("end_date")
 	recurType := r.FormValue("recur_type")
 	status := r.FormValue("status")
-	frequency := r.FormValue("frequency")
-	dayOfWeek := r.FormValue("day_of_week")
-	dayOfMonth := r.FormValue("day_of_month")
-	monthOfYear := r.FormValue("month_of_year")
+	frequencyStr := r.FormValue("frequency")
+	dayOfWeekStr := r.FormValue("day_of_week")
+	dayOfMonthStr := r.FormValue("day_of_month")
+	monthOfYearStr := r.FormValue("month_of_year")
 
-	req := map[string]any{
-		"id": recurringID,
-	}
+	var (
+		pName        *string
+		pType        *string
+		pAmount      *string
+		pNote        *string
+		pEndDate     *string
+		pRecurType   *string
+		pStatus      *string
+		pFrequency   *int
+		pDayOfWeek   *int
+		pDayOfMonth  *int
+		pMonthOfYear *int
+	)
+
 	if name != "" {
-		req["name"] = name
+		pName = &name
 	}
 	if tType != "" {
-		req["type"] = tType
+		pType = &tType
 	}
 	if amount != "" {
-		req["amount"] = amount
+		pAmount = &amount
 	}
 	if note != "" {
-		req["note"] = note
+		pNote = &note
 	}
-	if endDate != "" {
-		req["end_date"] = endDate
+	if endDateStr != "" {
+		pEndDate = &endDateStr
 	}
 	if recurType != "" {
-		req["recur_type"] = recurType
+		pRecurType = &recurType
 	}
 	if status != "" {
-		req["status"] = status
+		pStatus = &status
 	}
-	if frequency != "" {
-		req["frequency"] = frequency
+	if frequencyStr != "" {
+		if freqInt, err := strconv.Atoi(frequencyStr); err == nil {
+			pFrequency = &freqInt
+		}
 	}
-	if dayOfWeek != "" {
-		req["day_of_week"] = dayOfWeek
+	if dayOfWeekStr != "" {
+		if val, err := strconv.Atoi(dayOfWeekStr); err == nil {
+			pDayOfWeek = &val
+		}
 	}
-	if dayOfMonth != "" {
-		req["day_of_month"] = dayOfMonth
+	if dayOfMonthStr != "" {
+		if val, err := strconv.Atoi(dayOfMonthStr); err == nil {
+			pDayOfMonth = &val
+		}
 	}
-	if monthOfYear != "" {
-		req["month_of_year"] = monthOfYear
+	if monthOfYearStr != "" {
+		if val, err := strconv.Atoi(monthOfYearStr); err == nil {
+			pMonthOfYear = &val
+		}
 	}
 
-	var tx domain.RecurringTransaction
-	err := s.sendRequest(r, "PUT", "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
+	req := datatype.UpdateRecurringTransactionRequest{
+		ID:          recurringID,
+		Name:        pName,
+		Type:        pType,
+		Amount:      pAmount,
+		Note:        pNote,
+		EndDate:     pEndDate,
+		RecurType:   pRecurType,
+		Status:      pStatus,
+		Frequency:   pFrequency,
+		DayOfWeek:   pDayOfWeek,
+		DayOfMonth:  pDayOfMonth,
+		MonthOfYear: pMonthOfYear,
+	}
+
+	var tx datatype.RecurringTransaction
+	err := s.sendRequest(r, http.MethodPut, "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
 	if err != nil {
-		component := layout.Toast("更新定期交易失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to update recurring transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -680,13 +734,18 @@ func (s *Server) handleUpdateRecurring(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePauseRecurring(w http.ResponseWriter, r *http.Request) {
 	recurringID := parseInt32(r.PathValue("id"))
-	req := map[string]any{
-		"status": "paused",
+
+	req := datatype.UpdateRecurringTransactionRequest{
+		Status: func() *string {
+			status := "paused"
+			return &status
+		}(),
 	}
-	var tx domain.RecurringTransaction
-	err := s.sendRequest(r, "PUT", "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
+
+	var tx datatype.RecurringTransaction
+	err := s.sendRequest(r, http.MethodPut, "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
 	if err != nil {
-		component := layout.Toast("暫停失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to pause recurring transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -696,13 +755,18 @@ func (s *Server) handlePauseRecurring(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleResumeRecurring(w http.ResponseWriter, r *http.Request) {
 	recurringID := parseInt32(r.PathValue("id"))
-	req := map[string]any{
-		"status": "active",
+
+	req := datatype.UpdateRecurringTransactionRequest{
+		Status: func() *string {
+			status := "active"
+			return &status
+		}(),
 	}
-	var tx domain.RecurringTransaction
-	err := s.sendRequest(r, "PUT", "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
+
+	var tx datatype.RecurringTransaction
+	err := s.sendRequest(r, http.MethodPut, "/v1/recurring/"+strconv.Itoa(int(recurringID)), req, &tx)
 	if err != nil {
-		component := layout.Toast("恢復失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to resume recurring transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -712,9 +776,9 @@ func (s *Server) handleResumeRecurring(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleDeleteRecurring(w http.ResponseWriter, r *http.Request) {
 	recurringID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "DELETE", "/v1/recurring/"+strconv.Itoa(int(recurringID)), nil, nil)
+	err := s.sendRequest(r, http.MethodDelete, "/v1/recurring/"+strconv.Itoa(int(recurringID)), nil, nil)
 	if err != nil {
-		component := layout.Toast("刪除失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to delete recurring transaction: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -724,9 +788,9 @@ func (s *Server) handleDeleteRecurring(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMarkReminderRead(w http.ResponseWriter, r *http.Request) {
 	reminderID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "POST", "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/read", nil, nil)
+	err := s.sendRequest(r, http.MethodPost, "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/read", nil, nil)
 	if err != nil {
-		component := layout.Toast("標記失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to mark reminder as read: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -736,9 +800,9 @@ func (s *Server) handleMarkReminderRead(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleMarkReminderUnread(w http.ResponseWriter, r *http.Request) {
 	reminderID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "POST", "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/unread", nil, nil)
+	err := s.sendRequest(r, http.MethodPost, "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/unread", nil, nil)
 	if err != nil {
-		component := layout.Toast("標記失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to mark reminder as unread: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -748,9 +812,9 @@ func (s *Server) handleMarkReminderUnread(w http.ResponseWriter, r *http.Request
 
 func (s *Server) handleExecuteReminder(w http.ResponseWriter, r *http.Request) {
 	reminderID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "POST", "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/execute", nil, nil)
+	err := s.sendRequest(r, http.MethodPost, "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/execute", nil, nil)
 	if err != nil {
-		component := layout.Toast("執行提醒失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to execute reminder: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -759,27 +823,27 @@ func (s *Server) handleExecuteReminder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSnoozeReminder(w http.ResponseWriter, r *http.Request) {
-	reminderID := parseInt32(r.PathValue("id"))
-	snoozeMinutes := r.FormValue("minutes")
-	body := map[string]any{}
-	if snoozeMinutes != "" {
-		body["minutes"] = snoozeMinutes
-	}
-	err := s.sendRequest(r, "POST", "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/snooze", body, nil)
-	if err != nil {
-		component := layout.Toast("延後失敗："+err.Error(), "error")
-		component.Render(r.Context(), w)
-		return
-	}
-	w.Header().Set("HX-Refresh", "true")
+	// reminderID := parseInt32(r.PathValue("id"))
+	// snoozeMinutes := r.FormValue("minutes")
+	// body := map[string]any{}
+	// if snoozeMinutes != "" {
+	// 	body["minutes"] = snoozeMinutes
+	// }
+	// err := s.sendRequest(r, http.MethodPost, "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID))+"/snooze", body, nil)
+	// if err != nil {
+	// 	component := layout.Toast("Failed to snooze reminder: "+err.Error(), "error")
+	// 	component.Render(r.Context(), w)
+	// 	return
+	// }
+	// w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleDeleteReminder(w http.ResponseWriter, r *http.Request) {
 	reminderID := parseInt32(r.PathValue("id"))
-	err := s.sendRequest(r, "DELETE", "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID)), nil, nil)
+	err := s.sendRequest(r, http.MethodDelete, "/v1/recurring/reminders/"+strconv.Itoa(int(reminderID)), nil, nil)
 	if err != nil {
-		component := layout.Toast("刪除失敗："+err.Error(), "error")
+		component := layout.Toast("Failed to delete reminder: "+err.Error(), "error")
 		component.Render(r.Context(), w)
 		return
 	}
@@ -788,57 +852,49 @@ func (s *Server) handleDeleteReminder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleMarkAllRemindersRead(w http.ResponseWriter, r *http.Request) {
-	// err := s.sendRequest(r, "POST", "/v1/recurring/reminders/mark-all-read", nil, nil)
+	// err := s.sendRequest(r, http.MethodPost, "/v1/recurring/reminders/mark-all-read", nil, nil)
 	// if err != nil {
-	// 	component := layout.Toast("批次標記失敗："+err.Error(), "error")
-	// 	component.Render(r.Context(), w)
-	// 	return
+	// component := layout.Toast("Failed to mark all reminders as read: "+err.Error(), "error")
+	// component.Render(r.Context(), w)
+	// return
 	// }
 	// w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
 
-// API handlers for dashboard data
+// API handlers (for HTMX partial updates)
 func (s *Server) apiAccountsSummary(w http.ResponseWriter, r *http.Request) {
-	var summary any
-	// err := s.sendRequest(r, "GET", "/v1/accounts/summary", nil, &summary)
-	// if err != nil {
-	// 	http.Error(w, "取得失敗: "+err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(summary)
+	// Fetch account summary data and render as HTML partial
+	// Example:
+	// accounts := []struct{ Name string; Balance string }{{\"Bank\", \"$1,234.56\"}, {\"Credit Card\", \"$567.89\"}}
+	// component := components.AccountSummary(accounts)
+	// component.Render(r.Context(), w)
+	fmt.Fprint(w, "<p>Account summary loaded</p>")
 }
 
 func (s *Server) apiRecentLedgers(w http.ResponseWriter, r *http.Request) {
-	var ledgers any
-	// err := s.sendRequest(r, "GET", "/v1/ledgers/recent", nil, &ledgers)
-	// if err != nil {
-	// 	http.Error(w, "取得失敗: "+err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ledgers)
+	// Fetch recent ledgers and render as HTML partial
+	// Example:
+	// ledgers := []struct{ Description string; Amount string; Date string }{{\"Salary\", \"+$2,000.00\", \"2024-07-15\"}, {\"Groceries\", \"-$50.00\", \"2024-07-14\"}}
+	// component := components.RecentLedgers(ledgers)
+	// component.Render(r.Context(), w)
+	fmt.Fprint(w, "<p>Recent transactions loaded</p>")
 }
 
 func (s *Server) apiMonthlyStatistics(w http.ResponseWriter, r *http.Request) {
-	var stats any
-	// err := s.sendRequest(r, "GET", "/v1/statistics/monthly", nil, &stats)
-	// if err != nil {
-	// 	http.Error(w, "取得失敗: "+err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	// Fetch monthly statistics and render as HTML partial
+	// Example:
+	// stats := struct{ Income string; Expenses string; Net string }{Income: \"$3,000.00\", Expenses: \"$1,500.00\", Net: \"$1,500.00\"}
+	// component := components.MonthlyStats(stats)
+	// component.Render(r.Context(), w)
+	fmt.Fprint(w, "<p>Monthly statistics loaded</p>")
 }
 
 func (s *Server) apiUpcomingReminders(w http.ResponseWriter, r *http.Request) {
-	var reminders any
-	// err := s.sendRequest(r, "GET", "/v1/recurring/reminders/upcoming", nil, &reminders)
-	// if err != nil {
-	// 	http.Error(w, "取得失敗: "+err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(reminders)
+	// Fetch upcoming reminders and render as HTML partial
+	// Example:
+	// reminders := []struct{ Title string; DueDate string }{{\"Rent Payment\", \"2024-08-01\"}, {\"Subscription Renewal\", \"2024-07-20\"}}
+	// component := components.UpcomingReminders(reminders)
+	// component.Render(r.Context(), w)
+	fmt.Fprint(w, "<p>Upcoming reminders loaded</p>")
 }

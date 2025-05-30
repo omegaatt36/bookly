@@ -86,7 +86,17 @@ tasks:
       - air --build.cmd "go build -o build/api cmd/api/main.go" --build.bin "./build/api"
   live-web:
     cmds:
+      - templ generate
+      - tailwindcss -i ./app/web/static/css/input.css -o ./app/web/static/css/styles.css
       - air --build.cmd "go build -o build/web cmd/web/main.go" --build.bin "./build/web"
+  generate-templ:
+    desc: Generate Go code from .templ files
+    cmds:
+      - templ generate
+  watch-templ:
+    desc: Watch .templ files and regenerate Go code
+    cmds:
+      - templ generate --watch
   setup-db:
     desc: Setup the database
     cmds:
@@ -104,3 +114,9 @@ tasks:
     desc: Serve OpenAPI documentation using Swagger UI
     cmds:
       - docker run --rm -p 8087:8080 -e SWAGGER_JSON=/app/openapi.yaml -v ${PWD}/doc:/app swaggerapi/swagger-ui
+  build-css:
+    desc: Build Tailwind CSS
+    cmds:
+      - echo "Building Tailwind CSS..."
+      - tailwindcss -i ./app/web/static/css/input.css -o ./app/web/static/css/styles.css --config ./tailwind.config.js
+      - echo "CSS build complete!"
