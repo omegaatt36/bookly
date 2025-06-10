@@ -1,0 +1,20 @@
+package pages
+
+import (
+    "../layouts"
+    "github.com/axzilla/templui/internal/components/card"
+)
+
+templ AccountDetail(isAuthenticated bool, acc web.Account) {
+    @layouts.Base(acc.Name, isAuthenticated) {
+        @card.Card() {
+            @card.Header() {
+                @card.Title() { { acc.Name } }
+                @card.Description() { { acc.Currency } }
+            }
+            @card.Content() {
+                <p>Balance: { acc.Balance }</p>
+            }
+        }
+    }
+}

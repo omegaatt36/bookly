@@ -1,14 +1,16 @@
 package web
 
 import (
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"strconv"
-	"time"
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/http"
+        "strconv"
+        "time"
 
-	"github.com/omegaatt36/bookly/app"
+        "github.com/a-h/templ"
+        "github.com/omegaatt36/bookly/app"
+        "github.com/omegaatt36/bookly/app/web/views/pages"
 )
 
 type recurringTransaction struct {
@@ -56,26 +58,12 @@ func (s *Server) pageRecurringList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Also fetch accounts for the account selector in the create form
-	var accounts []account
-	err = s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
-	if err != nil {
-		slog.Error("failed to get accounts", slog.String("error", err.Error()))
-		// Continue with empty accounts list
-	}
+        items := make([]pages.Recurring, 0, len(recurring))
+        for _, rtx := range recurring {
+                items = append(items, pages.Recurring{ID: rtx.ID, Name: rtx.Name, Type: rtx.Type})
+        }
 
-	result := struct {
-		RecurringTransactions []recurringTransaction
-		Accounts              []account
-	}{
-		RecurringTransactions: recurring,
-		Accounts:              accounts,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "recurring_list.html", result); err != nil {
-		slog.Error("failed to render recurring_list.html", slog.String("error", err.Error()))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+        templ.Handler{Component: pages.RecurringList(true, items)}.ServeHTTP(w, r)
 }
 
 func (s *Server) pageRecurringDetails(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +85,7 @@ func (s *Server) pageRecurringDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get accounts for the edit form
-	var accounts []account
+        var accounts []Account
 	err = s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
 	if err != nil {
 		slog.Error("failed to get accounts", slog.String("error", err.Error()))
@@ -106,7 +94,7 @@ func (s *Server) pageRecurringDetails(w http.ResponseWriter, r *http.Request) {
 
 	result := struct {
 		RecurringTransaction recurringTransaction
-		Accounts             []account
+                Accounts             []Account
 	}{
 		RecurringTransaction: recurring,
 		Accounts:             accounts,
@@ -120,7 +108,7 @@ func (s *Server) pageRecurringDetails(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) pageCreateRecurring(w http.ResponseWriter, r *http.Request) {
 	// Get accounts for the create form
-	var accounts []account
+        var accounts []Account
 	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
 	if err != nil {
 		slog.Error("failed to get accounts", slog.String("error", err.Error()))
@@ -142,8 +130,8 @@ func (s *Server) pageCreateRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pageReminders(w http.ResponseWriter, r *http.Request) {
-	var reminders []reminder
-	err := s.sendRequest(r, "GET", "/v1/recurring/reminders", nil, &reminders)
+        var reminders []reminder
+        err := s.sendRequest(r, "GET", "/v1/recurring/reminders", nil, &reminders)
 	if err != nil {
 		slog.Error("failed to get reminders", slog.String("error", err.Error()))
 
@@ -157,10 +145,11 @@ func (s *Server) pageReminders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.templates.ExecuteTemplate(w, "reminders.html", reminders); err != nil {
-		slog.Error("failed to render reminders.html", slog.String("error", err.Error()))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+        items := make([]pages.Reminder, 0, len(reminders))
+        for _, rm := range reminders {
+                items = append(items, pages.Reminder{ID: rm.ID, Text: rm.Name, Read: rm.ReadAt != nil})
+        }
+        templ.Handler{Component: pages.Reminders(true, items)}.ServeHTTP(w, r)
 }
 
 func (s *Server) createRecurring(w http.ResponseWriter, r *http.Request) {

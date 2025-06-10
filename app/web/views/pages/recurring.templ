@@ -1,0 +1,30 @@
+package pages
+
+import (
+    "../layouts"
+    "github.com/axzilla/templui/internal/components/table"
+    "fmt"
+)
+
+type Recurring struct {
+    ID   int32
+    Name string
+    Type string
+}
+
+templ RecurringList(isAuthenticated bool, items []Recurring) {
+    @layouts.Base("Recurring", isAuthenticated) {
+        <h1 class="text-2xl font-bold mb-4">Recurring Transactions</h1>
+        @table.Table() {
+            @table.Header() { @table.Row() { @table.Head() { "Name" } @table.Head() { "Type" } } }
+            @table.Body() {
+                for _, r := range items {
+                    @table.Row() {
+                        @table.Cell() { <a href={ fmt.Sprintf("/page/recurring/%d", r.ID) } class="underline">{ r.Name }</a> }
+                        @table.Cell() { { r.Type } }
+                    }
+                }
+            }
+        }
+    }
+}

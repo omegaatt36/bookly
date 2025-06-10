@@ -1,0 +1,12 @@
+package pages
+
+import "../layouts"
+
+templ Home(isAuthenticated bool) {
+    @layouts.Base("Home", isAuthenticated) {
+        <div class="text-center py-20">
+            <h1 class="text-3xl font-bold mb-4">Welcome to Bookly</h1>
+            <p class="text-lg">Your personal finance dashboard.</p>
+        </div>
+    }
+}

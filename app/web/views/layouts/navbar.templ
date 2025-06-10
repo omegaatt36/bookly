@@ -1,0 +1,23 @@
+package layouts
+
+import (
+    "github.com/axzilla/templui/internal/components/button"
+)
+
+templ Navbar(isAuthenticated bool) {
+    <nav class="border-b bg-bg-secondary text-text-primary">
+        <div class="container mx-auto flex items-center justify-between p-4">
+            <a href="/" class="font-bold">Bookly</a>
+            if isAuthenticated {
+                <div class="flex gap-2">
+                    @button.Button(button.Props{Variant: button.VariantLink, Href: "/page/accounts"}) { "Accounts" }
+                    @button.Button(button.Props{Variant: button.VariantLink, Href: "/page/recurring"}) { "Recurring" }
+                    @button.Button(button.Props{Variant: button.VariantLink, Href: "/page/reminders"}) { "Reminders" }
+                    <form hx-post="/logout" hx-target="body">
+                        @button.Button(button.Props{Variant: button.VariantLink, Type: button.TypeSubmit}) { "Logout" }
+                    </form>
+                </div>
+            }
+        </div>
+    </nav>
+}

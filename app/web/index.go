@@ -1,8 +1,11 @@
 package web
 
 import (
-	"log/slog"
-	"net/http"
+        "log/slog"
+        "net/http"
+
+        "github.com/a-h/templ"
+        "github.com/omegaatt36/bookly/app/web/views/pages"
 )
 
 func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
@@ -15,17 +18,9 @@ func (s *Server) pageIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 如果未驗證，顯示登錄頁面
-	data := struct {
-		IsAuthenticated bool
-	}{
-		IsAuthenticated: isAuthenticated,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		slog.Error("failed to render layout.html", slog.String("error", err.Error()))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+        templ.Handler{
+                Component: pages.Home(isAuthenticated),
+        }.ServeHTTP(w, r)
 }
 
 // page404 renders the 404 page

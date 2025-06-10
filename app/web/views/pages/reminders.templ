@@ -1,0 +1,29 @@
+package pages
+
+import (
+    "../layouts"
+    "github.com/axzilla/templui/internal/components/table"
+)
+
+type Reminder struct {
+    ID   int32
+    Text string
+    Read bool
+}
+
+templ Reminders(isAuthenticated bool, items []Reminder) {
+    @layouts.Base("Reminders", isAuthenticated) {
+        <h1 class="text-2xl font-bold mb-4">Reminders</h1>
+        @table.Table() {
+            @table.Header() { @table.Row() { @table.Head() { "Reminder" } @table.Head() { "Status" } } }
+            @table.Body() {
+                for _, r := range items {
+                    @table.Row() {
+                        @table.Cell() { { r.Text } }
+                        @table.Cell() { if r.Read { "read" } else { "unread" } }
+                    }
+                }
+            }
+        }
+    }
+}

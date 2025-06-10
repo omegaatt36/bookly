@@ -1,0 +1,12 @@
+package layouts
+
+import "github.com/axzilla/templui/internal/ui/layouts"
+
+templ Base(title string, isAuthenticated bool) {
+    @layouts.BaseLayout(title, "Bookly") {
+        @Navbar(isAuthenticated)
+        <main class="container mx-auto p-6">
+            { children... }
+        </main>
+    }
+}

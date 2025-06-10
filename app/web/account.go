@@ -1,15 +1,17 @@
 package web
 
 import (
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
+        "errors"
+        "fmt"
+        "log/slog"
+        "net/http"
 
-	"github.com/omegaatt36/bookly/app"
+        "github.com/a-h/templ"
+        "github.com/omegaatt36/bookly/app"
+        "github.com/omegaatt36/bookly/app/web/views/pages"
 )
 
-type account struct {
+type Account struct {
 	ID       int32  `json:"id"`
 	Name     string `json:"name"`
 	Status   string `json:"status"`
@@ -27,7 +29,7 @@ func (s *Server) pageCreateAccount(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
 	accountID := parseInt32(r.PathValue("account_id"))
 
-	var acc account
+        var acc Account
 	err := s.sendRequest(r, "GET", fmt.Sprintf("/v1/accounts/%d", accountID), nil, &acc)
 	if err != nil {
 		slog.Error("failed to get accounts", slog.String("error", err.Error()))
@@ -60,21 +62,13 @@ func (s *Server) pageAccount(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	result := struct {
-		Account     account
-		BankAccount *bankAccount
-	}{
-		Account:     acc,
-		BankAccount: bankAcc,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "account_details.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
-	}
+        templ.Handler{
+                Component: pages.AccountDetail(true, acc),
+        }.ServeHTTP(w, r)
 }
 
-func (s *Server) getAccountList(r *http.Request) ([]account, error) {
-	var accounts []account
+func (s *Server) getAccountList(r *http.Request) ([]Account, error) {
+        var accounts []Account
 	err := s.sendRequest(r, "GET", "/v1/accounts", nil, &accounts)
 	if err != nil {
 		return nil, err
@@ -98,15 +92,9 @@ func (s *Server) pageAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := struct {
-		Accounts []account
-	}{
-		Accounts: accounts,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "accounts_page.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
-	}
+        templ.Handler{
+                Component: pages.Accounts(true, accounts),
+        }.ServeHTTP(w, r)
 }
 
 func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
@@ -124,16 +112,9 @@ func (s *Server) pageAccountList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := struct {
-		Accounts []account
-	}{
-		Accounts: accounts,
-	}
-
-	if err := s.templates.ExecuteTemplate(w, "account_list.html", result); err != nil {
-		slog.Error("failed to render account_list.html", slog.String("error", err.Error()))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+        templ.Handler{
+                Component: pages.Accounts(true, accounts),
+        }.ServeHTTP(w, r)
 }
 
 func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {

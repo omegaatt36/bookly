@@ -1,0 +1,35 @@
+package pages
+
+import (
+    "../layouts"
+    "github.com/axzilla/templui/internal/components/button"
+    "github.com/axzilla/templui/internal/components/table"
+    "fmt"
+)
+
+templ Accounts(isAuthenticated bool, accounts []web.Account) {
+    @layouts.Base("Accounts", isAuthenticated) {
+        <div class="mb-4 flex justify-between">
+            <h1 class="text-2xl font-bold">Accounts</h1>
+            @button.Button(button.Props{Href: "/page/accounts/create"}) { "New Account" }
+        </div>
+        @table.Table() {
+            @table.Header() {
+                @table.Row() {
+                    @table.Head() { "Name" }
+                    @table.Head() { "Currency" }
+                    @table.Head() { "Balance" }
+                }
+            }
+            @table.Body() {
+                for _, a := range accounts {
+                    @table.Row() {
+                        @table.Cell() { <a href={ fmt.Sprintf("/page/accounts/%d", a.ID) } class="underline">{ a.Name }</a> }
+                        @table.Cell() { { a.Currency } }
+                        @table.Cell() { { a.Balance } }
+                    }
+                }
+            }
+        }
+    }
+}
